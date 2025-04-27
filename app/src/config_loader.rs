@@ -139,11 +139,11 @@ impl ConfigLoader {
     }
 
     pub fn find_sdl_mapping(&self, usb_id: &String) -> Option<&ControllerSdlMap> {
-        self.controller_sdl_mappings.iter().find(|m| &m.usb_id == usb_id)
+        self.controller_sdl_mappings.iter().find(|m| m.usb_id.to_lowercase() == usb_id.to_lowercase())
     }
 
     pub fn find_controller_calibration(&self, usb_id: &String) -> Option<&ControllerCalibration> {
-        self.controller_calibrations.iter().find(|m| &m.usb_id == usb_id)
+        self.controller_calibrations.iter().find(|m| m.usb_id.to_lowercase() == usb_id.to_lowercase())
     }
 
     pub fn find_controller_profile<T: AsRef<str>>(&self, name: T, controller_usb_id: Option<String>) -> Option<&ControllerProfile> {
