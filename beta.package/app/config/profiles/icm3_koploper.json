@@ -36,14 +36,14 @@
 
     {
       "name": "Lever1",
-      "description": "Main Mode Selector",
+      "description": "Reverser",
       "assignment": {
         "type": "direct_control",
-        "controls": "MainModeSelector",
+        "controls": "Reverser",
         "input_value": {
           "min": 0.0,
           "max": 1.0,
-          "step": 0.33
+          "step": 0.5
         }
       }
     },
@@ -120,22 +120,22 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "w",
-          "press_time": 0.3,
-          "wait_time": 0.2
+          "controls": "MainModeSelector",
+          "value": -0.33,
+          "relative": true
         }
       }
     },
     {
       "name": "Dial1CCW",
-      "description": "Reverser Decrease",
+      "description": "Main mode selector ccw",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "s",
-          "press_time": 0.3,
-          "wait_time": 0.2
+          "controls": "MainModeSelector",
+          "value": 0.33,
+          "relative": true
         }
       }
     },

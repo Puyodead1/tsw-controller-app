@@ -198,6 +198,7 @@ impl ProfileRunner {
                                                 Some(ProfileRunnerAssignmentCallAction::DirectControlAction(super::direct_controller::DirectControlCommand {
                                                     controls: action.controls.clone(),
                                                     input_value: action.value,
+                                                    relative: action.relative,
                                                     hold: action.hold,
                                                 }))
                                             }
@@ -226,6 +227,7 @@ impl ProfileRunner {
                                                 Some(ProfileRunnerAssignmentCallAction::DirectControlAction(super::direct_controller::DirectControlCommand {
                                                     controls: action.controls.clone(),
                                                     input_value: action.value,
+                                                    relative: action.relative,
                                                     hold: action.hold,
                                                 }))
                                             }
@@ -294,6 +296,7 @@ impl ProfileRunner {
                                                 Some(ProfileRunnerAssignmentCallAction::DirectControlAction(super::direct_controller::DirectControlCommand {
                                                     controls: action.controls.clone(),
                                                     input_value: action.value,
+                                                    relative: action.relative,
                                                     hold: action.hold,
                                                 }))
                                             }
@@ -325,6 +328,7 @@ impl ProfileRunner {
                                                     Some(ProfileRunnerAssignmentCallAction::DirectControlAction(super::direct_controller::DirectControlCommand {
                                                         controls: action.controls.clone(),
                                                         input_value: action.value,
+                                                        relative: action.relative,
                                                         hold: action.hold,
                                                     }))
                                                 }
@@ -377,6 +381,7 @@ impl ProfileRunner {
                                             Some(ProfileRunnerAssignmentCallAction::DirectControlAction(super::direct_controller::DirectControlCommand {
                                                 controls: action.controls.clone(),
                                                 input_value: action.value,
+                                                relative: action.relative,
                                                 hold: action.hold,
                                             }))
                                         }
@@ -416,6 +421,8 @@ impl ProfileRunner {
                                 Some(ProfileRunnerAssignmentCallAction::DirectControlAction(DirectControlCommand {
                                     controls: assignment.controls.clone(),
                                     input_value,
+                                    /* direct control can't be relative since it should be directly bound to the lever/axis */
+                                    relative: Some(false),
                                     hold: assignment.hold,
                                 })),
                             )

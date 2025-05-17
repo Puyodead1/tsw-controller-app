@@ -15,6 +15,9 @@ use tungstenite::protocol::Message;
 pub struct DirectControlCommand {
     pub controls: String,
     pub input_value: f32,
+    /* whether to send the value relative to the current value */
+    pub relative: Option<bool>,
+    /* whether to hold the value instead of sending it once */
     pub hold: Option<bool>,
 }
 
@@ -32,7 +35,11 @@ impl fmt::Display for DirectControlCommand {
             Some(true) => "hold".to_string(),
             _ => "".to_string(),
         };
-        let flags = vec![hold_flag].iter().filter(|x| !x.is_empty()).map(|x| x.to_string()).collect::<Vec<String>>();
+        let relative_flag = match self.relative {
+          Some(true) => "relative".to_string(),
+          _ => "".to_string(),
+      };
+        let flags = vec![hold_flag, relative_flag].iter().filter(|x| !x.is_empty()).map(|x| x.to_string()).collect::<Vec<String>>();
         write!(f, "{},{},{}", self.controls, self.input_value, flags.join("|"))
     }
 }
