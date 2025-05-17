@@ -55,6 +55,8 @@ pub struct ControllerProfileDirectControlAssignment {
 pub struct ControllerProfileControlAssignmentDirectControlAction {
     pub controls: String,
     pub value: f32,
+    /* sets this value to be a relative adjustment as opposed to an absolute one */
+    pub relative: Option<bool>,
     /* determine whether to hold the value or not */
     pub hold: Option<bool>,
 }
