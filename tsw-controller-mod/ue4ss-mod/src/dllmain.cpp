@@ -332,6 +332,16 @@ class TSWControllerMod : public RC::CppUserModBase
 
             auto [target_value, flags] = control_pair.second;
             bool should_hold = std::find(flags.begin(), flags.end(), STR("hold")) != flags.end();
+            bool should_be_relative = std::find(flags.begin(), flags.end(), STR("relative")) != flags.end();
+
+            /* account for relative flag */
+            if (should_be_relative)
+            {
+                auto current_input_value = TSWControllerMod::get_current_vhid_component_input_value(find_virtualhid_component_params.VirtualHIDComponent);
+                target_value = current_input_value + target_value;
+                /* can't currently be used with hold */
+                should_hold = false;
+            }
 
             /* begin changing if not already */
             if (begin_changing_func && !TSWControllerMod::is_vhid_component_changing(find_virtualhid_component_params.VirtualHIDComponent))
