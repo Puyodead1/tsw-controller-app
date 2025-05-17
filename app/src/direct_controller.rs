@@ -36,9 +36,9 @@ impl fmt::Display for DirectControlCommand {
             _ => "".to_string(),
         };
         let relative_flag = match self.relative {
-            Some(true) => "relative".to_string(),
-            _ => "".to_string(),
-        };
+          Some(true) => "relative".to_string(),
+          _ => "".to_string(),
+      };
         let flags = vec![hold_flag, relative_flag].iter().filter(|x| !x.is_empty()).map(|x| x.to_string()).collect::<Vec<String>>();
         write!(f, "{},{},{}", self.controls, self.input_value, flags.join("|"))
     }

@@ -121,7 +121,11 @@ impl fmt::Display for ControllerProfileControlAssignmentDirectControlAction {
             Some(true) => "hold".to_string(),
             _ => "".to_string(),
         };
-        let flags = vec![hold_flag].iter().filter(|x| !x.is_empty()).map(|x| x.to_string()).collect::<Vec<String>>();
+        let relative_flag = match self.relative {
+            Some(true) => "relative".to_string(),
+            _ => "".to_string(),
+        };
+        let flags = vec![hold_flag, relative_flag].iter().filter(|x| !x.is_empty()).map(|x| x.to_string()).collect::<Vec<String>>();
         write!(f, "{},{},{}", self.controls, self.value, flags.join("|"))
     }
 }
