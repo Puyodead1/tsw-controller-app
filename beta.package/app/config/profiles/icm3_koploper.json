@@ -121,20 +121,21 @@
         "threshold": 0.9,
         "action_activate": {
           "controls": "MainModeSelector",
-          "relative_value"
+          "value": 0.33,
+          "relative": true
         }
       }
     },
     {
       "name": "Dial1CCW",
-      "description": "Reverser Decrease",
+      "description": "Main mode selector ccw",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "s",
-          "press_time": 0.3,
-          "wait_time": 0.2
+          "controls": "MainModeSelector",
+          "value": -0.33,
+          "relative": true
         }
       }
     },
