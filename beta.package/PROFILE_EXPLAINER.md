@@ -132,11 +132,13 @@ Each assignment triggers an action when activated (and optionally when deactivat
 {
   "controls": "Throttle1",
   "value": 0.5,
-  "hold": false
+  "hold": false,
+  "relative": false
 }
 ```
 - Sends a value directly to a UE4SS control.
 - Can be held or pulsed.
+- Can be defined as a relative value (instead of sending the absolute value)
 
 ---
 
