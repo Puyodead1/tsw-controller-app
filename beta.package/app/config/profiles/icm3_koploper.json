@@ -121,7 +121,7 @@
         "threshold": 0.9,
         "action_activate": {
           "controls": "MainModeSelector",
-          "value": 0.33,
+          "value": -0.33,
           "relative": true
         }
       }
@@ -134,7 +134,7 @@
         "threshold": 0.9,
         "action_activate": {
           "controls": "MainModeSelector",
-          "value": -0.33,
+          "value": 0.33,
           "relative": true
         }
       }
