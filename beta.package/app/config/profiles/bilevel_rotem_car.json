@@ -2,6 +2,36 @@
   "name": "bilevel_rotem_car",
   "controls": [
     {
+      "name": "Lever1",
+      "description": "Reverser",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "Reverser",
+          "input_value": {
+            "min": -1.0,
+            "max": 1.0,
+            "step": 1.0
+          }
+        },
+        {
+          "type": "sync_control",
+          "identifier": "Reverser",
+          "input_value": {
+            "min": -1.0,
+            "max": 1.0,
+            "step": 1.0
+          },
+          "action_increase": {
+            "keys": "w"
+          },
+          "action_decrease": {
+            "keys": "s"
+          }
+        }
+      ]
+    },
+    {
       "name": "Lever2",
       "description": "Throttle",
       "assignments": [
@@ -97,12 +127,12 @@
     },
     {
       "name": "Dial1CW",
-      "description": "Reverser Increase",
+      "description": "Headlights Dial CW",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "w",
+          "keys": "h",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -110,12 +140,12 @@
     },
     {
       "name": "Dial1CCW",
-      "description": "Reverser Decrease",
+      "description": "Headlights Dial CCW",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "s",
+          "keys": "shift+h",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -201,28 +231,6 @@
         "threshold": 0.9,
         "action_activate": {
           "keys": "b"
-        }
-      }
-    },
-    {
-      "name": "Button1",
-      "description": "Headlights Increase",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "h"
-        }
-      }
-    },
-    {
-      "name": "Button4",
-      "description": "Headlights Decrease",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "shift+h"
         }
       }
     }
