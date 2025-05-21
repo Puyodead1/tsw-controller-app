@@ -468,39 +468,35 @@ impl ControllerManager {
                 break;
             }
 
-            let possible_event = event_pump.poll_event();
-            match possible_event {
-                Some(event) => {
-                    debug!("Event Received: {:?}", event);
+            let event = event_pump.wait_event();
 
-                    use sdl2::event::Event;
+            debug!("Event Received: {:?}", event);
 
-                    // SDL on windows sends some initial movement events which causes issues
-                    let initial_events_threshold = 500;
+            use sdl2::event::Event;
 
-                    match event {
-                        Event::JoyDeviceAdded { .. } => self.handle_joy_device_added(event),
-                        Event::JoyDeviceRemoved { .. } => self.handle_joy_device_removed(event),
-                        Event::JoyAxisMotion { .. } => {
-                            if event.get_timestamp() > initial_events_threshold {
-                                self.handle_joy_axis_motion(event);
-                            }
-                        }
-                        Event::JoyButtonDown { .. } | Event::JoyButtonUp { .. } => {
-                            if event.get_timestamp() > initial_events_threshold {
-                                self.handle_joy_button_down_or_up(event)
-                            }
-                        }
-                        Event::JoyHatMotion { .. } => {
-                            if event.get_timestamp() > initial_events_threshold {
-                                self.handle_joy_hat_motion(event)
-                            }
-                        }
-                        Event::Quit { .. } => break,
-                        _ => {}
+            // SDL on windows sends some initial movement events which causes issues
+            let initial_events_threshold = 500;
+
+            match event {
+                Event::JoyDeviceAdded { .. } => self.handle_joy_device_added(event),
+                Event::JoyDeviceRemoved { .. } => self.handle_joy_device_removed(event),
+                Event::JoyAxisMotion { .. } => {
+                    if event.get_timestamp() > initial_events_threshold {
+                        self.handle_joy_axis_motion(event);
                     }
                 }
-                None => {}
+                Event::JoyButtonDown { .. } | Event::JoyButtonUp { .. } => {
+                    if event.get_timestamp() > initial_events_threshold {
+                        self.handle_joy_button_down_or_up(event)
+                    }
+                }
+                Event::JoyHatMotion { .. } => {
+                    if event.get_timestamp() > initial_events_threshold {
+                        self.handle_joy_hat_motion(event)
+                    }
+                }
+                Event::Quit { .. } => break,
+                _ => {}
             }
         }
     }
