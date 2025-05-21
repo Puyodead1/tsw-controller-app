@@ -30,7 +30,8 @@ pub struct ControllerProfileDirectControlAssignmentInputValue {
     pub min: f32,
     pub max: f32,
     pub step: Option<f32>,
-    pub steps: Option<Vec<f32>>,
+    /** steps can be combined with null values to create automatic interpolation */
+    pub steps: Option<Vec<Option<f32>>>,
     pub invert: Option<bool>,
 }
 
@@ -182,6 +183,40 @@ impl ControllerProfileControlLinearAssignment {
 }
 
 impl ControllerProfileDirectControlAssignmentInputValue {
+    pub fn normal_steps(&self) -> Option<Vec<f32>> {
+        if self.steps.is_none() {
+            return None;
+        }
+
+        let steps_input = self.steps.as_ref().unwrap().clone();
+        let mut normal_steps: Vec<f32> = vec![];
+        let mut current_interpolation_set: Vec<Option<f32>> = vec![];
+        for step in steps_input.iter() {
+            if step.is_none() {
+                current_interpolation_set.push(None);
+            } else if current_interpolation_set.is_empty() {
+                /* if empty - no interpolation required -> push value directly; unwrapping safe here since step.is_none() is already checked */
+                normal_steps.push(step.unwrap());
+            } else {
+                /* if there is an interpolation set we should interpolate between "this" value and the last known value */
+                let interpolation_start_value = match normal_steps.last() {
+                    Some(last_value) => *last_value,
+                    None => self.min,
+                };
+                let number_of_steps = current_interpolation_set.len() + 1;
+                let total_delta = step.unwrap() - interpolation_start_value;
+                let step_value = total_delta / number_of_steps as f32;
+                /* start at offset 1 and end at number of steps inclusive */
+                for i in 1..=number_of_steps {
+                    let interpolated_value = interpolation_start_value + (step_value * i as f32);
+                    normal_steps.push(interpolated_value);
+                }
+                current_interpolation_set.clear();
+            }
+        }
+        Some(normal_steps)
+    }
+
     /**
      * The incoming value here can only be [-1, 1]
      */
@@ -196,7 +231,8 @@ impl ControllerProfileDirectControlAssignmentInputValue {
         };
         let total_distance = (self.max - self.min).abs();
         let normal = (input_value * total_distance) + self.min;
-        let steps: Option<Vec<f32>> = match &self.steps {
+        let normal_steps = self.normal_steps();
+        let steps: Option<Vec<f32>> = match &normal_steps {
             Some(steps) => Some(steps.clone()),
             None => match self.step {
                 Some(step) => {
