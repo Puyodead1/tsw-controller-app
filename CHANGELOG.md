@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.2.2
+- Improve performance overhead by reducing controller polling.
+
 ## 0.2.1
 
 - Add support for mixing `null` values in the `steps` array for direct control assignments. This new feature allows automatic interpolation between step values without having to manually calculate the steps. Eg: `[0, null, null, 1]` will result in the following actual step list: `[0, 0.33, 0.66, 1]`. This is useful for levers where you want a combination of semi-free range and stepped values. (ie: North American suppression steps mixed with percentage based free range)
