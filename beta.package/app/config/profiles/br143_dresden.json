@@ -1,5 +1,5 @@
 {
-  "name": "br143",
+  "name": "br143_dresden",
   "controls": [
     {
       "name": "Lever2",
@@ -39,7 +39,9 @@
           "input_value": {
             "min": 0.1,
             "max": 0.8,
-            "steps": [0.1, 0.2, 0.3, 0.36, 0.425, 0.487, 0.55, 0.61, 0.675, 0.737, 0.8]
+            "steps": [
+              0.1, 0.2, 0.3, 0.36, 0.425, 0.487, 0.55, 0.61, 0.675, 0.737, 0.8
+            ]
           }
         },
         {
@@ -48,7 +50,9 @@
           "input_value": {
             "min": 0.1,
             "max": 0.8,
-            "steps": [0.1, 0.2, 0.3, 0.36, 0.425, 0.487, 0.55, 0.61, 0.675, 0.737, 0.8]
+            "steps": [
+              0.1, 0.2, 0.3, 0.36, 0.425, 0.487, 0.55, 0.61, 0.675, 0.737, 0.8
+            ]
           },
           "action_increase": {
             "keys": "'"
@@ -221,13 +225,35 @@
     {
       "name": "Button4",
       "description": "Headlights Decrease",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "shift+h"
+      "assignments": [
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}L",
+            "value": -0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}C",
+            "value": -0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}R",
+            "value": -0.5,
+            "relative": true
+          }
         }
-      }
+      ]
     },
     {
       "name": "Button2",
@@ -242,14 +268,36 @@
     },
     {
       "name": "Button1",
-      "description": "Headlights Increase",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "h"
+      "description": "Headlight Switches Up",
+      "assignments": [
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}L",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}C",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}R",
+            "value": 0.5,
+            "relative": true
+          }
         }
-      }
+      ]
     }
   ]
 }
