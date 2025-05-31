@@ -157,7 +157,7 @@ Used by `DirectControl` and `SyncControl` to map axis input to control values.
 
 - `min` / `max`: Range of values.
 - `step`: Optional increment size.
-- `steps`: List of discrete valid values. Can be used with `null` values to automatically interpolate between values.
+- `steps`: List of discrete valid values. Can be used with `null` values to create zones of free motion between detents.
 - `invert`: Whether to reverse the axis.
 
 ---
