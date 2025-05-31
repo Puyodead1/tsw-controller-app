@@ -1,6 +1,7 @@
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
+use tungstenite::protocol::frame;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum PreferredControlMode {
@@ -183,35 +184,50 @@ impl ControllerProfileControlLinearAssignment {
 }
 
 impl ControllerProfileDirectControlAssignmentInputValue {
+    /**
+     * Returns the free range zone limits
+     */
+    pub fn free_range_zones(&self) -> Vec<(f32, f32)> {
+        let mut zones = Vec::new();
+        if self.steps.is_none() {
+            return zones;
+        }
+
+        let mut previous_value = self.min;
+        let mut is_free_range_zone = false;
+        for step in self.steps.as_ref().unwrap().iter() {
+            if step.is_none() {
+                is_free_range_zone = true;
+            } else {
+                if is_free_range_zone {
+                    zones.push((previous_value, step.unwrap()));
+                }
+                is_free_range_zone = false;
+                previous_value = step.unwrap();
+            }
+        }
+
+        if is_free_range_zone {
+            zones.push((previous_value, self.max));
+        }
+
+        zones
+    }
+
+    /**
+     * Returns the actual defined steps - excluding free range zones.
+     * Free range zones should be handled separately
+     */
     pub fn normal_steps(&self) -> Option<Vec<f32>> {
         if self.steps.is_none() {
             return None;
         }
 
         let steps_input = self.steps.as_ref().unwrap().clone();
-        let mut normal_steps: Vec<f32> = vec![];
-        let mut current_interpolation_set: Vec<Option<f32>> = vec![];
+        let mut normal_steps = Vec::new();
         for step in steps_input.iter() {
-            if step.is_none() {
-                current_interpolation_set.push(None);
-            } else if current_interpolation_set.is_empty() {
-                /* if empty - no interpolation required -> push value directly; unwrapping safe here since step.is_none() is already checked */
+            if step.is_some() {
                 normal_steps.push(step.unwrap());
-            } else {
-                /* if there is an interpolation set we should interpolate between "this" value and the last known value */
-                let interpolation_start_value = match normal_steps.last() {
-                    Some(last_value) => *last_value,
-                    None => self.min,
-                };
-                let number_of_steps = current_interpolation_set.len() + 1;
-                let total_delta = step.unwrap() - interpolation_start_value;
-                let step_value = total_delta / number_of_steps as f32;
-                /* start at offset 1 and end at number of steps inclusive */
-                for i in 1..=number_of_steps {
-                    let interpolated_value = interpolation_start_value + (step_value * i as f32);
-                    normal_steps.push(interpolated_value);
-                }
-                current_interpolation_set.clear();
             }
         }
         Some(normal_steps)
@@ -232,6 +248,7 @@ impl ControllerProfileDirectControlAssignmentInputValue {
         let total_distance = (self.max - self.min).abs();
         let normal = (input_value * total_distance) + self.min;
         let normal_steps = self.normal_steps();
+        let free_zones = self.free_range_zones();
         let steps: Option<Vec<f32>> = match &normal_steps {
             Some(steps) => Some(steps.clone()),
             None => match self.step {
@@ -254,12 +271,19 @@ impl ControllerProfileDirectControlAssignmentInputValue {
 
         match steps {
             Some(steps) => {
+                /* check if this value is within a free-range section */
+                let is_free_range = free_zones.iter().any(|(zone_start, zone_end)| &normal >= zone_start && &normal <= zone_end);
+                if is_free_range {
+                    return normal.clamp(self.min, self.max);
+                }
+
                 let mut closest = steps[0];
                 for step in steps.iter() {
                     if (normal - step).abs() < (normal - closest).abs() {
                         closest = *step;
                     }
                 }
+
                 return closest;
             }
             None => normal.clamp(self.min, self.max),

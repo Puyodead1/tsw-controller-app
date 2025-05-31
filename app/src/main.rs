@@ -49,10 +49,8 @@ async fn main() -> eframe::Result {
 
     let cancel_token = CancellationToken::new();
 
-    let (on_selected_profile_change_sender, mut on_selected_profile_change_receiver) =
-        tokio::sync::watch::channel::<Option<String>>(None);
-    let (on_preferred_control_mode_change_sender, mut on_preferred_control_mode_change_receiver) =
-        tokio::sync::watch::channel::<PreferredControlMode>(PreferredControlMode::DirectControl);
+    let (on_selected_profile_change_sender, mut on_selected_profile_change_receiver) = tokio::sync::watch::channel::<Option<String>>(None);
+    let (on_preferred_control_mode_change_sender, mut on_preferred_control_mode_change_receiver) = tokio::sync::watch::channel::<PreferredControlMode>(PreferredControlMode::DirectControl);
 
     let mut config = config_loader::ConfigLoader::new();
     config.load_from_dir(Some("config"));
@@ -60,8 +58,7 @@ async fn main() -> eframe::Result {
 
     let sequencer = Arc::new(action_sequencer::ActionSequencer::new());
 
-    let (direct_controller_sender, _) =
-        tokio::sync::broadcast::channel::<DirectControlCommand>(10000);
+    let (direct_controller_sender, _) = tokio::sync::broadcast::channel::<DirectControlCommand>(10000);
     let direct_controller_sender_arc = Arc::new(Mutex::new(direct_controller_sender.clone()));
     let direct_controller = direct_controller::DirectController::new().await;
 
@@ -71,29 +68,16 @@ async fn main() -> eframe::Result {
         Arc::clone(&direct_controller_sender_arc),
     )));
 
-    let sync_controller = Arc::new(
-        sync_controller::SyncController::new(
-            Arc::clone(&shared_config),
-            Arc::clone(&sequencer),
-            Arc::clone(&profile_runner),
-        )
-        .await,
-    );
+    let sync_controller = Arc::new(sync_controller::SyncController::new(Arc::clone(&shared_config), Arc::clone(&sequencer), Arc::clone(&profile_runner)).await);
 
-    let (controller_manager_event_channel_sender, _) =
-        tokio::sync::broadcast::channel::<ControllerManagerChangeEvent>(10000);
+    let (controller_manager_event_channel_sender, _) = tokio::sync::broadcast::channel::<ControllerManagerChangeEvent>(10000);
 
-    let controller_manager_event_channel_sender_clone =
-        controller_manager_event_channel_sender.clone();
+    let controller_manager_event_channel_sender_clone = controller_manager_event_channel_sender.clone();
     let controller_manager_config: Arc<config_loader::ConfigLoader> = Arc::clone(&shared_config);
     let controller_manager_cancel_token = cancel_token.clone();
     tokio::task::spawn_blocking(move || {
-        let mut controller_manager =
-            controller_manager::ControllerManager::new(controller_manager_config);
-        controller_manager.subscribe(
-            controller_manager_event_channel_sender_clone,
-            controller_manager_cancel_token.clone(),
-        );
+        let mut controller_manager = controller_manager::ControllerManager::new(controller_manager_config);
+        controller_manager.subscribe(controller_manager_event_channel_sender_clone, controller_manager_cancel_token.clone());
         controller_manager.attach(controller_manager_cancel_token.clone());
     });
 
@@ -129,8 +113,7 @@ async fn main() -> eframe::Result {
         }
     });
 
-    let mut controller_manager_event_channel_receiver =
-        controller_manager_event_channel_sender.subscribe();
+    let mut controller_manager_event_channel_receiver = controller_manager_event_channel_sender.subscribe();
     let event_listener_cancel_token = cancel_token.clone();
     tokio::task::spawn(async move {
         loop {
@@ -147,18 +130,12 @@ async fn main() -> eframe::Result {
     });
 
     sequencer.run(cancel_token.clone());
-    direct_controller.start(
-        cancel_token.clone(),
-        Arc::clone(&direct_controller_sender_arc),
-    );
+    direct_controller.start(cancel_token.clone(), Arc::clone(&direct_controller_sender_arc));
 
-    sync_controller.start(
-        cancel_token.clone(),
-        controller_manager_event_channel_sender.subscribe(),
-    );
+    sync_controller.start(cancel_token.clone(), controller_manager_event_channel_sender.subscribe());
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([400.0, 300.0]),
+        viewport: egui::ViewportBuilder::default().with_resizable(false).with_inner_size([300.0, 120.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -208,11 +185,7 @@ impl eframe::App for MainApp {
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut selected_profile, None, "None");
                         for profile in self.config.controller_profiles.iter() {
-                            ui.selectable_value(
-                                &mut selected_profile,
-                                Some(profile.name.clone()),
-                                profile.name.clone(),
-                            );
+                            ui.selectable_value(&mut selected_profile, Some(profile.name.clone()), profile.name.clone());
                         }
                     });
 
@@ -224,9 +197,7 @@ impl eframe::App for MainApp {
 
         if selected_profile != self.selected_profile {
             self.selected_profile = selected_profile.clone();
-            self.on_selected_profile_change_sender
-                .send(selected_profile.clone())
-                .unwrap();
+            self.on_selected_profile_change_sender.send(selected_profile.clone()).unwrap();
         }
 
         if prefer_sync_control_mode != self.prefer_sync_control_mode {
