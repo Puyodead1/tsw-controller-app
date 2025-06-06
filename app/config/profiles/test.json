@@ -1,47 +1,17 @@
 {
-  "name": "bilevel_rotem_car",
+  "name": "m7",
   "controls": [
     {
-      "name": "Lever1",
-      "description": "Reverser",
-      "assignments": [
-        {
-          "type": "direct_control",
-          "controls": "Reverser",
-          "input_value": {
-            "min": -1.0,
-            "max": 1.0,
-            "step": 1.0
-          }
-        },
-        {
-          "type": "sync_control",
-          "identifier": "Reverser",
-          "input_value": {
-            "min": -1.0,
-            "max": 1.0,
-            "step": 1.0
-          },
-          "action_increase": {
-            "keys": "w"
-          },
-          "action_decrease": {
-            "keys": "s"
-          }
-        }
-      ]
-    },
-    {
       "name": "Lever2",
-      "description": "Throttle",
+      "description": "MasterController",
       "assignments": [
         {
           "type": "direct_control",
           "controls": "MasterController",
           "input_value": {
-            "min": 0.0,
+            "min": 0.1,
             "max": 1.0,
-            "step": 0.125
+            "steps": [0.1, null, 0.4, 0.5, 0.6, null, 1.0]
           }
         },
         {
@@ -49,8 +19,7 @@
           "identifier": "Throttle",
           "input_value": {
             "min": 0.0,
-            "max": 1.0,
-            "step": 0.125
+            "max": 1.0
           },
           "action_increase": {
             "keys": "a"
@@ -63,34 +32,20 @@
     },
 
     {
-      "name": "Lever3",
-      "description": "Automatic Brake",
-      "assignments": [
-        {
-          "type": "direct_control",
-          "controls": "AutomaticBrake",
-          "input_value": {
-            "min": 0.0,
-            "max": 0.549,
-             "steps": [0.0, 0.075, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 0.45, 0.549]
-          }
+      "name": "Lever1",
+      "description": "Master key",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.5,
+        "action_activate": {
+          "keys": "ctrl+w",
+          "press_time": 0.3
         },
-        {
-          "type": "sync_control",
-          "identifier": "AutomaticBrake",
-          "input_value": {
-            "min": 0.0,
-            "max": 0.549,
-             "steps": [0.0, 0.075, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 0.45, 0.549]
-          },
-          "action_increase": {
-            "keys": "'"
-          },
-          "action_decrease": {
-            "keys": ";"
-          }
+        "action_deactivate": {
+          "keys": "ctrl+w",
+          "press_time": 0.3
         }
-      ]
+      }
     },
 
     {
@@ -100,7 +55,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "'"
+          "keys": "d"
         }
       }
     },
@@ -111,7 +66,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": ";"
+          "keys": "a"
         }
       }
     },
@@ -129,12 +84,12 @@
     },
     {
       "name": "Dial1CW",
-      "description": "Headlights Dial CW",
+      "description": "Reverser Increase",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "h",
+          "keys": "w",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -142,12 +97,12 @@
     },
     {
       "name": "Dial1CCW",
-      "description": "Headlights Dial CCW",
+      "description": "Reverser Decrease",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "shift+h",
+          "keys": "s",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -167,12 +122,18 @@
     },
     {
       "name": "Lever2Button1",
-      "description": "Sand",
+      "description": "Charge Brakes",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "x"
+          "controls": "BrakeCharging",
+          "value": 1.0,
+          "hold": true
+        },
+        "action_deactivate": {
+          "controls": "BrakeCharging",
+          "value": 0.0
         }
       }
     },
@@ -202,37 +163,59 @@
 
     {
       "name": "Button3",
-      "description": "Wipers Increase/Decrease",
+      "description": "Wipers Increase",
       "assignment": {
-        "type": "toggle",
+        "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
           "keys": "v"
-        },
-        "action_deactivate": {
-          "keys": "shift+v"
         }
       }
     },
     {
       "name": "Button5",
-      "description": "Cab Light",
+      "description": "Wipers Decrease",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "l"
+          "keys": "shift+v"
+        }
+      }
+    },
+    {
+      "name": "Button1",
+      "description": "Headlights Dial Right",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "h"
+        }
+      }
+    },
+    {
+      "name": "Button4",
+      "description": "Headlights Dial Left",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "shift+h"
         }
       }
     },
     {
       "name": "Button2",
-      "description": "Bell",
+      "description": "Cab Light",
       "assignment": {
-        "type": "momentary",
+        "type": "toggle",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "b"
+          "keys": "l"
+        },
+        "action_deactivate": {
+          "keys": "shift+l"
         }
       }
     }
