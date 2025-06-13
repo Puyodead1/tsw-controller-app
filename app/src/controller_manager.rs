@@ -456,8 +456,8 @@ impl ControllerManager {
         Arc::clone(&self.change_event_channel.1)
     }
 
-    pub fn raw_receiver(&self) -> Arc<Mutex<Receiver<ControllerManagerRawEvent>>> {
-        Arc::clone(&self.raw_event_channel.1)
+    pub fn raw_receiver(&self) -> Receiver<ControllerManagerRawEvent> {
+        self.raw_event_channel.0.subscribe()
     }
 
     pub fn attach(&mut self, cancel: CancellationToken) {
@@ -468,8 +468,12 @@ impl ControllerManager {
                 break;
             }
 
-            let event = event_pump.wait_event();
+            let event_option = event_pump.wait_event_timeout(16);
+            if event_option.is_none() {
+                continue;
+            }
 
+            let event = event_option.unwrap();
             debug!("Event Received: {:?}", event);
 
             use sdl2::event::Event;

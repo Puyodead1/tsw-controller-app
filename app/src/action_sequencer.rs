@@ -23,9 +23,7 @@ impl ActionSequencer {
     pub fn new() -> ActionSequencer {
         ActionSequencer {
             actions: Arc::new(Mutex::new(VecDeque::new())),
-            enigo: Arc::new(Mutex::new(
-                enigo::Enigo::new(&enigo::Settings::default()).unwrap(),
-            )),
+            enigo: Arc::new(Mutex::new(enigo::Enigo::new(&enigo::Settings::default()).unwrap())),
         }
     }
 
@@ -89,11 +87,7 @@ impl ActionSequencer {
         (modifier_keys, action_keys)
     }
 
-    pub async fn press_or_release_keys<T: AsRef<str>>(
-        enigo: Arc<Mutex<enigo::Enigo>>,
-        keys: T,
-        direction: enigo::Direction,
-    ) {
+    pub async fn press_or_release_keys<T: AsRef<str>>(enigo: Arc<Mutex<enigo::Enigo>>, keys: T, direction: enigo::Direction) {
         let mut enigo_lock = enigo.lock().await;
         let (modifier_keys, action_keys) = ActionSequencer::parse_keys(keys.as_ref());
 

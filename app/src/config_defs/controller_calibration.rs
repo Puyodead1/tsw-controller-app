@@ -61,25 +61,15 @@ impl ControllerCalibrationData {
             Some(curve) => curve,
             None => [0.0, 0.0, 1.0, 1.0],
         };
-        let ease = bezier_easing(
-            easing_curve[0],
-            easing_curve[1],
-            easing_curve[2],
-            easing_curve[3],
-        )
-        .unwrap();
+        let ease = bezier_easing(easing_curve[0], easing_curve[1], easing_curve[2], easing_curve[3]).unwrap();
 
         /* below idle range -- negative value */
         if value < idle_range[0] && self.min != self.idle {
-            let abs_value = ((value - idle_range[0]) / (self.min - idle_range[0]))
-                .clamp(0.0, 1.0)
-                .abs();
+            let abs_value = ((value - idle_range[0]) / (self.min - idle_range[0])).clamp(0.0, 1.0).abs();
             return Some(ease(abs_value) * -1.0f32);
         }
 
-        let abs_value = ((value - idle_range[1]) / (self.max - idle_range[1]))
-            .clamp(0.0, 1.0)
-            .abs();
+        let abs_value = ((value - idle_range[1]) / (self.max - idle_range[1])).clamp(0.0, 1.0).abs();
         return Some(ease(abs_value));
     }
 }
