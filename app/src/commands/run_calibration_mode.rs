@@ -20,165 +20,177 @@ pub async fn run_calibration_mode<T: AsRef<str>>(config_dir: T) {
     let mut controller_manager = controller_manager::ControllerManager::new(Arc::clone(&config_arc));
 
     let cancel_token = CancellationToken::new();
-    let receiver = controller_manager.raw_receiver();
+    let mut receiver = controller_manager.raw_receiver();
 
     let controller_sdl_mappings = Arc::new(Mutex::new(HashMap::<String, ControllerSdlMap>::new()));
     let controller_calibrations = Arc::new(Mutex::new(HashMap::<String, ControllerCalibration>::new()));
 
-    let cancel_token_clone = cancel_token.clone();
-    let controller_sdl_mappings_task_arc = Arc::clone(&controller_sdl_mappings);
-    let controller_calibrations_task_arc = Arc::clone(&controller_calibrations);
-    let event_listener_task = tokio::task::spawn(async move {
+    let input_reader_task_cancel_token = cancel_token.clone();
+    let (stdin_read_channel_tx, mut stdin_read_channel_rx) = tokio::sync::mpsc::channel::<Result<String, String>>(10);
+    let input_line_reader_task = tokio::task::spawn(async move {
         let stdin = io::stdin();
-        let mut stdout = io::stdout();
+        let mut last_line_input = String::new();
         let mut stdin_reader = BufReader::new(stdin);
-        let (stdin_read_channel_tx, mut stdin_read_channel_rx) = tokio::sync::mpsc::channel::<Result<String, String>>(10);
 
         loop {
-            let mut last_line_input = String::new();
             tokio::select! {
-                _ = cancel_token_clone.cancelled() => {
-                        break;
-                }
+              _ = input_reader_task_cancel_token.cancelled() => {
+                break;
+              },
               read_result = stdin_reader.read_line(&mut last_line_input) => {
                 match read_result {
                   Ok(_) => {
                     if last_line_input.to_lowercase().trim() == "q" {
-                      cancel_token_clone.cancel();
+                      input_reader_task_cancel_token.cancel();
                       break;
                     }
                     stdin_read_channel_tx.send(Ok(last_line_input.clone())).await.unwrap();
+                    last_line_input.clear();
                   },
                   Err(_) => {
                     stdin_read_channel_tx.send(Err("Could not read line".to_string())).await.unwrap();
                   }
                 };
               },
-                _ = async {
-                  use sdl2::event::Event;
+            }
+        }
+    });
 
-                  let raw_event: ControllerManagerRawEvent = receiver.lock().await.recv().await.unwrap();
+    let event_listener_task_cancel_token = cancel_token.clone();
+    let controller_sdl_mappings_task_arc = Arc::clone(&controller_sdl_mappings);
+    let controller_calibrations_task_arc = Arc::clone(&controller_calibrations);
+    let event_listener_task = tokio::task::spawn(async move {
+        let mut stdout = io::stdout();
 
-                  let mut sdl_mapping_lock = controller_sdl_mappings_task_arc.lock().await;
-                  let mut controller_calibrations_lock = controller_calibrations_task_arc.lock().await;
-                  let existing_sdl_map = sdl_mapping_lock.get_mut(&raw_event.joystick_usb_id);
-                  let existing_calibration = controller_calibrations_lock.get_mut(&raw_event.joystick_usb_id);
+        loop {
+            tokio::select! {
+                _ = event_listener_task_cancel_token.cancelled() => {
+                  break;
+              }
+              raw_event_result = receiver.recv() => {
+                use sdl2::event::Event;
 
-                  let vendor_id = unsafe { sdl2_sys::SDL_JoystickGetDeviceVendor(raw_event.joystick_index as i32) };
-                  let product_id = unsafe { sdl2_sys::SDL_JoystickGetDeviceProduct(raw_event.joystick_index as i32) };
+                let raw_event = raw_event_result.unwrap();
+                let mut sdl_mapping_lock = controller_sdl_mappings_task_arc.lock().await;
+                let mut controller_calibrations_lock = controller_calibrations_task_arc.lock().await;
+                let existing_sdl_map = sdl_mapping_lock.get_mut(&raw_event.joystick_usb_id);
+                let existing_calibration = controller_calibrations_lock.get_mut(&raw_event.joystick_usb_id);
 
-                  let mut controller_sdl_map: ControllerSdlMap = match &existing_sdl_map {
-                    Some(sdl_map) => (*sdl_map).clone(),
-                    None => ControllerSdlMap {
-                      usb_id: format!("{:04x}:{:04x}", vendor_id, product_id),
-                      name: "Unknown".to_string(),
-                      data: vec![],
-                    }
-                  };
-                  let mut controller_calibration: ControllerCalibration = match &existing_calibration {
-                    Some(calibration) => (*calibration).clone(),
-                    None => ControllerCalibration {
-                      usb_id: format!("{:04x}:{:04x}", vendor_id, product_id),
-                      data: vec![],
-                    }
-                  };
+                let vendor_id = unsafe { sdl2_sys::SDL_JoystickGetDeviceVendor(raw_event.joystick_index as i32) };
+                let product_id = unsafe { sdl2_sys::SDL_JoystickGetDeviceProduct(raw_event.joystick_index as i32) };
 
-                  match raw_event.event {
-                    Event::JoyAxisMotion { axis_idx, value, .. } => {
-                      stdout.write_all(format!("[{}][{}] Axis {} moved to {}\n", raw_event.joystick_usb_id, raw_event.joystick_name, axis_idx, value).as_bytes()).await.unwrap();
+                let mut controller_sdl_map: ControllerSdlMap = match &existing_sdl_map {
+                  Some(sdl_map) => (*sdl_map).clone(),
+                  None => ControllerSdlMap {
+                    usb_id: format!("{:04x}:{:04x}", vendor_id, product_id),
+                    name: "Unknown".to_string(),
+                    data: vec![],
+                  }
+                };
+                let mut controller_calibration: ControllerCalibration = match &existing_calibration {
+                  Some(calibration) => (*calibration).clone(),
+                  None => ControllerCalibration {
+                    usb_id: format!("{:04x}:{:04x}", vendor_id, product_id),
+                    data: vec![],
+                  }
+                };
+
+                match raw_event.event {
+                  Event::JoyAxisMotion { axis_idx, value, .. } => {
+                    stdout.write_all(format!("[{}][{}] Axis {} moved to {}\n", raw_event.joystick_usb_id, raw_event.joystick_name, axis_idx, value).as_bytes()).await.unwrap();
+                    stdout.flush().await.unwrap();
+
+                    let control_name = format!("Axis{}", axis_idx);
+                    if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Axis && c.index == axis_idx) {
+                      stdout.write_all(b"Enter common name for this axis: ").await.unwrap();
                       stdout.flush().await.unwrap();
+                      let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
 
-                      let control_name = format!("Axis{}", axis_idx);
-                      if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Axis && c.index == axis_idx) {
-                        stdout.write_all(b"Enter common name for this axis: ").await.unwrap();
-                        stdout.flush().await.unwrap();
-                        let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
+                      controller_sdl_map.data.push(ControllerSdlMapControl {
+                        kind: SDLControlKind::Axis,
+                        index: axis_idx,
+                        name: match input.trim().to_string() {
+                          s if s.is_empty() => control_name.clone(),
+                          s => s,
+                        },
+                      });
+                    }
 
-                        controller_sdl_map.data.push(ControllerSdlMapControl {
-                          kind: SDLControlKind::Axis,
-                          index: axis_idx,
-                          name: match input.trim().to_string() {
-                            s if s.is_empty() => control_name.clone(),
-                            s => s,
-                          },
-                        });
-                      }
-
-                      let existing_calibration_index = controller_calibration.data.iter().position(|c| c.id == control_name).unwrap_or(controller_calibration.data.len());
-                      let mut control_calibration: ControllerCalibrationData = match &controller_calibration.data.get(existing_calibration_index) {
-                        Some(calibration) => (*calibration).clone(),
-                        None => {
-                          ControllerCalibrationData {
-                            id: control_name.clone(),
-                            min: 0.0f32,
-                            max: 1.0f32,
-                            deadzone: Some(0.0f32),
-                            idle: 0.0f32,
-                            easing_curve: None,
-                            invert: Some(false),
-                          }
+                    let existing_calibration_index = controller_calibration.data.iter().position(|c| c.id == control_name).unwrap_or(controller_calibration.data.len());
+                    let mut control_calibration: ControllerCalibrationData = match &controller_calibration.data.get(existing_calibration_index) {
+                      Some(calibration) => (*calibration).clone(),
+                      None => {
+                        ControllerCalibrationData {
+                          id: control_name.clone(),
+                          min: 0.0f32,
+                          max: 1.0f32,
+                          deadzone: Some(0.0f32),
+                          idle: 0.0f32,
+                          easing_curve: None,
+                          invert: Some(false),
                         }
-                      };
-                      control_calibration.min = control_calibration.min.min(value as f32);
-                      control_calibration.idle = control_calibration.idle.min(value as f32);
-                      control_calibration.max = control_calibration.max.max(value as f32);
-                      if existing_calibration_index < controller_calibration.data.len() {
-                          controller_calibration.data[existing_calibration_index] = control_calibration;
-                      } else {
-                          controller_calibration.data.push(control_calibration);
                       }
-                    },
-                    Event::JoyButtonDown {button_idx, ..} | Event::JoyButtonUp {button_idx, ..} => {
-                      stdout.write_all(format!("[{}][{}] Button {} triggered\n",  raw_event.joystick_usb_id, raw_event.joystick_name, button_idx).as_bytes()).await.unwrap();
-                      stdout.flush().await.unwrap();
-
-                      if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Button && c.index == button_idx) {
-                        stdout.write_all(b"Enter common name for this button: ").await.unwrap();
-                        stdout.flush().await.unwrap();
-                        let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
-
-                        controller_sdl_map.data.push(ControllerSdlMapControl {
-                          kind: SDLControlKind::Button,
-                          index: button_idx,
-                          name: match input.trim().to_string() {
-                            s if s.is_empty() => format!("Button{}", button_idx),
-                            s => s,
-                          },
-                        });
-                      }
-                    },
-                    Event::JoyHatMotion {hat_idx, ..}  => {
-                      stdout.write_all(format!("[{}][{}] Hat {} triggered\n", raw_event.joystick_usb_id, raw_event.joystick_name, hat_idx).as_bytes()).await.unwrap();
-                      stdout.flush().await.unwrap();
-
-                      if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Hat && c.index == hat_idx) {
-                        stdout.write_all(b"Enter common name for this hat: ").await.unwrap();
-                        stdout.flush().await.unwrap();
-                        let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
-
-                        controller_sdl_map.data.push(ControllerSdlMapControl {
-                          kind: SDLControlKind::Hat,
-                          index: hat_idx,
-                          name: match input.trim().to_string() {
-                            s if s.is_empty() => format!("Hat{}", hat_idx),
-                            s => s,
-                          },
-                        });
-                      }
+                    };
+                    control_calibration.min = control_calibration.min.min(value as f32);
+                    control_calibration.idle = control_calibration.idle.min(value as f32);
+                    control_calibration.max = control_calibration.max.max(value as f32);
+                    if existing_calibration_index < controller_calibration.data.len() {
+                        controller_calibration.data[existing_calibration_index] = control_calibration;
+                    } else {
+                        controller_calibration.data.push(control_calibration);
                     }
-                    _ => {},
-                  };
+                  },
+                  Event::JoyButtonDown {button_idx, ..} | Event::JoyButtonUp {button_idx, ..} => {
+                    stdout.write_all(format!("[{}][{}] Button {} triggered\n",  raw_event.joystick_usb_id, raw_event.joystick_name, button_idx).as_bytes()).await.unwrap();
+                    stdout.flush().await.unwrap();
 
-                  sdl_mapping_lock.insert(raw_event.joystick_usb_id.clone(), controller_sdl_map);
-                  controller_calibrations_lock.insert(raw_event.joystick_usb_id.clone(), controller_calibration);
-                } => {}
+                    if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Button && c.index == button_idx) {
+                      stdout.write_all(b"Enter common name for this button: ").await.unwrap();
+                      stdout.flush().await.unwrap();
+                      let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
+
+                      controller_sdl_map.data.push(ControllerSdlMapControl {
+                        kind: SDLControlKind::Button,
+                        index: button_idx,
+                        name: match input.trim().to_string() {
+                          s if s.is_empty() => format!("Button{}", button_idx),
+                          s => s,
+                        },
+                      });
+                    }
+                  },
+                  Event::JoyHatMotion {hat_idx, ..}  => {
+                    stdout.write_all(format!("[{}][{}] Hat {} triggered\n", raw_event.joystick_usb_id, raw_event.joystick_name, hat_idx).as_bytes()).await.unwrap();
+                    stdout.flush().await.unwrap();
+
+                    if !controller_sdl_map.data.iter().any(|c| c.kind == SDLControlKind::Hat && c.index == hat_idx) {
+                      stdout.write_all(b"Enter common name for this hat: ").await.unwrap();
+                      stdout.flush().await.unwrap();
+                      let input = stdin_read_channel_rx.recv().await.unwrap().expect("Could not read input");
+
+                      controller_sdl_map.data.push(ControllerSdlMapControl {
+                        kind: SDLControlKind::Hat,
+                        index: hat_idx,
+                        name: match input.trim().to_string() {
+                          s if s.is_empty() => format!("Hat{}", hat_idx),
+                          s => s,
+                        },
+                      });
+                    }
+                  }
+                  _ => {},
+                };
+
+                sdl_mapping_lock.insert(raw_event.joystick_usb_id.clone(), controller_sdl_map);
+                controller_calibrations_lock.insert(raw_event.joystick_usb_id.clone(), controller_calibration);
+              }
             }
         }
     });
 
     controller_manager.attach(cancel_token.clone());
-    cancel_token.cancel();
     event_listener_task.await.unwrap();
+    input_line_reader_task.await.unwrap();
 
     println!("Writing new config files..");
     let mut config = config_loader::ConfigLoader::new();

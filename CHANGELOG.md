@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.2.4
+- Fix calibration mode not exiting and writing files.
+
 ## 0.2.3
 - Update the mixing of `null` values to act as free range zones instead of automatic interpolation zones. This makes for smoother actions between detents. Eg, the following steps value: `[0.0, null, 0.5, 0.6, null, 1.0]` - will snap to `0.5` and `0.6` but allow free range of motion between `0.0` and `0.5` and `0.6` and `1.0`.
 

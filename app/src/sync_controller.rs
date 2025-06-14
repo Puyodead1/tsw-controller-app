@@ -12,10 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     action_sequencer::{ActionSequencer, ActionSequencerAction},
-    config_defs::controller_profile::{
-        ControllerProfileControlAssignment,
-        ControllerProfileDirectControAssignmentSyncMode,
-    },
+    config_defs::controller_profile::{ControllerProfileControlAssignment, ControllerProfileDirectControAssignmentSyncMode},
     config_loader::ConfigLoader,
     controller_manager::ControllerManagerChangeEvent,
     profile_runner::ProfileRunner,
@@ -38,18 +35,11 @@ pub struct SyncController {
     server: Arc<TcpListener>,
     controls_state_profile: Arc<Mutex<Option<String>>>,
     controls_state: Arc<Mutex<HashMap<String, SyncControllerControlState>>>,
-    control_state_changed_channel: (
-        Sender<SyncControllerControlState>,
-        Receiver<SyncControllerControlState>,
-    ),
+    control_state_changed_channel: (Sender<SyncControllerControlState>, Receiver<SyncControllerControlState>),
 }
 
 impl SyncController {
-    pub async fn new(
-        config: Arc<ConfigLoader>,
-        sequencer: Arc<ActionSequencer>,
-        profile_runner: Arc<Mutex<ProfileRunner>>,
-    ) -> Self {
+    pub async fn new(config: Arc<ConfigLoader>, sequencer: Arc<ActionSequencer>, profile_runner: Arc<Mutex<ProfileRunner>>) -> Self {
         let direct_control_server = TcpListener::bind("0.0.0.0:63242").await.unwrap();
 
         Self {
@@ -68,11 +58,7 @@ impl SyncController {
         controls_state_lock.clear();
     }
 
-    pub fn start(
-        &self,
-        cancel_token: CancellationToken,
-        mut controller_receiver: Receiver<ControllerManagerChangeEvent>,
-    ) -> JoinHandle<()> {
+    pub fn start(&self, cancel_token: CancellationToken, mut controller_receiver: Receiver<ControllerManagerChangeEvent>) -> JoinHandle<()> {
         let server = Arc::clone(&self.server);
 
         /* listen to current value changed channel to stop actions */
@@ -80,8 +66,7 @@ impl SyncController {
         let sequencer = Arc::clone(&self.sequencer);
         let current_value_changed_handler_cancel_token = cancel_token.clone();
         let control_state_changed_channel_sender = self.control_state_changed_channel.0.clone();
-        let mut control_state_changed_channel_receiver =
-            control_state_changed_channel_sender.subscribe();
+        let mut control_state_changed_channel_receiver = control_state_changed_channel_sender.subscribe();
         tokio::task::spawn(async move {
             loop {
                 tokio::select! {
@@ -224,8 +209,7 @@ impl SyncController {
         let control_state_changed_channel_sender = self.control_state_changed_channel.0.clone();
         tokio::task::spawn(async move {
             println!("[SC] Server started");
-            let cancel_token_clone: CancellationToken =
-                accept_incoming_clients_cancel_token.clone();
+            let cancel_token_clone: CancellationToken = accept_incoming_clients_cancel_token.clone();
             loop {
                 tokio::select! {
                     _ = cancel_token_clone.cancelled() => {
