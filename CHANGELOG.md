@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.2.5
+- Fix calibration for calibrating multiple controllers.
+
 ## 0.2.4
 - Fix calibration mode not exiting and writing files.
 

@@ -83,7 +83,7 @@ pub async fn run_calibration_mode<T: AsRef<str>>(config_dir: T) {
                   Some(sdl_map) => (*sdl_map).clone(),
                   None => ControllerSdlMap {
                     usb_id: format!("{:04x}:{:04x}", vendor_id, product_id),
-                    name: "Unknown".to_string(),
+                    name: format!("controller_{:04x}_{:04x}", vendor_id, product_id),
                     data: vec![],
                   }
                 };
