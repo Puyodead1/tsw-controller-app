@@ -472,3 +472,17 @@ func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Contr
 	}
 	return nil
 }
+
+func ControllerProfileFromJSON(json_str string) (*Config_Controller_Profile, error) {
+	var c Config_Controller_Profile
+	if err := json.Unmarshal([]byte(json_str), &c); err != nil {
+		return nil, err
+	}
+
+	v := validator.New()
+	if err := v.Struct(c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}

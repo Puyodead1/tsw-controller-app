@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/config_loader"
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/profile_runner"
 	"tsw_controller_app/sdl_mgr"
@@ -18,6 +19,7 @@ const (
 
 type App struct {
 	ctx                context.Context
+	config_loader      *config_loader.ConfigLoader
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
@@ -36,6 +38,7 @@ func NewApp() *App {
 	sync_controller := profile_runner.NewSyncController()
 
 	return &App{
+		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
 		action_sequencer:   action_sequencer,
