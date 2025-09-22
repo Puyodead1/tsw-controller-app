@@ -18,8 +18,8 @@ type ActionSequencer struct {
 	ActionsQueue chan ActionSequencerAction
 }
 
-func New() ActionSequencer {
-	return ActionSequencer{
+func New() *ActionSequencer {
+	return &ActionSequencer{
 		ActionsQueue: make(chan ActionSequencerAction, 10),
 	}
 }

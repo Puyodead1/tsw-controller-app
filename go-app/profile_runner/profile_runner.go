@@ -35,8 +35,8 @@ func New(
 	controller_manager *controller_mgr.ControllerManager,
 	direct_controller *DirectController,
 	sync_controller *SyncController,
-) ProfileRunner {
-	return ProfileRunner{
+) *ProfileRunner {
+	return &ProfileRunner{
 		ActionSequencer:   action_sequencer,
 		ControllerManager: controller_manager,
 		DirectController:  direct_controller,

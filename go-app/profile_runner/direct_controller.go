@@ -70,7 +70,7 @@ func (c *DirectController) Start() error {
 	return c.Server.ListenAndServe()
 }
 
-func NewDirectController() DirectController {
+func NewDirectController() *DirectController {
 	mux := http.NewServeMux()
 	server := &http.Server{
 		Addr:    ":63241",
@@ -81,5 +81,5 @@ func NewDirectController() DirectController {
 		Server:     server,
 	}
 	mux.HandleFunc("/", controller.WebsocketHandler)
-	return controller
+	return &controller
 }

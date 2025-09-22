@@ -122,7 +122,7 @@ func (c *SyncController) Start() error {
 	return c.Server.ListenAndServe()
 }
 
-func NewSyncCotroller() SyncController {
+func NewSyncController() *SyncController {
 	mux := http.NewServeMux()
 	server := &http.Server{
 		Addr:    ":63242",
@@ -134,5 +134,5 @@ func NewSyncCotroller() SyncController {
 		ControlState: map[string]SyncController_ControlState{},
 	}
 	mux.HandleFunc("/", controller.WebsocketHandler)
-	return controller
+	return &controller
 }

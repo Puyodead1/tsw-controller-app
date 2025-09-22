@@ -5,13 +5,17 @@ go 1.24.0
 toolchain go1.24.5
 
 require (
+	github.com/creasty/go-easing v0.0.0-20161107103139-0cfd96d3a544
+	github.com/go-playground/validator/v10 v10.27.0
+	github.com/go-vgo/robotgo v0.110.8
+	github.com/gorilla/websocket v1.5.3
 	github.com/veandco/go-sdl2 v0.4.40
 	github.com/wailsapp/wails/v2 v2.10.2
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 )
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect
-	github.com/creasty/go-easing v0.0.0-20161107103139-0cfd96d3a544 // indirect
 	github.com/dblohm7/wingoes v0.0.0-20240820181039-f2b84150679e // indirect
 	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
@@ -19,11 +23,8 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.27.0 // indirect
-	github.com/go-vgo/robotgo v0.110.8 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/labstack/echo/v4 v4.13.3 // indirect
@@ -37,6 +38,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/otiai10/gosseract v2.2.1+incompatible // indirect
+	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
@@ -60,7 +62,6 @@ require (
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/image v0.27.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
