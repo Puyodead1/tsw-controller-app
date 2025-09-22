@@ -189,7 +189,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 
 	/* normal action sequencing */
 	go func() {
-		channel, unsubscribe := p.ControllerManager.Subscribe()
+		channel, unsubscribe := p.ControllerManager.SubscribeChangeEvent()
 		defer unsubscribe()
 
 		for {

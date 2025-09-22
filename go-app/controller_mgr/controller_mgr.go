@@ -2,12 +2,20 @@ package controller_mgr
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"tsw_controller_app/config"
 	"tsw_controller_app/math_utils"
 	"tsw_controller_app/sdl_mgr"
 
 	"github.com/veandco/go-sdl2/sdl"
+)
+
+type ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType = string
+
+const (
+	ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Added   ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType = "added"
+	ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Removed ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType = "removed"
 )
 
 const DEFAULT_CHANNEL_BUFFER_SIZE = 50
@@ -23,6 +31,12 @@ type ControllerManager_Control_ChangeEvent struct {
 	Control      *ControllerManager_Controller_Control
 	ControlName  string
 	ControlState ControllerManager_Controller_ControlState
+}
+
+type ControllerManager_Control_JoydeviceAddedOrRemovedEvent struct {
+	EventType              string
+	ConfiguredController   *ControllerManager_ConfiguredController
+	UnconfiguredController *ControllerManager_UnconfiguredController
 }
 
 type ControllerManager_Controller_ControlState_DirectionChangeMarker struct {
@@ -80,8 +94,9 @@ type ControllerManager struct {
 	ConfiguredControllers   map[sdl.JoystickGUID]ControllerManager_ConfiguredController
 	UnconfiguredControllers map[sdl.JoystickGUID]ControllerManager_UnconfiguredController
 
-	RawEventChannels    []chan ControllerManager_RawEvent
-	ChangeEventChannels []chan ControllerManager_Control_ChangeEvent
+	RawEventChannels           []chan ControllerManager_RawEvent
+	ChangeEventChannels        []chan ControllerManager_Control_ChangeEvent
+	JoyDeviceOrRemovedChannels []chan ControllerManager_Control_JoydeviceAddedOrRemovedEvent
 }
 
 func (ctrl *ControllerManager_Controller_Control) Reset() {
@@ -207,6 +222,7 @@ func New(sdlmgr *sdl_mgr.SDLMgr) *ControllerManager {
 }
 
 func (mgr *ControllerManager) ConfigureJoystick(joystick *sdl_mgr.SDLMgr_Joystick, sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) ControllerManager_ConfiguredController {
+	joystick.Open()
 	controls := make(map[string]ControllerManager_Controller_Control)
 	for _, control := range sdl_map.Data {
 		var calibration_data config.Config_Controller_CalibrationData = config.Config_Controller_CalibrationData{
@@ -267,8 +283,17 @@ func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SD
 	mgr.Config.CalibrationsByUsbID[calibration.UsbID] = calibration
 	for guid, unconfigured := range mgr.UnconfiguredControllers {
 		if unconfigured.Joystick.ToString() == sdl_map.UsbID {
-			mgr.ConfiguredControllers[guid] = mgr.ConfigureJoystick(&unconfigured.Joystick, sdl_map, calibration)
+			configured_controller := mgr.ConfigureJoystick(&unconfigured.Joystick, sdl_map, calibration)
+			mgr.ConfiguredControllers[guid] = configured_controller
 			delete(mgr.UnconfiguredControllers, guid)
+
+			for _, channel := range mgr.JoyDeviceOrRemovedChannels {
+				channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
+					EventType:              ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Added,
+					ConfiguredController:   &configured_controller,
+					UnconfiguredController: nil,
+				}
+			}
 			break
 		}
 	}
@@ -282,23 +307,63 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 
 	sdl_map, has_sdl_map := mgr.Config.SDLMappingsByUsbID[joystick.ToString()]
 	calibration, has_calibration := mgr.Config.CalibrationsByUsbID[joystick.ToString()]
+	fmt.Printf("[ControllerManager:Handler_JoyDeviceAdded] Registering new joy device (%s)\n", joystick.Name)
 	if has_sdl_map && has_calibration {
-		mgr.ConfiguredControllers[joystick.GUID] = mgr.ConfigureJoystick(joystick, sdl_map, calibration)
+		configured_controller := mgr.ConfigureJoystick(joystick, sdl_map, calibration)
+		mgr.ConfiguredControllers[joystick.GUID] = configured_controller
+		for _, channel := range mgr.JoyDeviceOrRemovedChannels {
+			channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
+				EventType:              ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Added,
+				ConfiguredController:   &configured_controller,
+				UnconfiguredController: nil,
+			}
+		}
 	} else {
-		mgr.UnconfiguredControllers[joystick.GUID] = ControllerManager_UnconfiguredController{
+		unconfigured_controller := ControllerManager_UnconfiguredController{
 			Joystick: *joystick,
 		}
+		mgr.UnconfiguredControllers[joystick.GUID] = unconfigured_controller
+		for _, channel := range mgr.JoyDeviceOrRemovedChannels {
+			channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
+				EventType:              ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Added,
+				ConfiguredController:   nil,
+				UnconfiguredController: &unconfigured_controller,
+			}
+		}
 	}
+
 	return nil
 }
 
 func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemovedEvent) error {
-	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
-	if err != nil {
-		return err
+	for guid, configured_controller := range mgr.ConfiguredControllers {
+		if configured_controller.Joystick.Index == int(event.Which) {
+			fmt.Printf("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", configured_controller.Joystick.Name)
+			delete(mgr.ConfiguredControllers, guid)
+			for _, channel := range mgr.JoyDeviceOrRemovedChannels {
+				channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
+					EventType:              ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Removed,
+					ConfiguredController:   &configured_controller,
+					UnconfiguredController: nil,
+				}
+			}
+		}
 	}
-	delete(mgr.UnconfiguredControllers, joystick.GUID)
-	delete(mgr.ConfiguredControllers, joystick.GUID)
+
+	for guid, unconfigured_controller := range mgr.UnconfiguredControllers {
+		if unconfigured_controller.Joystick.Index == int(event.Which) {
+			fmt.Printf("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", unconfigured_controller.Joystick.Name)
+			delete(mgr.UnconfiguredControllers, guid)
+			for _, channel := range mgr.JoyDeviceOrRemovedChannels {
+				channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
+					EventType:              ControllerManager_Control_JoydeviceAddedOrRemovedEvent_EventType_Removed,
+					ConfiguredController:   nil,
+					UnconfiguredController: &unconfigured_controller,
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -382,6 +447,7 @@ func (mgr *ControllerManager) Attach(ctx context.Context) context.CancelFunc {
 		for {
 			select {
 			case event := <-events_channel:
+				fmt.Printf("[ControllerManager.Attach] Received SDL2 event %#v\n", event)
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
 					mgr.Handler_JoyDeviceAdded(e)
@@ -424,13 +490,27 @@ func (mgr *ControllerManager) SubscribeRaw(ctx context.Context) (chan Controller
 	return channel, unsubscribe
 }
 
-func (mgr *ControllerManager) Subscribe() (chan ControllerManager_Control_ChangeEvent, func()) {
+func (mgr *ControllerManager) SubscribeChangeEvent() (chan ControllerManager_Control_ChangeEvent, func()) {
 	channel := make(chan ControllerManager_Control_ChangeEvent)
 	mgr.ChangeEventChannels = append(mgr.ChangeEventChannels, channel)
 	unsubscribe := func() {
 		for index, c := range mgr.ChangeEventChannels {
 			if c == channel {
 				mgr.ChangeEventChannels = append(mgr.ChangeEventChannels[:index], mgr.ChangeEventChannels[index+1:]...)
+				break
+			}
+		}
+	}
+	return channel, unsubscribe
+}
+
+func (mgr *ControllerManager) SubscribeJoyDeviceOrRemoved() (chan ControllerManager_Control_JoydeviceAddedOrRemovedEvent, func()) {
+	channel := make(chan ControllerManager_Control_JoydeviceAddedOrRemovedEvent)
+	mgr.JoyDeviceOrRemovedChannels = append(mgr.JoyDeviceOrRemovedChannels, channel)
+	unsubscribe := func() {
+		for index, c := range mgr.JoyDeviceOrRemovedChannels {
+			if c == channel {
+				mgr.JoyDeviceOrRemovedChannels = append(mgr.JoyDeviceOrRemovedChannels[:index], mgr.JoyDeviceOrRemovedChannels[index+1:]...)
 				break
 			}
 		}

@@ -2,11 +2,18 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/profile_runner"
 	"tsw_controller_app/sdl_mgr"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+type AppEventType = string
+
+const (
+	AppEventType_JoyDeviceAddedOrRemoved AppEventType = "joydevice_added_or_removed"
 )
 
 type App struct {
@@ -44,9 +51,29 @@ func NewApp() *App {
 }
 
 func (a *App) startup(ctx context.Context) {
+	a.controller_manager.Attach(ctx)
+	go func() {
+		channel, _ := a.controller_manager.SubscribeJoyDeviceOrRemoved()
+		for range channel {
+			runtime.EventsEmit(ctx, AppEventType_JoyDeviceAddedOrRemoved)
+		}
+	}()
 	a.ctx = ctx
 }
 
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) GetControllers() []Interop_GenericController {
+	var controllers []Interop_GenericController
+	for _, c := range a.controller_manager.ConfiguredControllers {
+		controllers = append(controllers, Interop_GenericController{
+			Name:         c.Joystick.Name,
+			IsConfigured: true,
+		})
+	}
+	for _, c := range a.controller_manager.UnconfiguredControllers {
+		controllers = append(controllers, Interop_GenericController{
+			Name:         c.Joystick.Name,
+			IsConfigured: false,
+		})
+	}
+	return controllers
 }

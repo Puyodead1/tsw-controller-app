@@ -1,29 +1,30 @@
-// import { useState } from "react";
-// import logo from "./assets/images/logo-universal.png";
-// import "./App.css";
-// import { Greet } from "../wailsjs/go/main/App";
+import useSWR from "swr";
+import { GetControllers } from "../wailsjs/go/main/App";
+import { EventsOn } from "../wailsjs/runtime/runtime"
+import { useEffect } from "react";
 
 function App() {
-  // const [resultText, setResultText] = useState(
-  //   "Please enter your name below 👇",
-  // );
-  // const [name, setName] = useState("");
-  // const updateName = (e: any) => setName(e.target.value);
-  // const updateResultText = (result: string) => setResultText(result);
+  const { data: controllers, mutate: mutateControllers } = useSWR('controllers', () => GetControllers())
 
-  // function greet() {
-  //   Greet(name).then(updateResultText);
-  // }
+
+
+useEffect(() => {
+  EventsOn("joydevice_added_or_removed", () => {
+    mutateControllers()
+  });
+}, [])
 
   return (
     <div className="p-6">
       <select className="select w-full">
         <option disabled selected>
-          Pick a color
+          Select a controller
         </option>
-        <option>Crimson</option>
-        <option>Amber</option>
-        <option>Velvet</option>
+        {controllers?.map((c) => (
+          <option key={c.Name}>
+            {c.Name}
+          </option>
+        ))}
       </select>
     </div>
   );

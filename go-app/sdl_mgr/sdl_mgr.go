@@ -43,9 +43,10 @@ sdl.Init is guarded to only be ran once per app
 func (mgr *SDLMgr) PanicInit() bool {
 	if !mgr.Initialized {
 		/* try to initialize if not already initialized */
-		if err := sdl.Init(sdl.INIT_GAMECONTROLLER | sdl.INIT_JOYSTICK); err != nil {
+		if err := sdl.Init(sdl.INIT_GAMECONTROLLER | sdl.INIT_JOYSTICK | sdl.INIT_EVENTS); err != nil {
 			panic(err)
 		}
+		sdl.JoystickEventState(sdl.ENABLE)
 	}
 
 	mgr.Initialized = true
