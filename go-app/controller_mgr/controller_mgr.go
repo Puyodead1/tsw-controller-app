@@ -1,0 +1,439 @@
+package controller_mgr
+
+import (
+	"context"
+	"math"
+	"tsw_controller_app/config"
+	"tsw_controller_app/math_utils"
+	"tsw_controller_app/sdl_mgr"
+
+	"github.com/veandco/go-sdl2/sdl"
+)
+
+const DEFAULT_CHANNEL_BUFFER_SIZE = 50
+const DIRECTION_CHANGE_THRESHOLD = 0.05
+
+type ControllerManager_RawEvent struct {
+	Joystick *sdl_mgr.SDLMgr_Joystick
+	Event    sdl.Event
+}
+
+type ControllerManager_Control_ChangeEvent struct {
+	Joystick     *sdl_mgr.SDLMgr_Joystick
+	Control      *ControllerManager_Controller_Control
+	ControlName  string
+	ControlState ControllerManager_Controller_ControlState
+}
+
+type ControllerManager_Controller_ControlState_DirectionChangeMarker struct {
+	/* the actual direction of travel; -1 | 0 | 1 depending on the direction */
+	Direction int8
+	/* the value at which the direction changed */
+	ChangeValue float64
+}
+
+type ControllerManager_Controller_ControlStateValues struct {
+	/* the current value of the control state */
+	Value float64
+	/* the previous value of the control state */
+	PreviousValue float64
+	/* the value at which the control was initialized */
+	InitialValue float64
+}
+
+type ControllerManager_Controller_ControlState struct {
+	Direction ControllerManager_Controller_ControlState_DirectionChangeMarker
+	/* the normalized value states are in 0-1 format */
+	NormalizedValues ControllerManager_Controller_ControlStateValues
+	/* the raw values are in their raw value format coming from sdl */
+	RawValues ControllerManager_Controller_ControlStateValues
+}
+
+type ControllerManager_Controller_Control struct {
+	Manager     *ControllerManager
+	Joystick    sdl_mgr.SDLMgr_Joystick
+	Name        string
+	SDLMapping  config.Config_Controller_SDLMap_Control
+	Calibration config.Config_Controller_CalibrationData
+	State       ControllerManager_Controller_ControlState
+}
+
+type ControllerManager_ConfiguredController struct {
+	Manager  *ControllerManager
+	Joystick sdl_mgr.SDLMgr_Joystick
+	Controls map[string]ControllerManager_Controller_Control
+}
+
+type ControllerManager_UnconfiguredController struct {
+	Joystick sdl_mgr.SDLMgr_Joystick
+}
+
+type ControllerManager_Config struct {
+	SDLMappingsByName   map[string]config.Config_Controller_SDLMap
+	SDLMappingsByUsbID  map[string]config.Config_Controller_SDLMap
+	CalibrationsByUsbID map[string]config.Config_Controller_Calibration
+}
+
+type ControllerManager struct {
+	SDL                     *sdl_mgr.SDLMgr
+	Config                  ControllerManager_Config
+	ConfiguredControllers   map[sdl.JoystickGUID]ControllerManager_ConfiguredController
+	UnconfiguredControllers map[sdl.JoystickGUID]ControllerManager_UnconfiguredController
+
+	RawEventChannels    []chan ControllerManager_RawEvent
+	ChangeEventChannels []chan ControllerManager_Control_ChangeEvent
+}
+
+func (ctrl *ControllerManager_Controller_Control) Reset() {
+	switch ctrl.SDLMapping.Kind {
+	case sdl_mgr.SDLMgr_Control_Kind_Axis:
+		axis_value := ctrl.Joystick.InternalJoystick.Axis(ctrl.SDLMapping.Index)
+		ctrl.UpdateValue(float64(axis_value), true)
+	case sdl_mgr.SDLMgr_Control_Kind_Button:
+		button_value := int(ctrl.Joystick.InternalJoystick.Button(ctrl.SDLMapping.Index))
+		ctrl.UpdateValue(float64(int(button_value)), true)
+	case sdl_mgr.SDLMgr_Control_Kind_Hat:
+		hat_value := int(ctrl.Joystick.InternalJoystick.Hat(ctrl.SDLMapping.Index))
+		ctrl.UpdateValue(float64(int(hat_value)), true)
+	}
+}
+
+func (ctrl *ControllerManager_Controller_Control) UpdateValue(value float64, is_reset bool) {
+	/* update raw values */
+	if is_reset {
+		ctrl.State.RawValues.PreviousValue = value
+		ctrl.State.RawValues.InitialValue = value
+	} else {
+		ctrl.State.RawValues.PreviousValue = ctrl.State.RawValues.Value
+	}
+	ctrl.State.RawValues.Value = value
+
+	/* update normal values */
+	normalized_value := ctrl.Calibration.NormalizeRawValue(value)
+	if !normalized_value.IsWithinDeadzone {
+		rounded_value := math_utils.RoundToMarginOfError(normalized_value.Value)
+		if is_reset {
+			ctrl.State.NormalizedValues.InitialValue = rounded_value
+			ctrl.State.NormalizedValues.PreviousValue = rounded_value
+		} else {
+			ctrl.State.NormalizedValues.PreviousValue = ctrl.State.NormalizedValues.Value
+		}
+		ctrl.State.NormalizedValues.Value = rounded_value
+	}
+
+	/* update direction */
+	if is_reset {
+		ctrl.State.Direction = ControllerManager_Controller_ControlState_DirectionChangeMarker{
+			Direction:   0,
+			ChangeValue: ctrl.State.NormalizedValues.Value,
+		}
+	} else {
+		last_direction_change_value := ctrl.State.Direction.ChangeValue
+		value_diff := ctrl.State.NormalizedValues.Value - last_direction_change_value
+		if value_diff > DIRECTION_CHANGE_THRESHOLD {
+			ctrl.State.Direction = ControllerManager_Controller_ControlState_DirectionChangeMarker{
+				Direction:   1,
+				ChangeValue: ctrl.State.NormalizedValues.Value,
+			}
+		} else if value_diff < DIRECTION_CHANGE_THRESHOLD {
+			ctrl.State.Direction = ControllerManager_Controller_ControlState_DirectionChangeMarker{
+				Direction:   -1,
+				ChangeValue: ctrl.State.NormalizedValues.Value,
+			}
+		}
+	}
+
+	for _, channel := range ctrl.Manager.ChangeEventChannels {
+		channel <- ControllerManager_Control_ChangeEvent{
+			Joystick:     &ctrl.Joystick,
+			Control:      ctrl,
+			ControlName:  ctrl.Name,
+			ControlState: ctrl.State,
+		}
+	}
+}
+
+func (ctrl *ControllerManager_Controller_Control) ProcessEvent(event sdl.Event) {
+	switch e := event.(type) {
+	case *sdl.JoyAxisEvent:
+		ctrl.UpdateValue(float64(e.Value), false)
+	case *sdl.JoyButtonEvent:
+		switch e.State {
+		case sdl.PRESSED:
+			ctrl.UpdateValue(1.0, false)
+		case sdl.RELEASED:
+			ctrl.UpdateValue(0.0, false)
+		}
+	case *sdl.JoyHatEvent:
+		ctrl.UpdateValue(float64(e.Value), false)
+	}
+}
+
+func (controller *ControllerManager_ConfiguredController) ProcessEvent(event sdl.Event) {
+	switch e := event.(type) {
+	case *sdl.JoyAxisEvent:
+		for _, maybe_axis := range controller.Controls {
+			if maybe_axis.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Axis && maybe_axis.SDLMapping.Index == int(e.Axis) {
+				maybe_axis.ProcessEvent(event)
+				break
+			}
+		}
+	case *sdl.JoyButtonEvent:
+		for _, maybe_button := range controller.Controls {
+			if maybe_button.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Button && maybe_button.SDLMapping.Index == int(e.Button) {
+				maybe_button.ProcessEvent(event)
+				break
+			}
+		}
+	case *sdl.JoyHatEvent:
+		for _, maybe_hat := range controller.Controls {
+			if maybe_hat.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Hat && maybe_hat.SDLMapping.Index == int(e.Hat) {
+				maybe_hat.ProcessEvent(event)
+				break
+			}
+		}
+	}
+}
+
+func New(sdlmgr *sdl_mgr.SDLMgr) *ControllerManager {
+	return &ControllerManager{
+		SDL:                     sdlmgr,
+		Config:                  ControllerManager_Config{},
+		ConfiguredControllers:   map[sdl.JoystickGUID]ControllerManager_ConfiguredController{},
+		UnconfiguredControllers: map[sdl.JoystickGUID]ControllerManager_UnconfiguredController{},
+
+		RawEventChannels: []chan ControllerManager_RawEvent{},
+	}
+}
+
+func (mgr *ControllerManager) ConfigureJoystick(joystick *sdl_mgr.SDLMgr_Joystick, sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) ControllerManager_ConfiguredController {
+	controls := make(map[string]ControllerManager_Controller_Control)
+	for _, control := range sdl_map.Data {
+		var calibration_data config.Config_Controller_CalibrationData = config.Config_Controller_CalibrationData{
+			Id:  control.Name,
+			Min: -math.MaxFloat64,
+			Max: math.MaxFloat64,
+		}
+		for _, data := range calibration.Data {
+			if data.Id == control.Name {
+				calibration_data = data
+				break
+			}
+		}
+
+		idle_value := 0.0
+		if calibration_data.Idle != nil {
+			idle_value = *calibration_data.Idle
+		}
+		normal_idle_value := calibration_data.NormalizeRawValue(idle_value)
+
+		control := ControllerManager_Controller_Control{
+			Manager:     mgr,
+			Joystick:    *joystick,
+			Name:        control.Name,
+			SDLMapping:  control,
+			Calibration: calibration_data,
+			State: ControllerManager_Controller_ControlState{
+				Direction: ControllerManager_Controller_ControlState_DirectionChangeMarker{
+					Direction:   0,
+					ChangeValue: idle_value,
+				},
+				NormalizedValues: ControllerManager_Controller_ControlStateValues{
+					Value:         normal_idle_value.Value,
+					PreviousValue: normal_idle_value.Value,
+					InitialValue:  normal_idle_value.Value,
+				},
+				RawValues: ControllerManager_Controller_ControlStateValues{
+					Value:         idle_value,
+					PreviousValue: idle_value,
+					InitialValue:  idle_value,
+				},
+			},
+		}
+		control.Reset()
+		controls[control.Name] = control
+	}
+
+	return ControllerManager_ConfiguredController{
+		Manager:  mgr,
+		Joystick: *joystick,
+		Controls: controls,
+	}
+}
+
+func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) {
+	mgr.Config.SDLMappingsByName[sdl_map.Name] = sdl_map
+	mgr.Config.SDLMappingsByUsbID[sdl_map.UsbID] = sdl_map
+	mgr.Config.CalibrationsByUsbID[calibration.UsbID] = calibration
+	for guid, unconfigured := range mgr.UnconfiguredControllers {
+		if unconfigured.Joystick.ToString() == sdl_map.UsbID {
+			mgr.ConfiguredControllers[guid] = mgr.ConfigureJoystick(&unconfigured.Joystick, sdl_map, calibration)
+			delete(mgr.UnconfiguredControllers, guid)
+			break
+		}
+	}
+}
+
+func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEvent) error {
+	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
+	if err != nil {
+		return err
+	}
+
+	sdl_map, has_sdl_map := mgr.Config.SDLMappingsByUsbID[joystick.ToString()]
+	calibration, has_calibration := mgr.Config.CalibrationsByUsbID[joystick.ToString()]
+	if has_sdl_map && has_calibration {
+		mgr.ConfiguredControllers[joystick.GUID] = mgr.ConfigureJoystick(joystick, sdl_map, calibration)
+	} else {
+		mgr.UnconfiguredControllers[joystick.GUID] = ControllerManager_UnconfiguredController{
+			Joystick: *joystick,
+		}
+	}
+	return nil
+}
+
+func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemovedEvent) error {
+	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
+	if err != nil {
+		return err
+	}
+	delete(mgr.UnconfiguredControllers, joystick.GUID)
+	delete(mgr.ConfiguredControllers, joystick.GUID)
+	return nil
+}
+
+func (mgr *ControllerManager) Handler_JoyAxisEvent(event *sdl.JoyAxisEvent) error {
+	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
+	if err != nil {
+		return err
+	}
+
+	/* only send if the channel is being read */
+	for _, channel := range mgr.RawEventChannels {
+		channel <- ControllerManager_RawEvent{
+			Joystick: joystick,
+			Event:    event,
+		}
+	}
+
+	/* send for processing if configured */
+	configured, is_configured := mgr.ConfiguredControllers[joystick.GUID]
+	if is_configured {
+		configured.ProcessEvent(event)
+	}
+
+	return nil
+}
+
+func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) error {
+	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
+	if err != nil {
+		return err
+	}
+
+	/* only send if the channel is being read */
+	for _, channel := range mgr.RawEventChannels {
+		channel <- ControllerManager_RawEvent{
+			Joystick: joystick,
+			Event:    event,
+		}
+	}
+
+	/* send for processing if configured */
+	configured, is_configured := mgr.ConfiguredControllers[joystick.GUID]
+	if is_configured {
+		configured.ProcessEvent(event)
+	}
+
+	return nil
+}
+
+func (mgr *ControllerManager) Handler_JoyHatEvent(event *sdl.JoyHatEvent) error {
+	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
+	if err != nil {
+		return err
+	}
+
+	/* only send if the channel is being read */
+	for _, channel := range mgr.RawEventChannels {
+		channel <- ControllerManager_RawEvent{
+			Joystick: joystick,
+			Event:    event,
+		}
+	}
+
+	/* send for processing if configured */
+	configured, is_configured := mgr.ConfiguredControllers[joystick.GUID]
+	if is_configured {
+		configured.ProcessEvent(event)
+	}
+
+	return nil
+}
+
+func (mgr *ControllerManager) Attach(ctx context.Context) context.CancelFunc {
+	ctx_with_cancel, cancel := context.WithCancel(ctx)
+	go func() {
+		// SDL on windows sends some initial movement events which causes issues
+		initial_events_threshold := uint32(500)
+
+		/* returns a cancel but will be cancelled by it's parent context */
+		events_channel, _ := mgr.SDL.StartPolling(ctx_with_cancel)
+		for {
+			select {
+			case event := <-events_channel:
+				switch e := event.(type) {
+				case *sdl.JoyDeviceAddedEvent:
+					mgr.Handler_JoyDeviceAdded(e)
+				case *sdl.JoyDeviceRemovedEvent:
+					mgr.Handler_JoyDeviceRemoved(e)
+				case *sdl.JoyAxisEvent:
+					if e.GetTimestamp() > initial_events_threshold {
+						mgr.Handler_JoyAxisEvent(e)
+					}
+				case *sdl.JoyButtonEvent:
+					if e.GetTimestamp() > initial_events_threshold {
+						mgr.Handler_JoyButtonEvent(e)
+					}
+				case *sdl.JoyHatEvent:
+					if e.GetTimestamp() > initial_events_threshold {
+						mgr.Handler_JoyHatEvent(e)
+					}
+				case *sdl.QuitEvent:
+					cancel()
+				}
+			case <-ctx_with_cancel.Done():
+				return
+			}
+		}
+	}()
+	return cancel
+}
+
+func (mgr *ControllerManager) SubscribeRaw(ctx context.Context) (chan ControllerManager_RawEvent, func()) {
+	channel := make(chan ControllerManager_RawEvent)
+	mgr.RawEventChannels = append(mgr.RawEventChannels, channel)
+	unsubscribe := func() {
+		for index, c := range mgr.RawEventChannels {
+			if c == channel {
+				mgr.RawEventChannels = append(mgr.RawEventChannels[:index], mgr.RawEventChannels[index+1:]...)
+				break
+			}
+		}
+	}
+	return channel, unsubscribe
+}
+
+func (mgr *ControllerManager) Subscribe() (chan ControllerManager_Control_ChangeEvent, func()) {
+	channel := make(chan ControllerManager_Control_ChangeEvent)
+	mgr.ChangeEventChannels = append(mgr.ChangeEventChannels, channel)
+	unsubscribe := func() {
+		for index, c := range mgr.ChangeEventChannels {
+			if c == channel {
+				mgr.ChangeEventChannels = append(mgr.ChangeEventChannels[:index], mgr.ChangeEventChannels[index+1:]...)
+				break
+			}
+		}
+	}
+	return channel, unsubscribe
+}

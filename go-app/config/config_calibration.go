@@ -1,0 +1,99 @@
+package config
+
+import (
+	"encoding/json"
+	"math"
+	"tsw_controller_app/math_utils"
+
+	"github.com/creasty/go-easing"
+	"github.com/go-playground/validator/v10"
+)
+
+type Config_Controller_CalibrationData struct {
+	/** the ID of the controller button or trigger as named in the controller mapping config (see other file - eg: "throttle1", "throttle2", "button1") */
+	Id          string     `json:"id" validate:"required"`
+	Deadzone    *float64   `json:"deadzone,omitempty"`
+	Invert      *bool      `json:"bool,omitempty"`
+	Min         float64    `json:"min" validate:"required"`
+	Max         float64    `json:"max" validate:"required"`
+	Idle        *float64   `json:"idle,omitempty"`
+	EasingCurve *[]float64 `json:"easing_curve,omitempty"`
+}
+
+type Config_Controller_Calibration struct {
+	UsbID string                              `json:"usb_id" validate:"required" example:"{0xVENDOR_ID}:{0xPRODUCT_ID}"`
+	Data  []Config_Controller_CalibrationData `json:"data" validate:"required"`
+}
+
+type NormalizedValue struct {
+	Value            float64
+	IsWithinDeadzone bool
+}
+
+func ControllerCalibrationFromJSON(json_str string) (*Config_Controller_Calibration, error) {
+	var c Config_Controller_Calibration
+	if err := json.Unmarshal([]byte(json_str), &c); err != nil {
+		return nil, err
+	}
+
+	v := validator.New()
+	if err := v.Struct(c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+/*
+Normalizes the raw input value to a [-1,1] range.
+Will return IsWithinDeadzone true when within deadzone
+*/
+func (calibration *Config_Controller_CalibrationData) NormalizeRawValue(raw_value float64) NormalizedValue {
+	/* get optional values */
+	idle_value := calibration.Min
+	if calibration.Idle != nil {
+		idle_value = *calibration.Idle
+	}
+
+	deadzone_value := float64(0)
+	if calibration.Deadzone != nil {
+		deadzone_value = *calibration.Deadzone
+	}
+
+	invert_value := false
+	if calibration.Invert != nil {
+		invert_value = *calibration.Invert
+	}
+
+	/* actual normalization logic starts here */
+	idle_range := []float64{
+		/* deadzone is optional so it will be initialized as 0 (no deadzone) */
+		idle_value - deadzone_value,
+		idle_value + deadzone_value,
+	}
+
+	easing_curve_value := []float64{0.0, 0.0, 1.0, 1.0}
+	if calibration.EasingCurve != nil && len(*calibration.EasingCurve) == 4 {
+		easing_curve_value = *calibration.EasingCurve
+	}
+
+	value := float64(raw_value)
+	if invert_value {
+		value = -value
+	}
+
+	if value >= idle_range[0] && value <= idle_range[1] {
+		return NormalizedValue{Value: 0, IsWithinDeadzone: true}
+	}
+
+	ease_func := easing.NewCustomEasing(easing_curve_value[0], easing_curve_value[1], easing_curve_value[2], easing_curve_value[3])
+
+	/* below idle range -- negative value */
+	if value < idle_range[0] && calibration.Min != idle_range[0] {
+		abs_value := math.Abs(math_utils.Clamp((value-idle_range[0])/(calibration.Min-idle_range[0]), 0.0, 1.0))
+		return NormalizedValue{Value: ease_func(abs_value) * -1.0, IsWithinDeadzone: false}
+	}
+
+	abs_value := math.Abs(math_utils.Clamp((value-idle_range[1])/(calibration.Max-idle_range[1]), 0.0, 1.0))
+	return NormalizedValue{Value: ease_func(abs_value), IsWithinDeadzone: false}
+}
