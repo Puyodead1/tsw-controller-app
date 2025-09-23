@@ -1,33 +1,51 @@
-import useSWR from "swr";
-import { GetControllers } from "../wailsjs/go/main/App";
-import { EventsOn } from "../wailsjs/runtime/runtime";
-import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { LogsTab } from "./tabs/logs/LogsTab";
+import { MainTab } from "./tabs/main";
+import { OnFrontendReady } from "../wailsjs/go/main/App";
+import { CalibrationTab } from "./tabs/calibration";
 
-function App() {
-  const { data: controllers, mutate: mutateControllers } = useSWR(
-    "controllers",
-    () => GetControllers(),
-  );
+OnFrontendReady();
 
-  useEffect(() => {
-    EventsOn("joydevice_added_or_removed", () => {
-      mutateControllers();
-    });
-  }, []);
+const App = () => {
+  const tabsForm = useForm<{ tab: "main" | "calibration" | "logs" }>({
+    defaultValues: { tab: "main" },
+  });
+  const tab = tabsForm.watch("tab");
+  console.log(tab)
 
   return (
-    <div className="p-6">
-      <fieldset className="fieldset">
-        <legend className="fieldset-legend">Select profile</legend>
-        <select className="select">
-          <option disabled selected>
-            Auto-detect
-          </option>
-        </select>
-        <span className="label">Auto-detect only works for certain supported controllers</span>
-      </fieldset>
+    <div className="p-2">
+      <div className="sticky top-2 tabs tabs-box">
+        <input
+          type="radio"
+          className="tab"
+          aria-label="Main"
+          value="main"
+          {...tabsForm.register("tab", { value: "main" })}
+        />
+        <input
+          type="radio"
+          className="tab"
+          aria-label="Calibration"
+          value="calibration"
+          {...tabsForm.register("tab", { value: 'calibration' })}
+        />
+        <input
+          type="radio"
+          className="tab"
+          aria-label="Logs"
+          value="logs"
+          {...tabsForm.register("tab", { value: 'logs' })}
+        />
+      </div>
+
+      <div className="p-2">
+        {tab === "main" && <MainTab />}
+        {tab === 'calibration' && <CalibrationTab />}
+        {tab === "logs" && <LogsTab />}
+      </div>
     </div>
   );
-}
+};
 
 export default App;

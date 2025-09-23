@@ -5,3 +5,11 @@
 export function GetControllers() {
   return window['go']['main']['App']['GetControllers']();
 }
+
+export function OnFrontendReady() {
+  return window['go']['main']['App']['OnFrontendReady']();
+}
+
+export function SaveLogsAsFile() {
+  return window['go']['main']['App']['SaveLogsAsFile']();
+}

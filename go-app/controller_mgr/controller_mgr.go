@@ -2,9 +2,9 @@ package controller_mgr
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"tsw_controller_app/config"
+	"tsw_controller_app/logger"
 	"tsw_controller_app/math_utils"
 	"tsw_controller_app/sdl_mgr"
 
@@ -307,7 +307,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 
 	sdl_map, has_sdl_map := mgr.Config.SDLMappingsByUsbID[joystick.ToString()]
 	calibration, has_calibration := mgr.Config.CalibrationsByUsbID[joystick.ToString()]
-	fmt.Printf("[ControllerManager:Handler_JoyDeviceAdded] Registering new joy device (%s)\n", joystick.Name)
+	logger.Logger.LogF("[ControllerManager:Handler_JoyDeviceAdded] Registering new joy device (%s)\n", joystick.Name)
 	if has_sdl_map && has_calibration {
 		configured_controller := mgr.ConfigureJoystick(joystick, sdl_map, calibration)
 		mgr.ConfiguredControllers[joystick.GUID] = configured_controller
@@ -338,7 +338,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemovedEvent) error {
 	for guid, configured_controller := range mgr.ConfiguredControllers {
 		if configured_controller.Joystick.Index == int(event.Which) {
-			fmt.Printf("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", configured_controller.Joystick.Name)
+			logger.Logger.LogF("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", configured_controller.Joystick.Name)
 			delete(mgr.ConfiguredControllers, guid)
 			for _, channel := range mgr.JoyDeviceOrRemovedChannels {
 				channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
@@ -352,7 +352,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemov
 
 	for guid, unconfigured_controller := range mgr.UnconfiguredControllers {
 		if unconfigured_controller.Joystick.Index == int(event.Which) {
-			fmt.Printf("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", unconfigured_controller.Joystick.Name)
+			logger.Logger.LogF("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device (%s)\n", unconfigured_controller.Joystick.Name)
 			delete(mgr.UnconfiguredControllers, guid)
 			for _, channel := range mgr.JoyDeviceOrRemovedChannels {
 				channel <- ControllerManager_Control_JoydeviceAddedOrRemovedEvent{
@@ -447,7 +447,7 @@ func (mgr *ControllerManager) Attach(ctx context.Context) context.CancelFunc {
 		for {
 			select {
 			case event := <-events_channel:
-				fmt.Printf("[ControllerManager.Attach] Received SDL2 event %#v\n", event)
+				logger.Logger.LogF("[ControllerManager.Attach] Received SDL2 event %#v\n", event)
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
 					mgr.Handler_JoyDeviceAdded(e)

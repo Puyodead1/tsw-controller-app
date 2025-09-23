@@ -1,11 +1,11 @@
 package profile_runner
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"tsw_controller_app/config"
+	"tsw_controller_app/logger"
 
 	"github.com/gorilla/websocket"
 )
@@ -58,7 +58,7 @@ func (c *SyncController) UpdateControlStateTargetValue(identifier string, target
 func (c *SyncController) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := c.WsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("websocket upgrade error: ", err)
+		logger.Logger.LogF("[SyncController::WebsocketHandler] websocket upgrade error (%e)", err)
 		return
 	}
 	defer conn.Close()
@@ -66,12 +66,12 @@ func (c *SyncController) WebsocketHandler(w http.ResponseWriter, r *http.Request
 	for {
 		msg_type, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("Read error:", err)
+			logger.Logger.LogF("[SyncController::WebsocketHandler] read error (%e)", err)
 			return
 		}
 
 		if msg_type == websocket.CloseMessage {
-			fmt.Println("Client requested close")
+			logger.Logger.LogF("[SyncController::WebsocketHandler] received close message")
 			break
 		}
 

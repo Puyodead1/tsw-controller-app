@@ -3,3 +3,7 @@
 import {main} from '../models';
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
+
+export function OnFrontendReady():Promise<void>;
+
+export function SaveLogsAsFile():Promise<void>;
