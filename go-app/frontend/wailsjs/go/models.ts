@@ -1,6 +1,69 @@
 export namespace main {
 	
+	export class Interop_ControllerCalibration_Control {
+	    Kind: string;
+	    Index: number;
+	    Name: string;
+	    Min: number;
+	    Max: number;
+	    Idle: number;
+	    Deadzone: number;
+	    Invert: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_ControllerCalibration_Control(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Kind = source["Kind"];
+	        this.Index = source["Index"];
+	        this.Name = source["Name"];
+	        this.Min = source["Min"];
+	        this.Max = source["Max"];
+	        this.Idle = source["Idle"];
+	        this.Deadzone = source["Deadzone"];
+	        this.Invert = source["Invert"];
+	    }
+	}
+	export class Interop_ControllerCalibration {
+	    Name: string;
+	    UsbId: string;
+	    Controls: Interop_ControllerCalibration_Control[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_ControllerCalibration(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.UsbId = source["UsbId"];
+	        this.Controls = this.convertValues(source["Controls"], Interop_ControllerCalibration_Control);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Interop_GenericController {
+	    GUID: string;
+	    UsbID: string;
 	    Name: string;
 	    IsConfigured: boolean;
 	
@@ -10,8 +73,32 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.GUID = source["GUID"];
+	        this.UsbID = source["UsbID"];
 	        this.Name = source["Name"];
 	        this.IsConfigured = source["IsConfigured"];
+	    }
+	}
+	export class Interop_RawEvent {
+	    GUID: string;
+	    UsbID: string;
+	    Kind: string;
+	    Index: number;
+	    Value: number;
+	    Timestamp: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_RawEvent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.GUID = source["GUID"];
+	        this.UsbID = source["UsbID"];
+	        this.Kind = source["Kind"];
+	        this.Index = source["Index"];
+	        this.Value = source["Value"];
+	        this.Timestamp = source["Timestamp"];
 	    }
 	}
 

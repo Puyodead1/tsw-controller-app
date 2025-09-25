@@ -29,7 +29,7 @@ func (command *DirectController_Command) ToString() string {
 func (c *DirectController) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := c.WsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logger.Logger.LogF("[DirectController::WebsocketHandler] websocket upgrade error (%s) ", err)
+		logger.Logger.Error("[DirectController::WebsocketHandler] websocket upgrade error", "error", err.Error())
 		return
 	}
 	defer conn.Close()
@@ -54,12 +54,12 @@ func (c *DirectController) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 	for {
 		msg_type, _, err := conn.ReadMessage()
 		if err != nil {
-			logger.Logger.LogF("[DirectController::WebsocketHandler] message read error (%s)", err)
+			logger.Logger.Error("[DirectController::WebsocketHandler] message read error", "error", err)
 			return
 		}
 
 		if msg_type == websocket.CloseMessage {
-			logger.Logger.LogF("[DirectController::WebsocketHandler] received close message from client")
+			logger.Logger.Info("[DirectController::WebsocketHandler] received close message from client")
 			break
 		}
 	}

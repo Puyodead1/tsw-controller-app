@@ -1,12 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { main } from "../../../wailsjs/go/models";
 import useSWR from "swr";
 import { GetControllers } from "../../../wailsjs/go/main/App";
+import { CalibrationModal } from "./CalibrationModal";
+import { EventsOn } from "../../../wailsjs/runtime/runtime";
+import { events } from "../../events";
 
 export const CalibrationTab = () => {
-  const { data: controllers } = useSWR("controllers", () => GetControllers(), {
+  const dialogRef = useRef<HTMLDialogElement | null>(null)
+  const [currentlyCalibratingController, setCurrentlyCalibratingController] = useState<main.Interop_GenericController | null>(null)
+  const { data: controllers, mutate: refetchControllers } = useSWR("controllers", () => GetControllers(), {
     revalidateOnMount: true,
   });
+
+  const handleConfigure = (c: main.Interop_GenericController) => {
+    setCurrentlyCalibratingController(c)
+    dialogRef.current?.showModal()
+  }
+
+  useEffect(() => {
+    return EventsOn(events.joydevices_updated, () => {
+      refetchControllers()
+    })
+  }, [])
 
   return (
     <div>
@@ -19,14 +35,14 @@ export const CalibrationTab = () => {
             <div>
               {c.IsConfigured && (
                 <div className="tooltip" data-tip="Re-configure">
-                  <button className="btn btn-success btn-soft btn-xs">
+                  <button className="btn btn-success btn-soft btn-xs" onClick={() => handleConfigure(c)}>
                     Configured
                   </button>
                 </div>
               )}
               {!c.IsConfigured && (
                 <div className="tooltip" data-tip="Configure now">
-                  <button className="btn btn-error btn-soft btn-xs">
+                  <button className="btn btn-error btn-soft btn-xs" onClick={() => handleConfigure(c)}>
                     Unconfigured
                   </button>
                 </div>
@@ -35,6 +51,8 @@ export const CalibrationTab = () => {
           </li>
         ))}
       </ul>
+
+      <CalibrationModal dialogRef={dialogRef} controller={currentlyCalibratingController} />
     </div>
   );
 };

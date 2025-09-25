@@ -6,10 +6,22 @@ export function GetControllers() {
   return window['go']['main']['App']['GetControllers']();
 }
 
+export function LastRawEvent() {
+  return window['go']['main']['App']['LastRawEvent']();
+}
+
 export function OnFrontendReady() {
   return window['go']['main']['App']['OnFrontendReady']();
 }
 
-export function SaveLogsAsFile() {
-  return window['go']['main']['App']['SaveLogsAsFile']();
+export function SaveCalibration(arg1) {
+  return window['go']['main']['App']['SaveCalibration'](arg1);
+}
+
+export function SubscribeRaw(arg1) {
+  return window['go']['main']['App']['SubscribeRaw'](arg1);
+}
+
+export function UnsubscribeRaw() {
+  return window['go']['main']['App']['UnsubscribeRaw']();
 }

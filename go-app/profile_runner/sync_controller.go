@@ -58,7 +58,7 @@ func (c *SyncController) UpdateControlStateTargetValue(identifier string, target
 func (c *SyncController) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := c.WsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logger.Logger.LogF("[SyncController::WebsocketHandler] websocket upgrade error (%e)", err)
+		logger.Logger.Error("[SyncController::WebsocketHandler] websocket upgrade error", "error", err)
 		return
 	}
 	defer conn.Close()
@@ -66,12 +66,12 @@ func (c *SyncController) WebsocketHandler(w http.ResponseWriter, r *http.Request
 	for {
 		msg_type, msg, err := conn.ReadMessage()
 		if err != nil {
-			logger.Logger.LogF("[SyncController::WebsocketHandler] read error (%e)", err)
+			logger.Logger.Error("[SyncController::WebsocketHandler] read error", "error", err)
 			return
 		}
 
 		if msg_type == websocket.CloseMessage {
-			logger.Logger.LogF("[SyncController::WebsocketHandler] received close message")
+			logger.Logger.Info("[SyncController::WebsocketHandler] received close message")
 			break
 		}
 

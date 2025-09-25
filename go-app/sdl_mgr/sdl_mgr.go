@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"tsw_controller_app/logger"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 /* the SDL control kind like Button, Hat, Axis */
 type SDLMgr_Control_Kind = string
+type SDLMgr_Guid_Str = string
 
 const (
 	SDLMgr_Control_Kind_Button SDLMgr_Control_Kind = "button"
@@ -18,7 +20,7 @@ const (
 )
 
 type SDLMgr_Joystick struct {
-	GUID      sdl.JoystickGUID
+	GUID      SDLMgr_Guid_Str
 	Name      string
 	VendorID  int
 	ProductID int
@@ -30,10 +32,13 @@ type SDLMgr_Joystick struct {
 
 type SDLMgr struct {
 	Initialized bool
+	Timestamp   time.Time
 }
 
 func New() *SDLMgr {
-	return &SDLMgr{}
+	return &SDLMgr{
+		Initialized: false,
+	}
 }
 
 /*
@@ -42,14 +47,18 @@ sdl.Init is guarded to only be ran once per app
 */
 func (mgr *SDLMgr) PanicInit() bool {
 	if !mgr.Initialized {
+		init_ts := time.Now()
+
 		/* try to initialize if not already initialized */
 		if err := sdl.Init(sdl.INIT_GAMECONTROLLER | sdl.INIT_JOYSTICK | sdl.INIT_EVENTS); err != nil {
 			panic(err)
 		}
 		sdl.JoystickEventState(sdl.ENABLE)
+
+		mgr.Initialized = true
+		mgr.Timestamp = init_ts
 	}
 
-	mgr.Initialized = true
 	return true
 }
 
@@ -69,7 +78,7 @@ func (mgr *SDLMgr) GetJoystickByIndex(index int) (*SDLMgr_Joystick, error) {
 	usb_product := sdl.JoystickGetDeviceProduct(index)
 
 	return &SDLMgr_Joystick{
-		GUID:      guid,
+		GUID:      sdl.JoystickGetGUIDString(guid),
 		Name:      name,
 		VendorID:  usb_vendor,
 		ProductID: usb_product,
@@ -89,19 +98,56 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 	go func() {
 		/* check for done */
 		for {
-			if event := sdl.PollEvent(); event != nil {
-				/* pass event to channel */
-				event_channel <- event
+			/* stop if context has been cancelled */
+			if ctx_with_cancel.Err() != nil {
+				return
 			}
 
-			timer := time.NewTimer(60 * time.Millisecond)
-			select {
-			case <-ctx_with_cancel.Done():
-				/* polling stopped during wait */
-				timer.Stop()
-				return
-			case <-timer.C:
-				/* continue to next iteration */
+			if event := sdl.WaitEventTimeout(60); event != nil {
+				/* cancelled while waiting; stop */
+				if ctx_with_cancel.Err() != nil {
+					return
+				}
+
+				/* pass event to channel */
+				switch e := event.(type) {
+				case *sdl.JoyDeviceAddedEvent:
+					event_channel <- &sdl.JoyDeviceAddedEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+					}
+				case *sdl.JoyDeviceRemovedEvent:
+					event_channel <- &sdl.JoyDeviceRemovedEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+					}
+				case *sdl.JoyAxisEvent:
+					event_channel <- &sdl.JoyAxisEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Axis:      e.Axis,
+						Value:     e.Value,
+					}
+				case *sdl.JoyButtonEvent:
+					event_channel <- &sdl.JoyButtonEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Button:    e.Button,
+						State:     e.State,
+					}
+				case *sdl.JoyHatEvent:
+					event_channel <- &sdl.JoyHatEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Hat:       e.Hat,
+						Value:     e.Value,
+					}
+				}
 			}
 		}
 	}()
@@ -117,6 +163,7 @@ func (joystick *SDLMgr_Joystick) Open() error {
 		return nil
 	}
 
+	logger.Logger.Info("[SDLMgr_Joystick::Open] opening joystick", "joystick", joystick.ToString(), "name", joystick.Name)
 	joystick.InternalJoystick = sdl.JoystickOpen(joystick.Index)
 	if joystick.InternalJoystick == nil {
 		return fmt.Errorf("could not open joystick for use")

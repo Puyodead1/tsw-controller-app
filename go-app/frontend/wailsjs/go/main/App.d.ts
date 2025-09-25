@@ -4,6 +4,12 @@ import {main} from '../models';
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
 
+export function LastRawEvent():Promise<main.Interop_RawEvent>;
+
 export function OnFrontendReady():Promise<void>;
 
-export function SaveLogsAsFile():Promise<void>;
+export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
+
+export function SubscribeRaw(arg1:string):Promise<void>;
+
+export function UnsubscribeRaw():Promise<void>;
