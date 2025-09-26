@@ -44,7 +44,7 @@ type Config_Controller_Profile_Control_Assignment_Action struct {
 
 type Config_Controller_Profile_Control_Assignment_Momentary struct {
 	Type      string  `json:"type" validate:"required,eq=momentary"`
-	Threshold float64 `json:"threshold" validate:"required"`
+	Threshold float64 `json:"threshold"`
 	/* which action to perform once the threshold is exceeded */
 	ActionActivate Config_Controller_Profile_Control_Assignment_Action `json:"action_activate" validate:"required"`
 	/* which action to perform once the threshold is not exceeded anymore; defaults to releasing the activate action if keys */
@@ -52,7 +52,7 @@ type Config_Controller_Profile_Control_Assignment_Momentary struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_Linear_Threshold struct {
-	Value float64 `json:"value" validate:"required"`
+	Value float64 `json:"value"`
 	/* ValueEnd and ValueStep can be used to automatically generate a set of thresholds while keeping the same action (ie: throttle) */
 	ValueEnd  *float64 `json:"value_end,omitempty"`
 	ValueStep *float64 `json:"value_step,omitempty"`
@@ -69,15 +69,15 @@ type Config_Controller_Profile_Control_Assignment_Linear struct {
 
 type Config_Controller_Profile_Control_Assignment_Toggle struct {
 	Type      string  `json:"type" validate:"required,eq=toggle"`
-	Threshold float64 `json:"threshold" validate:"required"`
+	Threshold float64 `json:"threshold"`
 	/* which action to perform once the threshold is exceeded */
 	ActionActivate   Config_Controller_Profile_Control_Assignment_Action `json:"action_activate" validate:"required"`
 	ActionDeactivate Config_Controller_Profile_Control_Assignment_Action `json:"action_deactivate" validate:"required"`
 }
 
 type Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue struct {
-	Min  float64  `json:"min" validate:"required"`
-	Max  float64  `json:"max" validate:"required"`
+	Min  float64  `json:"min"`
+	Max  float64  `json:"max"`
 	Step *float64 `json:"step,omitempty"`
 	/** steps can be combined with null values to create automatic interpolation */
 	Steps  *[]*float64 `json:"steps,omitempty"`

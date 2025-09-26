@@ -7,6 +7,7 @@ import (
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
 	"tsw_controller_app/controller_mgr"
+	"tsw_controller_app/logger"
 )
 
 type ProfileRunnerSettings struct {
@@ -27,7 +28,7 @@ type ProfileRunner struct {
 	SyncController                    *SyncController
 	Profiles                          map[string]config.Config_Controller_Profile
 	Settings                          ProfileRunnerSettings
-	PreviousControlAssignmentCallList map[string][]*ProfileRunnerAssignmentCall
+	PreviousControlAssignmentCallList map[string]*[]*ProfileRunnerAssignmentCall
 }
 
 func New(
@@ -46,7 +47,7 @@ func New(
 			SelectedProfile:      nil,
 			PreferredControlMode: config.PreferredControlMode_DirectControl,
 		},
-		PreviousControlAssignmentCallList: map[string][]*ProfileRunnerAssignmentCall{},
+		PreviousControlAssignmentCallList: map[string]*[]*ProfileRunnerAssignmentCall{},
 	}
 }
 
@@ -68,11 +69,13 @@ func (p *ProfileRunner) ClearProfile() {
 	p.Settings.SelectedProfile = nil
 }
 
-func (p *ProfileRunner) SetProfile(name string) {
+func (p *ProfileRunner) SetProfile(name string) error {
 	profile, is_valid_profile := p.Profiles[name]
 	if is_valid_profile {
 		p.Settings.SelectedProfile = &profile
+		return nil
 	}
+	return fmt.Errorf("could not find profile by name %s", name)
 }
 
 func (p *ProfileRunner) SetPreferredControlMode(mode config.PreferredControlMode) {
@@ -86,16 +89,19 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 	assignment config.Config_Controller_Profile_Control_Assignment,
 	action *ProfileRunnerAssignmentCall,
 ) error {
+	if action != nil {
+		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand)
+	}
 	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList[control.Name]
 	if !has_previous_control_call {
-		previous_control_assignments_call_list = []*ProfileRunnerAssignmentCall{}
+		previous_control_assignments_call_list = &[]*ProfileRunnerAssignmentCall{}
 		p.PreviousControlAssignmentCallList[control.Name] = previous_control_assignments_call_list
 	}
-	for len(previous_control_assignments_call_list) <= assignment_index {
-		previous_control_assignments_call_list = append(previous_control_assignments_call_list, nil)
+	for len(*previous_control_assignments_call_list) <= assignment_index {
+		*previous_control_assignments_call_list = append(*previous_control_assignments_call_list, nil)
 	}
 
-	if action == nil && previous_control_assignments_call_list[assignment_index] == nil {
+	if action == nil && (*previous_control_assignments_call_list)[assignment_index] == nil {
 		/* no action and no previous call - don't do anything */
 		return fmt.Errorf("no action or previous call list entry")
 	}
@@ -111,15 +117,17 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 		assignment_call.DirectControlCommand = action.DirectControlCommand
 	} else {
 		/* should always be available - None action should only be set as none for deactivation calls */
-		assignment_call.ActionSequencerAction = previous_control_assignments_call_list[assignment_index].ActionSequencerAction
-		assignment_call.DirectControlCommand = previous_control_assignments_call_list[assignment_index].DirectControlCommand
+		assignment_call.ActionSequencerAction = (*previous_control_assignments_call_list)[assignment_index].ActionSequencerAction
+		assignment_call.DirectControlCommand = (*previous_control_assignments_call_list)[assignment_index].DirectControlCommand
 	}
-	previous_control_assignments_call_list[assignment_index] = assignment_call
+	(*previous_control_assignments_call_list)[assignment_index] = assignment_call
 
 	if action != nil {
 		if action.ActionSequencerAction != nil {
+			logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] queueing sequencer action", "action", action.ActionSequencerAction)
 			p.ActionSequencer.Enqueue(*action.ActionSequencerAction)
 		} else if action.DirectControlCommand != nil {
+			logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
 			p.DirectController.ControlChannel <- *action.DirectControlCommand
 		}
 	}
@@ -197,6 +205,8 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case <-context_with_cancel.Done():
 				return
 			case change_event := <-channel:
+				logger.Logger.Info("[ProfileRunner::Run] received change event", "event", change_event)
+
 				selected_profile := p.Settings.SelectedProfile
 				if selected_profile == nil {
 					/* try to find default profile by USB ID */
@@ -209,20 +219,23 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				}
 
 				if selected_profile == nil {
+					logger.Logger.Info("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
 					continue
 				}
 
 				control_profile := selected_profile.FindControlByName(change_event.ControlName)
 				if control_profile == nil {
+					logger.Logger.Info("[ProfileRunner::Run] skipping event, control not found in profile", "event", change_event)
 					continue
 				}
 
 				assignments := control_profile.GetAssignments(p.Settings.PreferredControlMode)
-				previous_control_assignments_call := p.PreviousControlAssignmentCallList[change_event.ControlName]
+				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList[change_event.ControlName]
 				for assignment_index, control_assignment_item := range assignments {
+					logger.Logger.Info("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
 					var previous_assignment_call *ProfileRunnerAssignmentCall = nil
-					if len(p.PreviousControlAssignmentCallList) > assignment_index {
-						previous_assignment_call = previous_control_assignments_call[assignment_index]
+					if has_previous_control_assignments_call_list && len(*previous_control_assignments_call_list) > assignment_index {
+						previous_assignment_call = (*previous_control_assignments_call_list)[assignment_index]
 					}
 
 					if control_assignment_item.Momentary != nil {
@@ -236,7 +249,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						} else if previous_assignment_call != nil && previous_assignment_call.ControlState.NormalizedValues.Value >= control_assignment_item.Momentary.Threshold {
 							// when below the threshold only call action if the last call was above or equal to the threshold
 							if control_assignment_item.Momentary.ActionDeactivate != nil {
-								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Momentary.ActionActivate, false)
+								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, *control_assignment_item.Momentary.ActionDeactivate, false)
 								p.CallAssignmentActionForControl(change_event.Control, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
 							} else if control_assignment_item.Momentary.ActionActivate.Keys != nil {
 								/* only release if keys -> can't "release" direct control actions */

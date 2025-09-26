@@ -1,9 +1,6 @@
 import { useForm } from "react-hook-form";
 import { MainTab } from "./tabs/main";
-import { OnFrontendReady } from "../wailsjs/go/main/App";
 import { CalibrationTab } from "./tabs/calibration";
-
-OnFrontendReady();
 
 const App = () => {
   const tabsForm = useForm<{ tab: "main" | "calibration" }>({

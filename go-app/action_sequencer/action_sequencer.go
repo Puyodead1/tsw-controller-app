@@ -3,6 +3,7 @@ package action_sequencer
 import (
 	"context"
 	"strings"
+	"tsw_controller_app/logger"
 
 	"github.com/go-vgo/robotgo"
 )
@@ -20,7 +21,7 @@ type ActionSequencer struct {
 
 func New() *ActionSequencer {
 	return &ActionSequencer{
-		ActionsQueue: make(chan ActionSequencerAction, 10),
+		ActionsQueue: make(chan ActionSequencerAction),
 	}
 }
 
@@ -54,7 +55,8 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 			case <-ctx_with_cancel.Done():
 				return
 			case action := <-seq.ActionsQueue:
-				keys_list := strings.Split(action.Keys, ",")
+				logger.Logger.Info("[ActionSequencer::Run] received action from queue", "action", action)
+				keys_list := strings.Split(action.Keys, "+")
 				modifier_keys := []string{}
 				other_keys := []string{}
 				for _, key := range keys_list {
@@ -70,11 +72,11 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 				} else {
 					seq.ToggleKeys(other_keys, modifier_keys, "down")
 					if action.PressTime != 0 {
-						robotgo.Sleep(int(action.PressTime * 1000))
+						robotgo.MilliSleep(int(action.PressTime * 1000))
 						seq.ToggleKeys(other_keys, modifier_keys, "up")
 					}
 					if action.WaitTime != 0 {
-						robotgo.Sleep(int(action.WaitTime * 1000))
+						robotgo.MilliSleep(int(action.WaitTime * 1000))
 					}
 				}
 			}

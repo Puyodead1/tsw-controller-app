@@ -155,7 +155,7 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 }
 
 func (joystick *SDLMgr_Joystick) ToString() string {
-	return fmt.Sprintf("%d:%d", joystick.VendorID, joystick.ProductID)
+	return fmt.Sprintf("%04X:%04X", joystick.VendorID, joystick.ProductID)
 }
 
 func (joystick *SDLMgr_Joystick) Open() error {

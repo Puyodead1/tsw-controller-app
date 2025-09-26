@@ -9,6 +9,10 @@ type Interop_GenericController struct {
 	IsConfigured bool
 }
 
+type Interop_Profile struct {
+	Name string
+}
+
 type Interop_RawEvent struct {
 	GUID      string
 	UsbID     string

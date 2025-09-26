@@ -22,6 +22,7 @@ type AppEventType = string
 
 const (
 	AppEventType_JoyDevicesUpdated AppEventType = "joydevices_updated"
+	AppEventType_ProfilesUpdated   AppEventType = "profiles_updated"
 	AppEvent_RawEvent              AppEventType = "rawevent"
 )
 
@@ -71,12 +72,44 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.LoadConfiguration()
+
+	go func() {
+		cancel := a.controller_manager.Attach(a.ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		cancel := a.profile_runner.Run(ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		cancel := a.action_sequencer.Run(ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		channel, cancel := a.controller_manager.SubscribeJoyDevicesUpdated()
+		defer cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-channel:
+				runtime.EventsEmit(a.ctx, AppEventType_JoyDevicesUpdated)
+			}
+		}
+	}()
 }
 
-func (a *App) domReady(ctx context.Context) {
+func (a *App) shutdown(ctx context.Context) {
 }
 
-func (a *App) OnFrontendReady() {
+func (a *App) LoadConfiguration() {
 	/* load config from relative config directory */
 	sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory("./config")
 	for _, err := range errors {
@@ -91,7 +124,7 @@ func (a *App) OnFrontendReady() {
 			}
 		}
 		if calibration != nil {
-			logger.Logger.Info("[App] registering SDL map and calibration for controller", "name", sdl_mapping.Name)
+			logger.Logger.Info("[App] registering SDL map and calibration for controller", "name", sdl_mapping.Name, "usb_id", sdl_mapping.UsbID)
 			a.controller_manager.RegisterConfig(sdl_mapping, *calibration)
 		}
 	}
@@ -99,14 +132,7 @@ func (a *App) OnFrontendReady() {
 		logger.Logger.Info("[App] registering profile", "profile", profile.Name)
 		a.profile_runner.RegisterProfile(profile)
 	}
-
-	a.controller_manager.Attach(a.ctx)
-	go func() {
-		channel, _ := a.controller_manager.SubscribeJoyDevicesUpdated()
-		for range channel {
-			runtime.EventsEmit(a.ctx, AppEventType_JoyDevicesUpdated)
-		}
-	}()
+	runtime.EventsEmit(a.ctx, AppEventType_ProfilesUpdated)
 }
 
 func (a *App) GetControllers() []Interop_GenericController {
@@ -127,6 +153,28 @@ func (a *App) GetControllers() []Interop_GenericController {
 		})
 	}
 	return controllers
+}
+
+func (a *App) GetProfiles() []Interop_Profile {
+	var profiles []Interop_Profile
+	for _, profile := range a.profile_runner.Profiles {
+		profiles = append(profiles, Interop_Profile{
+			Name: profile.Name,
+		})
+	}
+	return profiles
+}
+
+func (a *App) SelectProfile(name string) error {
+	if err := a.profile_runner.SetProfile(name); err != nil {
+		logger.Logger.Error("selected profile", "profile", name)
+		return err
+	}
+	return nil
+}
+
+func (a *App) ClearProfile() {
+	a.profile_runner.ClearProfile()
 }
 
 func (a *App) LastRawEvent() *Interop_RawEvent {

@@ -24,18 +24,18 @@ func (c *ConfigLoader) FromDirectory(dir string) ([]config.Config_Controller_SDL
 	calibration_file_entries, err := os.ReadDir(calibration_files_dir)
 	var parsed_calibration_files []config.Config_Controller_Calibration
 	if err != nil {
-		errors = append(errors, fmt.Errorf("could not read calibration directory (%s)", calibration_files_dir))
+		errors = append(errors, fmt.Errorf("could not read calibration directory %s (%e)", calibration_files_dir, err))
 	} else {
 		for _, entry := range calibration_file_entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
 				file_bytes, err := os.ReadFile(path.Join(calibration_files_dir, entry.Name()))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not read calibration file (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not read calibration file %s (%e)", entry.Name(), err))
 					continue
 				}
 				calibration, err := config.ControllerCalibrationFromJSON(string(file_bytes))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not parse calibration file (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not parse calibration file %s (%e)", entry.Name(), err))
 					continue
 				}
 				parsed_calibration_files = append(parsed_calibration_files, *calibration)
@@ -46,18 +46,18 @@ func (c *ConfigLoader) FromDirectory(dir string) ([]config.Config_Controller_SDL
 	sdl_mappings_file_entries, err := os.ReadDir(sdl_mapping_files_dir)
 	var parsed_sdl_mappings_files []config.Config_Controller_SDLMap
 	if err != nil {
-		errors = append(errors, fmt.Errorf("could not read SDL mappings directory (%s)", sdl_mapping_files_dir))
+		errors = append(errors, fmt.Errorf("could not read SDL mappings directory %s (%e)", sdl_mapping_files_dir, err))
 	} else {
 		for _, entry := range sdl_mappings_file_entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
 				file_bytes, err := os.ReadFile(path.Join(sdl_mapping_files_dir, entry.Name()))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not read SDL mapping file (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not read SDL mapping file %s (%e)", entry.Name(), err))
 					continue
 				}
 				sdl_mapping, err := config.ControllerSDLMapFromJSON(string(file_bytes))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not parse SDL mapping file (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not parse SDL mapping file %s (%e)", entry.Name(), err))
 					continue
 				}
 				parsed_sdl_mappings_files = append(parsed_sdl_mappings_files, *sdl_mapping)
@@ -68,18 +68,18 @@ func (c *ConfigLoader) FromDirectory(dir string) ([]config.Config_Controller_SDL
 	profiles_file_entries, err := os.ReadDir(profiles_files_dir)
 	var parsed_profile_files []config.Config_Controller_Profile
 	if err != nil {
-		errors = append(errors, fmt.Errorf("could not read profiles directory (%s)", profiles_files_dir))
+		errors = append(errors, fmt.Errorf("could not read profiles directory %s (%e)", profiles_files_dir, err))
 	} else {
 		for _, entry := range profiles_file_entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
 				file_bytes, err := os.ReadFile(path.Join(profiles_files_dir, entry.Name()))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not read profile file (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not read profile file %s (%e)", entry.Name(), err))
 					continue
 				}
 				profile, err := config.ControllerProfileFromJSON(string(file_bytes))
 				if err != nil {
-					errors = append(errors, fmt.Errorf("could not parse profile (%s)", entry.Name()))
+					errors = append(errors, fmt.Errorf("could not parse profile %s (%e)", entry.Name(), err))
 					continue
 				}
 				parsed_profile_files = append(parsed_profile_files, *profile)

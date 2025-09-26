@@ -1,5 +1,5 @@
 export const events = {
-  log: 'log',
   joydevices_updated: 'joydevices_updated',
+  profiles_updated: 'profiles_updated',
   rawevent: 'rawevent',
 }

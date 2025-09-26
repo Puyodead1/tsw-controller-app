@@ -79,6 +79,18 @@ export namespace main {
 	        this.IsConfigured = source["IsConfigured"];
 	    }
 	}
+	export class Interop_Profile {
+	    Name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_Profile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	    }
+	}
 	export class Interop_RawEvent {
 	    GUID: string;
 	    UsbID: string;
