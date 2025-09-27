@@ -5,10 +5,6 @@ import {
   UnsubscribeRaw,
   SubscribeRaw,
 } from "../../../wailsjs/go/main/App";
-import { EventsOn } from "../../../wailsjs/runtime/runtime";
-import { events } from "../../events";
-import throttle from "just-throttle";
-import { useFieldArray, useForm } from "react-hook-form";
 import { useCalibrationForm } from "./useCalibrationForm";
 import { CalibrationModalFormControl } from "./CalibrationModalFormControl";
 

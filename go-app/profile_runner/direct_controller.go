@@ -2,6 +2,7 @@ package profile_runner
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -21,6 +22,7 @@ func (command *DirectController_Command) ToSocketMessage() SocketConnection_Mess
 		EventName: "direct_control",
 		Properties: map[string]string{
 			"controls": command.Controls,
+			"value":    fmt.Sprintf("%f", command.InputValue),
 			"flags":    strings.Join(command.Flags, "|"),
 		},
 	}
