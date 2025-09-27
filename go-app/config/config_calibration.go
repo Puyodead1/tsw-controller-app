@@ -11,13 +11,14 @@ import (
 
 type Config_Controller_CalibrationData struct {
 	/** the ID of the controller button or trigger as named in the controller mapping config (see other file - eg: "throttle1", "throttle2", "button1") */
-	Id          string     `json:"id" validate:"required"`
-	Deadzone    *float64   `json:"deadzone,omitempty"`
-	Invert      *bool      `json:"invert,omitempty"`
-	Min         float64    `json:"min" validate:"required"`
-	Max         float64    `json:"max" validate:"required"`
-	Idle        *float64   `json:"idle,omitempty"`
-	EasingCurve *[]float64 `json:"easing_curve,omitempty"`
+	Id           string     `json:"id" validate:"required"`
+	IsCalibrated bool       `json:"is_calibrated"`
+	Deadzone     *float64   `json:"deadzone,omitempty"`
+	Invert       *bool      `json:"invert,omitempty"`
+	Min          float64    `json:"min" validate:"required"`
+	Max          float64    `json:"max" validate:"required"`
+	Idle         *float64   `json:"idle,omitempty"`
+	EasingCurve  *[]float64 `json:"easing_curve,omitempty"`
 }
 
 type Config_Controller_Calibration struct {
@@ -49,6 +50,13 @@ Normalizes the raw input value to a [-1,1] range.
 Will return IsWithinDeadzone true when within deadzone
 */
 func (calibration *Config_Controller_CalibrationData) NormalizeRawValue(raw_value float64) NormalizedValue {
+	if !calibration.IsCalibrated {
+		return NormalizedValue{
+			Value:            raw_value,
+			IsWithinDeadzone: false,
+		}
+	}
+
 	/* get optional values */
 	idle_value := calibration.Min
 	if calibration.Idle != nil {

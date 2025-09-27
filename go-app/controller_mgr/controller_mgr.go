@@ -58,7 +58,7 @@ type ControllerManager_Controller_Control struct {
 	Joystick    sdl_mgr.SDLMgr_Joystick
 	Name        string
 	SDLMapping  config.Config_Controller_SDLMap_Control
-	Calibration *config.Config_Controller_CalibrationData
+	Calibration config.Config_Controller_CalibrationData
 	State       ControllerManager_Controller_ControlState
 }
 
@@ -219,22 +219,24 @@ func New(sdlmgr *sdl_mgr.SDLMgr) *ControllerManager {
 func (mgr *ControllerManager) ConfigureJoystick(joystick *sdl_mgr.SDLMgr_Joystick, sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) ControllerManager_ConfiguredController {
 	controls := make(map[string]ControllerManager_Controller_Control)
 	for _, control := range sdl_map.Data {
-		var calibration_data *config.Config_Controller_CalibrationData = nil
+		var calibration_data config.Config_Controller_CalibrationData = config.Config_Controller_CalibrationData{
+			Id:           control.Name,
+			IsCalibrated: false,
+		}
 		for _, data := range calibration.Data {
 			if data.Id == control.Name {
-				calibration_data = &data
+				calibration_data = data
+				calibration_data.IsCalibrated = true
 				break
 			}
 		}
 
 		idle_value := 0.0
 		normal_idle_value := 0.0
-		if calibration_data != nil {
-			if calibration_data.Idle != nil {
-				idle_value = *calibration_data.Idle
-			}
-			normal_idle_value = (*calibration_data).NormalizeRawValue(idle_value).Value
+		if calibration_data.Idle != nil {
+			idle_value = *calibration_data.Idle
 		}
+		normal_idle_value = calibration_data.NormalizeRawValue(idle_value).Value
 
 		control := ControllerManager_Controller_Control{
 			Manager:     mgr,
