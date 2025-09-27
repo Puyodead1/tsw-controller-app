@@ -30,6 +30,8 @@ static STATE: Lazy<Arc<Mutex<DLLState>>> = Lazy::new(|| {
 /// Start WebSocket loop inside a Tokio runtime
 #[no_mangle]
 pub extern "C" fn tsw_controller_mod_start() {
+    println!("[socket_connection_lib][info] starting tsw_controller_mod");
+
     let mut st = STATE.lock().unwrap();
     if st.rt.is_some() {
         return; // already running
@@ -47,13 +49,13 @@ pub extern "C" fn tsw_controller_mod_start() {
 
     rt.spawn(async move {
         loop {
+            println!("[socket_connection_lib][info] attempting to connect to socket");
             tokio::select! {
                 _ = stop_rx.recv() => {
                     break;
                 }
-                else => {
-                    println!("[socket_connection_lib][info] attempting to connect to socket");
-                    match connect_async(ws_url.as_str()).await {
+                conect_res = connect_async(ws_url.as_str()) => {
+                    match conect_res {
                         Ok((ws_stream, _)) => {
                             let (mut ws_write, mut ws_read) = ws_stream.split();
 

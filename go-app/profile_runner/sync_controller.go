@@ -3,7 +3,6 @@ package profile_runner
 import (
 	"context"
 	"strconv"
-	"strings"
 	"tsw_controller_app/config"
 )
 
@@ -77,30 +76,28 @@ func (c *SyncController) Run(ctx context.Context) func() {
 			case <-ctx_with_cancel.Done():
 				return
 			case msg := <-incoming_channel:
-				/* message should follow format sync_control,{identifier},{value} */
-				message_parts := strings.Split(string(msg), ",")
 				/* skip message if not sync_control message */
-				if message_parts[0] != "sync_control" || len(message_parts) != 3 {
+				if msg.EventName == "sync_control" {
 					continue
 				}
 
-				control_state, has_control_state := c.ControlState[message_parts[1]]
+				control_state, has_control_state := c.ControlState[msg.Properties["name"]]
 				if !has_control_state {
 					control_state = SyncController_ControlState{
-						Identifier:   message_parts[1],
+						Identifier:   msg.Properties["name"],
 						CurrentValue: 0.0,
 						TargetValue:  0.0,
 						Moving:       0,
 					}
 				}
-				current_value, err := strconv.ParseFloat(message_parts[2], 64)
+				current_value, err := strconv.ParseFloat(msg.Properties["value"], 64)
 				if err != nil {
 					control_state.CurrentValue = current_value
 					for _, channel := range c.ControlStateChangedChannels {
 						channel <- control_state
 					}
 				}
-				c.ControlState[message_parts[1]] = control_state
+				c.ControlState[msg.Properties["name"]] = control_state
 			}
 		}
 	}()

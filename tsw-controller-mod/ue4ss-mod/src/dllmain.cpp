@@ -386,12 +386,23 @@ class TSWControllerMod : public RC::CppUserModBase
 
         auto message = RC::ensure_str(std::string{raw_message});
         auto parts = TSWControllerMod::wstring_split(message, STR(","));
-        /* format: direct_control,{control_name},{target_value},{flag|flag} */
+        /* format: direct_control,control={control_name},value={target_value},flags={flag|flag} */
         if (parts.size() < 4 || parts[0] != STR("direct_control")) return;
+        std::map<RC::StringType, RC::StringType> properties;
+        for (size_t i = 1; i < parts.size(); ++i)
+        {
+            const RC::StringType& kv = parts[i];
+            size_t eqPos = kv.find(STR("="));
+            if (eqPos != RC::StringType::npos) {
+                auto key = kv.substr(0, eqPos);
+                auto val = kv.substr(eqPos + 1);
+                properties[key] = val;
+            }
+        }
 
         Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Processing Direct Control message: {}\n"), message);
-        std::vector<RC::StringType> flags = TSWControllerMod::wstring_split(parts[3], STR("|"));
-        TSWControllerMod::DIRECT_CONTROL_TARGET_STATE[parts[1]] = std::make_tuple(std::stof(parts[2]), flags);
+        std::vector<RC::StringType> flags = TSWControllerMod::wstring_split(properties[STR("flags")], STR("|"));
+        TSWControllerMod::DIRECT_CONTROL_TARGET_STATE[properties[STR("control")]] = std::make_tuple(std::stof(properties[STR("value")]), flags);
     }
 
     static void on_ts2_virtualhidcomponent_inputvaluechanged(Unreal::UnrealScriptFunctionCallableContext context, void* custom_data)
@@ -409,9 +420,40 @@ class TSWControllerMod : public RC::CppUserModBase
                 return;
             }
 
-            VirtualHIDComponent_InputValueChangedParams inptu_value_changed_params = context.GetParams<VirtualHIDComponent_InputValueChangedParams>();
-            auto message = input_identifier->ToString() + STR(",") + std::to_wstring(inptu_value_changed_params.NewValue);
-            Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Sending SC message {}\n"), message);
+            /* find drivable actor*/
+            Unreal::UFunction* get_drivable_actor_fn = get_currently_changing_controller_params.Controller->GetFunctionByNameInChain(STR("GetDrivableActor"));
+            if (!get_drivable_actor_fn) {
+                Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Can't find GetDrivableActor function\n"));
+                return;
+            }
+            DriverController_GetDrivableActorParams drivable_actor_result;
+            get_currently_changing_controller_params.Controller->ProcessEvent(get_drivable_actor_fn, &drivable_actor_result);
+            if (!drivable_actor_result.DrivableActor) {
+                return;
+            }
+
+            /* loop over class properties to find raw controller identifier */
+            RC::StringType control_property_name = RC::StringType(STR(""));
+            auto drivable_actor_class = drivable_actor_result.DrivableActor->GetClassPrivate();
+            for (Unreal::FProperty* prop = drivable_actor_class->GetPropertyLink(); prop; prop = prop->GetPropertyLinkNext())
+            {
+                auto prop_name = prop->GetName();
+                if (Unreal::FObjectProperty* as_obj_prop = CastField<Unreal::FObjectProperty>(prop))
+                {
+                    auto prop_value_ptr = as_obj_prop->ContainerPtrToValuePtr<void>(drivable_actor_result.DrivableActor);
+                    if (as_obj_prop->GetPropertyValue(prop_value_ptr) == context.Context)
+                    {
+                        control_property_name = prop_name;
+                        break;
+                    }
+                }
+            }
+
+            /* send updated value */
+            VirtualHIDComponent_InputValueChangedParams input_value_changed_params = context.GetParams<VirtualHIDComponent_InputValueChangedParams>();
+            /* message format = sync_control,name={name},property={control_property_name},value={value},normal_value={normal_value} */
+            auto message = STR("sync_control_value,name=") + input_identifier->ToString() + STR(",property=") + control_property_name + STR(",value=") + std::to_wstring(input_value_changed_params.NewValue);
+            Output::send<LogLevel::Default>(STR("[TSWControllerMod] sending updated control value {}\n"), message);
             tsw_controller_mod_send_message((char*)std::string(message.begin(), message.end()).c_str());
         }
     }

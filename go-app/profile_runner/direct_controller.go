@@ -2,7 +2,6 @@ package profile_runner
 
 import (
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -17,8 +16,14 @@ type DirectController struct {
 	ControlChannel   chan DirectController_Command
 }
 
-func (command *DirectController_Command) ToString() string {
-	return fmt.Sprintf("%s,%f,%s", command.Controls, command.InputValue, strings.Join(command.Flags, "|"))
+func (command *DirectController_Command) ToSocketMessage() SocketConnection_Message {
+	return SocketConnection_Message{
+		EventName: "direct_control",
+		Properties: map[string]string{
+			"controls": command.Controls,
+			"flags":    strings.Join(command.Flags, "|"),
+		},
+	}
 }
 
 func (controller *DirectController) Run(ctx context.Context) func() {
@@ -30,7 +35,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 			case <-ctx_with_cancel.Done():
 				return
 			case command := <-controller.ControlChannel:
-				controller.SocketConnection.OutgoingChannel <- command.ToString()
+				controller.SocketConnection.OutgoingChannel <- command.ToSocketMessage()
 			}
 		}
 	}()

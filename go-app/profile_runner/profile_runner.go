@@ -56,7 +56,7 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 		return pc.ActionSequencerAction.Keys
 	}
 	if pc.DirectControlCommand != nil {
-		return pc.DirectControlCommand.ToString()
+		return pc.DirectControlCommand.ToSocketMessage().ToString()
 	}
 	return ""
 }
