@@ -77,6 +77,10 @@ struct VirtualHIDComponent_SetCurrentInputValueParams
 {
     float Value;
 };
+struct VirtualHIDComponent_SetNormalisedInputValueParams
+{
+    float Value;
+};
 struct VirtualHIDComponent_SetPushedStateParams
 {
     bool IsPushed;
@@ -87,6 +91,10 @@ struct VirtualHIDComponent_IsChangingParams
     bool IsChanging;
 };
 struct VirtualHIDComponent_GetCurrentInputValueParams
+{
+    float InputValue;
+};
+struct VirtualVHIDComponent_GetNormalisedInputValueParams
 {
     float InputValue;
 };
@@ -235,6 +243,18 @@ class TSWControllerMod : public RC::CppUserModBase
         return params.InputValue;
     }
 
+    static float get_current_vhid_component_normalized_input_value(Unreal::UObject* vhid_component)
+    {
+        if (!vhid_component) return 0.0f;
+
+        Unreal::UFunction* get_normalised_input_value_func = vhid_component->GetFunctionByNameInChain(STR("GetNormalisedInputValue"));
+        if (!get_normalised_input_value_func) return false;
+
+        VirtualVHIDComponent_GetNormalisedInputValueParams params;
+        vhid_component->ProcessEvent(get_normalised_input_value_func, &params);
+        return params.InputValue;
+    }
+
     static std::vector<RC::StringType> wstring_split(RC::StringType s, RC::StringType delimiter)
     {
         size_t pos_start = 0, pos_end, delim_len = delimiter.length();
@@ -329,15 +349,20 @@ class TSWControllerMod : public RC::CppUserModBase
             Unreal::UFunction* set_pushed_state_func = find_virtualhid_component_params.VirtualHIDComponent->GetFunctionByNameInChain(STR("SetPushedState"));
             Unreal::UFunction* set_current_input_value_fn =
                     find_virtualhid_component_params.VirtualHIDComponent->GetFunctionByNameInChain(STR("SetCurrentInputValue"));
+            Unreal::UFunction* set_normlised_input_value_fn =
+                    find_virtualhid_component_params.VirtualHIDComponent->GetFunctionByNameInChain(STR("SetNormalisedInputValue"));
 
             auto [target_value, flags] = control_pair.second;
             bool should_hold = std::find(flags.begin(), flags.end(), STR("hold")) != flags.end();
             bool should_be_relative = std::find(flags.begin(), flags.end(), STR("relative")) != flags.end();
+            bool should_use_normalized = std::find(flags.begin(), flags.end(), STR("normalized")) != flags.end();
+            auto get_current_value_func = should_use_normalized ? TSWControllerMod::get_current_vhid_component_normalized_input_value :  TSWControllerMod::get_current_vhid_component_input_value;
+            auto set_input_value_func = should_use_normalized ? set_normlised_input_value_fn : set_current_input_value_fn;
 
             /* account for relative flag */
             if (should_be_relative)
             {
-                auto current_input_value = TSWControllerMod::get_current_vhid_component_input_value(find_virtualhid_component_params.VirtualHIDComponent);
+                auto current_input_value = get_current_value_func(find_virtualhid_component_params.VirtualHIDComponent);
                 target_value = current_input_value + target_value;
                 /* can't currently be used with hold */
                 should_hold = false;
@@ -364,12 +389,12 @@ class TSWControllerMod : public RC::CppUserModBase
                     TSWControllerMod::DIRECT_CONTROL_TARGET_STATE.erase(control_pair.first);
                 }
             }
-            else if (set_current_input_value_fn)
+            else if (set_input_value_func)
             {
                 VirtualHIDComponent_SetCurrentInputValueParams set_current_input_value_params = {target_value};
-                find_virtualhid_component_params.VirtualHIDComponent->ProcessEvent(set_current_input_value_fn, &set_current_input_value_params);
+                find_virtualhid_component_params.VirtualHIDComponent->ProcessEvent(set_input_value_func, &set_current_input_value_params);
                 /* check if value was reached within margin of error*/
-                auto current_input_value = TSWControllerMod::get_current_vhid_component_input_value(find_virtualhid_component_params.VirtualHIDComponent);
+                auto current_input_value = get_current_value_func(find_virtualhid_component_params.VirtualHIDComponent);
                 if (!should_hold && TSWControllerMod::is_within_margin_of_error(target_value, current_input_value))
                 {
                     /* remove value from target states */
@@ -386,7 +411,7 @@ class TSWControllerMod : public RC::CppUserModBase
 
         auto message = RC::ensure_str(std::string{raw_message});
         auto parts = TSWControllerMod::wstring_split(message, STR(","));
-        /* format: direct_control,control={control_name},value={target_value},flags={flag|flag} */
+        /* format: direct_control,controls={control_name},value={target_value},flags={flag|flag} */
         if (parts.size() < 4 || parts[0] != STR("direct_control")) return;
         std::map<RC::StringType, RC::StringType> properties;
         for (size_t i = 1; i < parts.size(); ++i)
@@ -402,7 +427,7 @@ class TSWControllerMod : public RC::CppUserModBase
 
         Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Processing Direct Control message: {}\n"), message);
         std::vector<RC::StringType> flags = TSWControllerMod::wstring_split(properties[STR("flags")], STR("|"));
-        TSWControllerMod::DIRECT_CONTROL_TARGET_STATE[properties[STR("control")]] = std::make_tuple(std::stof(properties[STR("value")]), flags);
+        TSWControllerMod::DIRECT_CONTROL_TARGET_STATE[properties[STR("controls")]] = std::make_tuple(std::stof(properties[STR("value")]), flags);
     }
 
     static void on_ts2_virtualhidcomponent_inputvaluechanged(Unreal::UnrealScriptFunctionCallableContext context, void* custom_data)
@@ -449,10 +474,13 @@ class TSWControllerMod : public RC::CppUserModBase
                 }
             }
 
+            /* get normalised input value */
+            auto normalized_value = TSWControllerMod::get_current_vhid_component_normalized_input_value(context.Context);
+
             /* send updated value */
             VirtualHIDComponent_InputValueChangedParams input_value_changed_params = context.GetParams<VirtualHIDComponent_InputValueChangedParams>();
             /* message format = sync_control,name={name},property={control_property_name},value={value},normal_value={normal_value} */
-            auto message = STR("sync_control_value,name=") + input_identifier->ToString() + STR(",property=") + control_property_name + STR(",value=") + std::to_wstring(input_value_changed_params.NewValue);
+            auto message = STR("sync_control_value,name=") + input_identifier->ToString() + STR(",property=") + control_property_name + STR(",value=") + std::to_wstring(input_value_changed_params.NewValue) + STR(",normalized_value=") + std::to_wstring(normalized_value);
             Output::send<LogLevel::Default>(STR("[TSWControllerMod] sending updated control value {}\n"), message);
             tsw_controller_mod_send_message((char*)std::string(message.begin(), message.end()).c_str());
         }

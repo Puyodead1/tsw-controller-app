@@ -1,10 +1,71 @@
 package logger
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 )
 
-var loghandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{})
+type GlobalLogger struct {
+	slogger   *slog.Logger
+	listeners []chan string
+}
 
-var Logger = slog.New(loghandler)
+func (g *GlobalLogger) Listen() (chan string, func()) {
+	channel := make(chan string)
+	g.listeners = append(g.listeners, channel)
+	unsubscribe := func() {
+		for index, c := range g.listeners {
+			if c == channel {
+				g.listeners = append(g.listeners[:index], g.listeners[index+1:]...)
+				break
+			}
+		}
+		close(channel)
+	}
+	return channel, unsubscribe
+}
+
+func (g *GlobalLogger) PropertiesFromArgs(args ...any) map[string]string {
+	properties := map[string]string{}
+	for index, arg := range args {
+		if index%2 == 1 {
+			/* uneven indexes are the values */
+			properties[fmt.Sprintf("%v", args[index-1])] = fmt.Sprintf("%#v", arg)
+		}
+	}
+	return properties
+}
+
+func (g *GlobalLogger) Debug(msg string, args ...any) {
+	g.slogger.Debug(msg, args...)
+}
+
+func (g *GlobalLogger) Info(msg string, args ...any) {
+	g.slogger.Info(msg, args...)
+
+	if len(g.listeners) > 0 {
+		properties := g.PropertiesFromArgs(args...)
+		for _, c := range g.listeners {
+			c <- fmt.Sprintf("%s | %v", msg, properties)
+		}
+	}
+}
+
+func (g *GlobalLogger) Error(msg string, args ...any) {
+	g.slogger.Error(msg, args...)
+
+	if len(g.listeners) > 0 {
+		properties := g.PropertiesFromArgs(args...)
+		for _, c := range g.listeners {
+			c <- fmt.Sprintf("%s | %v", msg, properties)
+		}
+	}
+}
+
+var Logger = GlobalLogger{
+	slogger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})),
+	listeners: []chan string{},
+}

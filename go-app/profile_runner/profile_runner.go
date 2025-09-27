@@ -173,6 +173,9 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 		if action.DirectControl.Hold != nil && *action.DirectControl.Hold {
 			flags = append(flags, "hold")
 		}
+		if action.DirectControl.UseNormalized != nil && *action.DirectControl.UseNormalized {
+			flags = append(flags, "normalized")
+		}
 
 		return &ProfileRunnerAssignmentCall{
 			ControlState:          control_state,
@@ -219,13 +222,13 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				}
 
 				if selected_profile == nil {
-					logger.Logger.Info("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
+					logger.Logger.Debug("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
 					continue
 				}
 
 				control_profile := selected_profile.FindControlByName(change_event.ControlName)
 				if control_profile == nil {
-					logger.Logger.Info("[ProfileRunner::Run] skipping event, control not found in profile", "event", change_event)
+					logger.Logger.Debug("[ProfileRunner::Run] skipping event, control not found in profile", "event", change_event)
 					continue
 				}
 

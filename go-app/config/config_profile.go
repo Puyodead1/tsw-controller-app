@@ -35,6 +35,8 @@ type Config_Controller_Profile_Control_Assignment_Action_DirectControl struct {
 	Relative *bool `json:"relative,omitempty"`
 	/* determine whether to hold the value or not; meaning the value will be sent continuously */
 	Hold *bool `json:"hold,omitempty"`
+	/* whether to apply raw or normalized values */
+	UseNormalized *bool `json:"use_normalized,omitempty"`
 }
 
 type Config_Controller_Profile_Control_Assignment_Action struct {
@@ -89,7 +91,10 @@ type Config_Controller_Profile_Control_Assignment_DirectControl struct {
 	/* the HID control component as per the UE4SS API */
 	Controls string `json:"controls" validate:"required"`
 	/* will hold the control in changing */
-	Hold       *bool                                                                       `json:"hold"`
+	Hold *bool `json:"hold"`
+	/* whether to apply raw or normalized values */
+	UseNormalized *bool `json:"use_normalized,omitempty"`
+
 	InputValue Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue `json:"input_value" validate:"required"`
 }
 
@@ -259,6 +264,9 @@ func (c *Config_Controller_Profile_Control_Assignment_Action_DirectControl) ToSt
 	}
 	if c.Relative != nil && *c.Relative {
 		flags = append(flags, "relative")
+	}
+	if c.UseNormalized != nil && *c.UseNormalized {
+		flags = append(flags, "normalized")
 	}
 
 	return fmt.Sprintf("%s,%f,%s", c.Controls, c.Value, strings.Join(flags, "|"))

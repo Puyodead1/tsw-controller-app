@@ -23,7 +23,8 @@ type AppEventType = string
 const (
 	AppEventType_JoyDevicesUpdated AppEventType = "joydevices_updated"
 	AppEventType_ProfilesUpdated   AppEventType = "profiles_updated"
-	AppEvent_RawEvent              AppEventType = "rawevent"
+	AppEventType_RawEvent          AppEventType = "rawevent"
+	AppEventType_Log               AppEventType = "log"
 )
 
 type AppRawSubscriber struct {
@@ -76,6 +77,19 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.LoadConfiguration()
+
+	go func() {
+		channel, unsubscribe := logger.Logger.Listen()
+		defer unsubscribe()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg := <-channel:
+				runtime.EventsEmit(ctx, AppEventType_Log, msg)
+			}
+		}
+	}()
 
 	go func() {
 		a.socket_connection.Start()
@@ -266,7 +280,7 @@ func (a *App) SubscribeRaw(guid string) error {
 			if e.Joystick.GUID == joystick.GUID {
 				raw_subscriber.LastEvent = &e
 				if event := a.LastRawEvent(); event != nil {
-					runtime.EventsEmit(a.ctx, AppEvent_RawEvent, event)
+					runtime.EventsEmit(a.ctx, AppEventType_RawEvent, event)
 				}
 			}
 		}
