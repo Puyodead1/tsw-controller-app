@@ -41,7 +41,7 @@
 #include <DynamicOutput/Output.hpp>
 #include <UE4SSProgram.hpp>
 
-#include "tsw_controller_app_socket_lib.h"
+#include "tsw_controller_mod_socket_connection.h"
 
 struct VirtualHIDComponent_GetCurrentlyChangingControllerParams
 {
