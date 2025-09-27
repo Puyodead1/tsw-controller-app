@@ -365,6 +365,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemov
 func (mgr *ControllerManager) Handler_JoyAxisEvent(event *sdl.JoyAxisEvent) error {
 	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
 	if err != nil {
+		logger.Logger.Error("[ControllerManager::Handler_JoyAxisEvent] could not get joystick", "error", err)
 		return err
 	}
 
@@ -388,9 +389,11 @@ func (mgr *ControllerManager) Handler_JoyAxisEvent(event *sdl.JoyAxisEvent) erro
 func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) error {
 	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
 	if err != nil {
+		logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] could not get joystick", "error", err)
 		return err
 	}
 
+	logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] handling button event", "event", event)
 	/* only send if the channel is being read */
 	for _, channel := range mgr.RawEventChannels {
 		channel <- ControllerManager_RawEvent{
@@ -402,6 +405,7 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 	/* send for processing if configured */
 	configured, is_configured := mgr.ConfiguredControllers[joystick.GUID]
 	if is_configured {
+		logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] processing button event", "event", event)
 		configured.ProcessEvent(event)
 	}
 
@@ -411,6 +415,7 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 func (mgr *ControllerManager) Handler_JoyHatEvent(event *sdl.JoyHatEvent) error {
 	joystick, err := mgr.SDL.GetJoystickByIndex(int(event.Which))
 	if err != nil {
+		logger.Logger.Error("[ControllerManager::Handler_JoyHatEvent] could not get joystick", "error", err)
 		return err
 	}
 

@@ -52,7 +52,7 @@ export const MainTab = () => {
       <fieldset className="fieldset">
         <legend className="fieldset-legend">Select profile</legend>
         <select className="select w-full" {...register("profile")}>
-          <option disabled selected value="">
+          <option selected value="">
             Auto-detect
           </option>
           {profiles?.map((profile) => (

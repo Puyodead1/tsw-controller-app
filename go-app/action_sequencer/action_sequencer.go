@@ -59,7 +59,8 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 				keys_list := strings.Split(action.Keys, "+")
 				modifier_keys := []string{}
 				other_keys := []string{}
-				for _, key := range keys_list {
+				for _, input := range keys_list {
+					key := strings.ToLower(input)
 					if key == "ctrl" || key == "control" || key == "alt" || key == "meta" || key == "cmd" || key == "command" {
 						modifier_keys = append(modifier_keys, key)
 					} else {
