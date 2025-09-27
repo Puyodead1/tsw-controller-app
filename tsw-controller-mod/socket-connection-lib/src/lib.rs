@@ -36,7 +36,7 @@ pub extern "C" fn tsw_controller_mod_start() {
     }
 
     // create tokio runtime
-    let rt = Runtime::new().unwrap();
+    let rt =  tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Failed to create runtime");
 
     // create channels
     let (stop_tx, mut stop_rx) = mpsc::channel::<()>(1);
@@ -52,6 +52,7 @@ pub extern "C" fn tsw_controller_mod_start() {
                     break;
                 }
                 else => {
+                    println!("[socket_connection_lib][info] attempting to connect to socket");
                     match connect_async(ws_url.as_str()).await {
                         Ok((ws_stream, _)) => {
                             let (mut ws_write, mut ws_read) = ws_stream.split();
