@@ -1,1 +1,3 @@
-This has to be built in combination with RE-UE4SS as a cppmod
+- This has to be built in combination with RE-UE4SS as a cppmod.
+- Additionally should be built with a proxy other than dwmapi such as `user32.dll` for vendoring and stability
+- Also required is to change the ue4ss DLL directory so we can use the vendored version correctly alongside any potential userspace UE4ss (`UE4ss/proxy_generator/main.cpp` -> update ` const fs::path ue4ssPath = currentPath` to own directory)

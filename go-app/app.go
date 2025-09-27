@@ -38,6 +38,7 @@ type App struct {
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
+	socket_connection  *profile_runner.SocketConnection
 	direct_controller  *profile_runner.DirectController
 	sync_controller    *profile_runner.SyncController
 	profile_runner     *profile_runner.ProfileRunner
@@ -51,14 +52,16 @@ func NewApp() *App {
 
 	controller_manager := controller_mgr.New(sdl_manager)
 	action_sequencer := action_sequencer.New()
-	direct_controller := profile_runner.NewDirectController()
-	sync_controller := profile_runner.NewSyncController()
+	socket_connection := profile_runner.NewSocketConnection()
+	direct_controller := profile_runner.NewDirectController(socket_connection)
+	sync_controller := profile_runner.NewSyncController(socket_connection)
 
 	return &App{
 		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
 		action_sequencer:   action_sequencer,
+		socket_connection:  socket_connection,
 		direct_controller:  direct_controller,
 		sync_controller:    sync_controller,
 		profile_runner: profile_runner.New(
@@ -75,6 +78,10 @@ func (a *App) startup(ctx context.Context) {
 	a.LoadConfiguration()
 
 	go func() {
+		a.socket_connection.Start()
+	}()
+
+	go func() {
 		cancel := a.controller_manager.Attach(a.ctx)
 		defer cancel()
 		<-ctx.Done()
@@ -88,6 +95,18 @@ func (a *App) startup(ctx context.Context) {
 
 	go func() {
 		cancel := a.action_sequencer.Run(ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		cancel := a.direct_controller.Run(ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		cancel := a.sync_controller.Run(ctx)
 		defer cancel()
 		<-ctx.Done()
 	}()
