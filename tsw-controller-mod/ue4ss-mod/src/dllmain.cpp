@@ -41,7 +41,7 @@
 #include <DynamicOutput/Output.hpp>
 #include <UE4SSProgram.hpp>
 
-#include "tsw_controller_mod_socket_connection.h"
+#include "tsw_controller_app_socket_lib.h"
 
 struct VirtualHIDComponent_GetCurrentlyChangingControllerParams
 {
@@ -412,7 +412,7 @@ class TSWControllerMod : public RC::CppUserModBase
             VirtualHIDComponent_InputValueChangedParams inptu_value_changed_params = context.GetParams<VirtualHIDComponent_InputValueChangedParams>();
             auto message = input_identifier->ToString() + STR(",") + std::to_wstring(inptu_value_changed_params.NewValue);
             Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Sending SC message {}\n"), message);
-            tsw_controller_mod_send_sync_controller_message(std::string(message.begin(), message.end()).c_str());
+            tsw_controller_mod_send_message((char*)std::string(message.begin(), message.end()).c_str());
         }
     }
 
@@ -441,7 +441,7 @@ class TSWControllerMod : public RC::CppUserModBase
         Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Registering hooks and callbacks"));
         Unreal::Hook::RegisterProcessEventPreCallback(TSWControllerMod::on_process_event_pre_callback);
         unreal_function->RegisterPostHook(TSWControllerMod::on_ts2_virtualhidcomponent_inputvaluechanged);
-        tsw_controller_mod_set_direct_controller_callback(TSWControllerMod::on_direct_control_message_received);
+        tsw_controller_mod_set_receive_message_callback(TSWControllerMod::on_direct_control_message_received);
     }
 
     ~TSWControllerMod() override = default;
@@ -458,7 +458,7 @@ extern "C"
 
     TSW_CONTROLLER_MOD_API void uninstall_mod(RC::CppUserModBase* mod)
     {
-        /* @TODO stop listeners?*/
+        tsw_controller_mod_stop();
         delete mod;
     }
 }
