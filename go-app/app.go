@@ -198,6 +198,13 @@ func (a *App) GetProfiles() []Interop_Profile {
 	return profiles
 }
 
+func (a *App) GetSelectedProfile() string {
+	if a.profile_runner.Settings.SelectedProfile != nil {
+		return a.profile_runner.Settings.SelectedProfile.Name
+	}
+	return ""
+}
+
 func (a *App) SelectProfile(name string) error {
 	if err := a.profile_runner.SetProfile(name); err != nil {
 		logger.Logger.Error("selected profile", "profile", name)

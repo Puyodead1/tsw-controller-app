@@ -304,11 +304,11 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						if change_event.ControlState.NormalizedValues.Value >= control_assignment_item.Toggle.Threshold {
 							// call if there was no prior call or if the prior call was not this threshold
 							action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Toggle.ActionActivate, false)
-							if previous_assignment_call != nil && previous_assignment_call.ToString() != action_to_call.ToString() {
+							if previous_assignment_call != nil && previous_assignment_call.ToString() == action_to_call.ToString() {
 								/* if the previous call is the same as the activation call -> toggle to deactivation action */
 								action_to_call = p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Toggle.ActionDeactivate, false)
-								p.CallAssignmentActionForControl(change_event.Control, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
 							}
+							p.CallAssignmentActionForControl(change_event.Control, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
 						} else if previous_assignment_call != nil && previous_assignment_call.ControlState.NormalizedValues.Value >= control_assignment_item.Toggle.Threshold && previous_assignment_call.ActionSequencerAction != nil {
 							// when below the threshold only call action if the last call was above or equal to the threshold
 							// this is only used for releasing key actions

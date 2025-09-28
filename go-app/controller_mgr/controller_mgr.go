@@ -407,6 +407,8 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 	if is_configured {
 		logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] processing button event", "event", event)
 		configured.ProcessEvent(event)
+	} else {
+		logger.Logger.Info("[ControllerManager::Handler_JoyButtonEvent] skipping processing because of unconfigured controller", "event", event)
 	}
 
 	return nil

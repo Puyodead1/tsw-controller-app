@@ -4,6 +4,7 @@ import {
   LoadConfiguration,
   SelectProfile,
   ClearProfile,
+  GetSelectedProfile,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
@@ -24,9 +25,9 @@ export const MainTab = () => {
   );
 
   const { register, watch, getValues } = useForm<FormValues>({
-    defaultValues: {
-      profile: "",
-    },
+    defaultValues: async () => ({
+      profile: await GetSelectedProfile(),
+    }),
   });
 
   const handleReload = () => {

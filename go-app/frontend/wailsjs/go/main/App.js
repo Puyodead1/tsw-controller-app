@@ -14,6 +14,10 @@ export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
 
+export function GetSelectedProfile() {
+  return window['go']['main']['App']['GetSelectedProfile']();
+}
+
 export function LastRawEvent() {
   return window['go']['main']['App']['LastRawEvent']();
 }
