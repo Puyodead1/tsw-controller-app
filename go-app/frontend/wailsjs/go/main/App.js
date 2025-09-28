@@ -54,6 +54,10 @@ export function SelectProfile(arg1) {
   return window['go']['main']['App']['SelectProfile'](arg1);
 }
 
+export function SetLastInstalledModVersion(arg1) {
+  return window['go']['main']['App']['SetLastInstalledModVersion'](arg1);
+}
+
 export function SubscribeRaw(arg1) {
   return window['go']['main']['App']['SubscribeRaw'](arg1);
 }

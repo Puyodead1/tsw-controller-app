@@ -9,6 +9,7 @@ import {
   InstallTrainSimWorldMod,
   OpenConfigDirectory,
   GetLastInstalledModVersion,
+  SetLastInstalledModVersion,
   GetVersion,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
@@ -62,6 +63,14 @@ export const MainTab = () => {
     InstallTrainSimWorldMod()
       .then(() => refetchVersionInfo())
       .catch((err) => alert(String(err)));
+  };
+
+  const handleIgnoreModInstallWarning = () => {
+    if (versionInfo) {
+      SetLastInstalledModVersion(versionInfo.version).then(() =>
+        refetchVersionInfo(),
+      );
+    }
   };
 
   useEffect(() => {
@@ -126,6 +135,14 @@ export const MainTab = () => {
             It looks like you have not installed the Train Sim World mod yet,
             make sure you install the mod first.
           </span>
+          <div>
+            <button
+              className="btn btn-sm"
+              onClick={handleIgnoreModInstallWarning}
+            >
+              Ignore
+            </button>
+          </div>
         </div>
       )}
       {versionInfo?.lastInstalledModVersion &&
@@ -136,6 +153,14 @@ export const MainTab = () => {
               installed the mod, make sure to reinstall the updated mod version
               before starting the game.
             </span>
+            <div>
+              <button
+                className="btn btn-sm"
+                onClick={handleIgnoreModInstallWarning}
+              >
+                Ignore
+              </button>
+            </div>
           </div>
         )}
       <div role="alert" className="alert">

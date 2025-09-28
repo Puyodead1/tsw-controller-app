@@ -170,6 +170,11 @@ func (a *App) GetLastInstalledModVersion() string {
 	return a.program_config.LastInstalledModVersion
 }
 
+func (a *App) SetLastInstalledModVersion(version string) {
+	a.program_config.LastInstalledModVersion = version
+	a.program_config.Save(PROGRAM_CONFIG_FILEPATH)
+}
+
 func (a *App) LoadConfiguration() {
 	/* load config from relative config directory */
 	sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory("./config")

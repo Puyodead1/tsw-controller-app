@@ -28,6 +28,8 @@ export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise
 
 export function SelectProfile(arg1:string):Promise<void>;
 
+export function SetLastInstalledModVersion(arg1:string):Promise<void>;
+
 export function SubscribeRaw(arg1:string):Promise<void>;
 
 export function UnsubscribeRaw():Promise<void>;
