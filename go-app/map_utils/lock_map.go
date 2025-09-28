@@ -43,6 +43,12 @@ func (m *LockMap[T, V]) Set(key T, value V) {
 	m.Map[key] = value
 }
 
+func (m *LockMap[T, V]) Delete(key T) {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+	delete(m.Map, key)
+}
+
 func (m *LockMap[T, V]) ForEach(callback func(value V, key T) bool) {
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()

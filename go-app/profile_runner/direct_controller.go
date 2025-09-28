@@ -37,7 +37,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 			case <-ctx_with_cancel.Done():
 				return
 			case command := <-controller.ControlChannel:
-				controller.SocketConnection.OutgoingChannel <- command.ToSocketMessage()
+				controller.SocketConnection.Send(command.ToSocketMessage())
 			}
 		}
 	}()

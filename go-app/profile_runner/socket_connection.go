@@ -6,7 +6,9 @@ import (
 	"sort"
 	"strings"
 	"tsw_controller_app/logger"
+	"tsw_controller_app/map_utils"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,10 +18,10 @@ type SocketConnection_Message struct {
 }
 
 type SocketConnection struct {
-	WsUpgrader      *websocket.Upgrader
-	Server          *http.Server
-	OutgoingChannel chan SocketConnection_Message
-	Subscribers     []chan SocketConnection_Message
+	WsUpgrader       *websocket.Upgrader
+	Server           *http.Server
+	OutgoingChannels *map_utils.LockMap[uuid.UUID, chan SocketConnection_Message]
+	Subscribers      []chan SocketConnection_Message
 }
 
 func SocketConnectionMessage_FromString(msg string) SocketConnection_Message {
@@ -77,13 +79,19 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 	}
 	defer conn.Close()
 
+	conn_id := uuid.New()
+	outgoing_channel := make(chan SocketConnection_Message)
+	c.OutgoingChannels.Set(conn_id, outgoing_channel)
+	defer close(outgoing_channel)
+	defer c.OutgoingChannels.Delete(conn_id)
+
 	ctx_with_cancel, cancel_sender := context.WithCancel(r.Context())
 	go func() {
 		for {
 			select {
 			case <-ctx_with_cancel.Done():
 				return
-			case message := <-c.OutgoingChannel:
+			case message := <-outgoing_channel:
 				err := conn.WriteMessage(websocket.TextMessage, []byte(message.ToString()))
 				if err != nil {
 					cancel_sender()
@@ -136,6 +144,13 @@ func (c *SocketConnection) Start() error {
 	return c.Server.ListenAndServe()
 }
 
+func (c *SocketConnection) Send(m SocketConnection_Message) {
+	c.OutgoingChannels.ForEach(func(channel chan SocketConnection_Message, key uuid.UUID) bool {
+		channel <- m
+		return true
+	})
+}
+
 func NewSocketConnection() *SocketConnection {
 	mux := http.NewServeMux()
 	server := &http.Server{
@@ -143,9 +158,9 @@ func NewSocketConnection() *SocketConnection {
 		Handler: mux,
 	}
 	controller := SocketConnection{
-		WsUpgrader:      &websocket.Upgrader{},
-		Server:          server,
-		OutgoingChannel: make(chan SocketConnection_Message),
+		WsUpgrader:       &websocket.Upgrader{},
+		Server:           server,
+		OutgoingChannels: map_utils.NewLockMap[uuid.UUID, chan SocketConnection_Message](),
 	}
 	mux.HandleFunc("/", controller.WebsocketHandler)
 	return &controller
