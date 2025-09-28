@@ -48,7 +48,13 @@ export const MainTab = () => {
   });
 
   const handleReloadConfiguration = () => {
-    LoadConfiguration();
+    LoadConfiguration().then(() => {
+      /* re-select profile after reloading */
+      const selectedProfile = getValues('profile')
+      if (selectedProfile.length) {
+        SelectProfile(selectedProfile)
+      }
+    });
   };
 
   const handleBrowseConfig = () => {
