@@ -34,8 +34,8 @@ export const MainTab = () => {
   };
 
   const openInWindow = (url: string) => {
-    BrowserOpenURL(url)
-  }
+    BrowserOpenURL(url);
+  };
 
   useEffect(() => {
     watch(() => {
@@ -77,10 +77,25 @@ export const MainTab = () => {
         <span>
           For this app to correctly work you will need to make sure Train Sim
           World is not able to process the controller input. You can achieve
-          this by configuring your controller in using Steam Input and applying
-          the following "Disabled Controller" layout preset for the game.
-          Alternatively, you can also a software like{" "}
-          <button className="inline link" onClick={() => openInWindow('https://ds4-windows.com/download/hidhide/')}>
+          this by configuring your controller in using{" "}
+          <button
+            className="inline link"
+            onClick={() =>
+              openInWindow(
+                "https://github.com/LiamMartens/tsw-controller-app/blob/main/STEAM_INPUT_SETUP.md",
+              )
+            }
+          >
+            Steam Input
+          </button>{" "}
+          and applying the following "Disabled Controller" layout preset for the
+          game. Alternatively, you can also a software like{" "}
+          <button
+            className="inline link"
+            onClick={() =>
+              openInWindow("https://ds4-windows.com/download/hidhide/")
+            }
+          >
             HidHide
           </button>{" "}
           to hide the controller from the game altogether
