@@ -361,15 +361,15 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case <-context_with_cancel.Done():
 				return
 			case change_event := <-channel:
-				/* sync control only works when a profile is distinctly selected */
-				if p.Settings.SelectedProfile == nil {
+				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
+				if p.Settings.SelectedProfile == nil || p.Settings.PreferredControlMode != config.PreferredControlMode_SyncControl {
 					continue
 				}
 
 				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
 			control_loop:
 				for _, cp := range p.Settings.SelectedProfile.Controls {
-					assignments := cp.GetAssignments(config.PreferredControlMode_SyncControl)
+					assignments := cp.GetAssignments(p.Settings.PreferredControlMode)
 					for _, assignment := range assignments {
 						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == change_event.Identifier {
 							sync_control_assignment = &assignment
@@ -377,7 +377,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						}
 					}
 				}
-				/* only act if a sync control assignment exists for this identifier */
+				/* only act if a sync control assignment exists for this identifier and is the current preferred control mode */
 				if sync_control_assignment == nil {
 					continue
 				}

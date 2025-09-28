@@ -426,7 +426,6 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 		return err
 	}
 
-	logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] handling button event", "event", event)
 	/* only send if the channel is being read */
 	for _, channel := range mgr.RawEventChannels {
 		channel <- ControllerManager_RawEvent{
