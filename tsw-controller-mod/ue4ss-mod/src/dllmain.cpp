@@ -281,21 +281,17 @@ class TSWControllerMod : public RC::CppUserModBase
             return;
         }
 
-        /* skip if no controller or pawn */
-        Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
-        Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
-        if (!controller || !pawn) {
-            Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Missing player controller or pawn\n"));
-            return;
-        }
-
-        /* get locks and process */
         std::shared_lock<std::shared_mutex> direct_control_queue_lock(TSWControllerMod::DIRECT_CONTROL_TARGET_STATE_MUTEX);
         std::shared_lock<std::shared_mutex> vhid_components_to_release_lock(TSWControllerMod::VHID_COMPONENTS_TO_RELEASE_MUTEX);
 
         /* release components if they don't have a target state */
         if (!TSWControllerMod::VHID_COMPONENTS_TO_RELEASE.empty())
         {
+            /* skip if no controller or pawn */
+            Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
+            Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
+            if (!controller || !pawn) return;
+
             Unreal::UFunction* end_using_func = controller->GetFunctionByNameInChain(STR("EndUsingVHIDComponent"));
             if (!end_using_func) return;
 
@@ -313,6 +309,14 @@ class TSWControllerMod : public RC::CppUserModBase
                     ++it;
                 }
             }
+        }
+
+        /* skip if no controller or pawn */
+        Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
+        Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
+        if (!controller || !pawn) {
+            Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Missing player controller or pawn\n"));
+            return;
         }
 
         /* skip if drivable actor can't be found */
@@ -421,7 +425,7 @@ class TSWControllerMod : public RC::CppUserModBase
             }
         }
 
-        Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Processing Direct Control message [{}]: {}\n"), message);
+        Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Processing Direct Control message: {}\n"), message);
         std::vector<RC::StringType> flags = TSWControllerMod::wstring_split(properties[STR("flags")], STR("|"));
         TSWControllerMod::DIRECT_CONTROL_TARGET_STATE[properties[STR("controls")]] = std::make_tuple(std::stof(properties[STR("value")]), flags);
     }
@@ -499,6 +503,8 @@ class TSWControllerMod : public RC::CppUserModBase
 
         Unreal::UFunction* input_value_changed_func =
                 Unreal::UObjectGlobals::StaticFindObject<Unreal::UFunction*>(nullptr, nullptr, STR("/Script/TS2Prototype.VirtualHIDComponent:InputValueChanged"));
+        if (!input_value_changed_func) return;
+
         Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Registering hooks and callbacks"));
         Unreal::Hook::RegisterProcessEventPreCallback(TSWControllerMod::on_process_event_pre_callback);
         input_value_changed_func->RegisterPostHook(TSWControllerMod::on_ts2_virtualhidcomponent_inputvaluechanged);
