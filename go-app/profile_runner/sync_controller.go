@@ -4,12 +4,15 @@ import (
 	"context"
 	"strconv"
 	"tsw_controller_app/config"
+	"tsw_controller_app/map_utils"
 )
 
 type SyncController_ControlState struct {
-	Identifier   string
-	CurrentValue float64
-	TargetValue  float64
+	Identifier             string
+	PropertyName           string
+	CurrentValue           float64
+	CurrentNormalizedValue float64
+	TargetValue            float64
 	/** [-1,0,1] -> decreasing, idle, increasing */
 	Moving         int
 	ControlProfile config.Config_Controller_Profile_Control_Assignment_SyncControl
@@ -17,14 +20,14 @@ type SyncController_ControlState struct {
 
 type SyncController struct {
 	SocketConnection            *SocketConnection
-	ControlState                map[string]SyncController_ControlState
+	ControlState                *map_utils.LockMap[string, SyncController_ControlState]
 	ControlStateChangedChannels []chan SyncController_ControlState
 }
 
 func (c *SyncController) UpdateControlStateMoving(identifier string, moving int) {
-	if state, has_state := c.ControlState[identifier]; has_state {
+	if state, has_state := c.ControlState.Get(identifier); has_state {
 		state.Moving = moving
-		c.ControlState[identifier] = state
+		c.ControlState.Set(identifier, state)
 		for _, channel := range c.ControlStateChangedChannels {
 			channel <- state
 		}
@@ -32,18 +35,19 @@ func (c *SyncController) UpdateControlStateMoving(identifier string, moving int)
 }
 
 func (c *SyncController) UpdateControlStateTargetValue(identifier string, targetValue float64, profile config.Config_Controller_Profile_Control_Assignment_SyncControl) {
-	state, has_state := c.ControlState[identifier]
+	state, has_state := c.ControlState.Get(identifier)
 	if !has_state {
 		state = SyncController_ControlState{
-			Identifier:     identifier,
-			CurrentValue:   targetValue,
-			TargetValue:    targetValue,
-			Moving:         0,
-			ControlProfile: profile,
+			Identifier:             identifier,
+			TargetValue:            targetValue,
+			CurrentValue:           0.0,
+			CurrentNormalizedValue: 0.0,
+			Moving:                 0,
+			ControlProfile:         profile,
 		}
 	}
 	state.TargetValue = targetValue
-	c.ControlState[identifier] = state
+	c.ControlState.Set(identifier, state)
 
 	for _, channel := range c.ControlStateChangedChannels {
 		channel <- state
@@ -81,23 +85,27 @@ func (c *SyncController) Run(ctx context.Context) func() {
 					continue
 				}
 
-				control_state, has_control_state := c.ControlState[msg.Properties["name"]]
+				control_state, has_control_state := c.ControlState.Get(msg.Properties["name"])
 				if !has_control_state {
 					control_state = SyncController_ControlState{
-						Identifier:   msg.Properties["name"],
-						CurrentValue: 0.0,
-						TargetValue:  0.0,
-						Moving:       0,
+						Identifier:             msg.Properties["name"],
+						PropertyName:           msg.Properties["property"],
+						CurrentValue:           0.0,
+						CurrentNormalizedValue: 0.0,
+						TargetValue:            0.0,
+						Moving:                 0,
 					}
 				}
-				current_value, err := strconv.ParseFloat(msg.Properties["value"], 64)
-				if err != nil {
-					control_state.CurrentValue = current_value
-					for _, channel := range c.ControlStateChangedChannels {
-						channel <- control_state
-					}
+
+				current_value, _ := strconv.ParseFloat(msg.Properties["value"], 64)
+				current_normalized_value, _ := strconv.ParseFloat(msg.Properties["normalized_value"], 64)
+				control_state.PropertyName = msg.Properties["property"]
+				control_state.CurrentValue = current_value
+				control_state.CurrentNormalizedValue = current_normalized_value
+				for _, channel := range c.ControlStateChangedChannels {
+					channel <- control_state
 				}
-				c.ControlState[msg.Properties["name"]] = control_state
+				c.ControlState.Set(msg.Properties["name"], control_state)
 			}
 		}
 	}()
@@ -108,7 +116,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 func NewSyncController(connection *SocketConnection) *SyncController {
 	controller := SyncController{
 		SocketConnection:            connection,
-		ControlState:                map[string]SyncController_ControlState{},
+		ControlState:                map_utils.NewLockMap[string, SyncController_ControlState](),
 		ControlStateChangedChannels: []chan SyncController_ControlState{},
 	}
 	return &controller

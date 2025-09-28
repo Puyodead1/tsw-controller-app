@@ -38,6 +38,7 @@ const (
 	AppEventType_JoyDevicesUpdated AppEventType = "joydevices_updated"
 	AppEventType_ProfilesUpdated   AppEventType = "profiles_updated"
 	AppEventType_RawEvent          AppEventType = "rawevent"
+	AppEventType_SyncControlState  AppEventType = "synccontrolstate"
 	AppEventType_Log               AppEventType = "log"
 )
 
@@ -142,7 +143,22 @@ func (a *App) startup(ctx context.Context) {
 	go func() {
 		cancel := a.sync_controller.Run(ctx)
 		defer cancel()
+
 		<-ctx.Done()
+	}()
+
+	go func() {
+		channel, unsubscribe := a.sync_controller.Subscribe()
+		defer unsubscribe()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-channel:
+				runtime.EventsEmit(ctx, AppEventType_SyncControlState)
+			}
+		}
+
 	}()
 
 	go func() {
@@ -239,6 +255,15 @@ func (a *App) GetSelectedProfile() string {
 		return a.profile_runner.Settings.SelectedProfile.Name
 	}
 	return ""
+}
+
+func (a *App) GetSyncControlState() []profile_runner.SyncController_ControlState {
+	control_states := []profile_runner.SyncController_ControlState{}
+	a.sync_controller.ControlState.ForEach(func(value profile_runner.SyncController_ControlState, key string) bool {
+		control_states = append(control_states, value)
+		return true
+	})
+	return control_states
 }
 
 func (a *App) SelectProfile(name string) error {

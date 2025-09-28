@@ -22,6 +22,10 @@ export function GetSelectedProfile() {
   return window['go']['main']['App']['GetSelectedProfile']();
 }
 
+export function GetSyncControlState() {
+  return window['go']['main']['App']['GetSyncControlState']();
+}
+
 export function GetVersion() {
   return window['go']['main']['App']['GetVersion']();
 }
