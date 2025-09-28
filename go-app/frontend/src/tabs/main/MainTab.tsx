@@ -5,6 +5,7 @@ import {
   SelectProfile,
   ClearProfile,
   GetSelectedProfile,
+  InstallMod
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
@@ -37,6 +38,12 @@ export const MainTab = () => {
   const openInWindow = (url: string) => {
     BrowserOpenURL(url);
   };
+
+  const handleInstall = () => {
+    InstallMod().catch((err) => (
+      alert(String(err))
+    ))
+  }
 
   useEffect(() => {
     watch(() => {
@@ -72,6 +79,9 @@ export const MainTab = () => {
       </fieldset>
       <button className="btn btn-sm" onClick={handleReload}>
         Reload Configurations
+      </button>
+      <button className="btn btn-sm" onClick={handleInstall}>
+        Install or update mod
       </button>
       {/* steam://controllerconfig/2967990/3576092503 */}
       <div role="alert" className="alert">

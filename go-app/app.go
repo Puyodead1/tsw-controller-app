@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"path"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
 	"tsw_controller_app/config_loader"
@@ -18,6 +21,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const VERSION = "1.0.0"
+
+//go:embed installation_assets/*
+var installation_assets embed.FS
+
 type AppEventType = string
 
 const (
@@ -26,6 +34,10 @@ const (
 	AppEventType_RawEvent          AppEventType = "rawevent"
 	AppEventType_Log               AppEventType = "log"
 )
+
+type InstallationAssets_Manifest struct {
+	Manifest []string `json:"manifest"`
+}
 
 type AppRawSubscriber struct {
 	Channel   chan controller_mgr.ControllerManager_RawEvent
@@ -368,6 +380,65 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 
 	/* register config */
 	a.controller_manager.RegisterConfig(sdl_mapping, calibration)
+
+	return nil
+}
+
+func (a *App) InstallMod() error {
+	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Train Sim World 5/6 directory",
+	})
+	if err != nil {
+		return err
+	}
+
+	binaries_path := path.Join(dir, "WindowsNoEditor/TS2Prototype/Binaries/Win64")
+	tsw_exec_path := path.Join(binaries_path, "TrainSimWorld.exe")
+	if _, err := os.Stat(tsw_exec_path); err != nil {
+		logger.Logger.Error("[App::InstallMod] selected directory does not contain Train Sim World installation", "path", tsw_exec_path)
+		return fmt.Errorf("selected directory does not contain Train Sim World installation")
+	}
+
+	var manifest InstallationAssets_Manifest
+	manifest_json_bytes, err := installation_assets.ReadFile("installation_assets/manifest.json")
+	if err != nil {
+		logger.Logger.Error("[App::InstallMod] failed to read manfiest file", "error", err)
+		return err
+	}
+
+	if err := json.Unmarshal(manifest_json_bytes, &manifest); err != nil {
+		return err
+	}
+	/* go through files to copy */
+	for _, file := range manifest.Manifest {
+		file_dir := path.Dir(file)
+		if err := os.MkdirAll(path.Join(binaries_path, file_dir), 0755); err != nil {
+			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", path.Join(binaries_path, file_dir))
+			return err
+		}
+
+		fh, err := installation_assets.Open(path.Join("installation_assets", file))
+		if err != nil {
+			logger.Logger.Error("[App::InstallMod] could open file", "file", file)
+			return fmt.Errorf("could not open file %e", err)
+		}
+		defer fh.Close()
+
+		out, err := os.Create(path.Join(binaries_path, file))
+		if err != nil {
+			logger.Logger.Error("[App::InstallMod] could not create file", "file", path.Join(binaries_path, file))
+			return fmt.Errorf("could not open create %e", err)
+		}
+		if _, err := io.Copy(out, fh); err != nil {
+			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", path.Join(binaries_path, file))
+			return fmt.Errorf("failed to copy file: %w", err)
+		}
+
+		defer out.Close()
+	}
+
+	/* write version file */
+	os.WriteFile(path.Join(binaries_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
 
 	return nil
 }

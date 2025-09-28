@@ -18,6 +18,10 @@ export function GetSelectedProfile() {
   return window['go']['main']['App']['GetSelectedProfile']();
 }
 
+export function InstallMod() {
+  return window['go']['main']['App']['InstallMod']();
+}
+
 export function LastRawEvent() {
   return window['go']['main']['App']['LastRawEvent']();
 }

@@ -10,6 +10,8 @@ export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
 export function GetSelectedProfile():Promise<string>;
 
+export function InstallMod():Promise<void>;
+
 export function LastRawEvent():Promise<main.Interop_RawEvent>;
 
 export function LoadConfiguration():Promise<void>;
