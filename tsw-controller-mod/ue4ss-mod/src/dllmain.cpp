@@ -439,8 +439,7 @@ class TSWControllerMod : public RC::CppUserModBase
             VirtualHIDComponent_GetCurrentlyChangingControllerParams get_currently_changing_controller_params{};
             context.Context->ProcessEvent(get_currently_changing_controller_func, &get_currently_changing_controller_params);
             /* don't do anything if it's a none identifier, there is no controller or it's not the player controller */
-            if (*input_identifier == Unreal::NAME_None || !get_currently_changing_controller_params.Controller ||
-                !TSWControllerMod::is_player_controller(get_currently_changing_controller_params.Controller))
+            if (!get_currently_changing_controller_params.Controller || !TSWControllerMod::is_player_controller(get_currently_changing_controller_params.Controller))
             {
                 return;
             }
@@ -490,9 +489,9 @@ class TSWControllerMod : public RC::CppUserModBase
     TSWControllerMod() : CppUserModBase()
     {
         ModName = STR("TSWControllerMod");
-        ModVersion = STR("1.0");
-        ModDescription = STR("TSW Direct Access Controller");
-        ModAuthors = STR("truman");
+        ModVersion = STR("1.0.0");
+        ModDescription = STR("TSW Controller Utility Helper");
+        ModAuthors = STR("Liam");
 
         Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Starting..."));
     }
