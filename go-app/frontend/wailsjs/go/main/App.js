@@ -74,10 +74,6 @@ export function UnsubscribeRaw() {
   return window['go']['main']['App']['UnsubscribeRaw']();
 }
 
-export function UpateApp() {
-  return window['go']['main']['App']['UpateApp']();
-}
-
 export function UpdateApp() {
   return window['go']['main']['App']['UpdateApp']();
 }

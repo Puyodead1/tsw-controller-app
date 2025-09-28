@@ -10,7 +10,6 @@ require (
 	github.com/go-vgo/robotgo v0.110.8
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/veandco/go-sdl2 v0.4.40
 	github.com/wailsapp/wails/v2 v2.10.2
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621

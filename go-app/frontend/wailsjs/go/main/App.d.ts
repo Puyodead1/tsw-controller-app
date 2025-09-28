@@ -39,6 +39,4 @@ export function SubscribeRaw(arg1:string):Promise<void>;
 
 export function UnsubscribeRaw():Promise<void>;
 
-export function UpateApp():Promise<void>;
-
 export function UpdateApp():Promise<boolean>;
