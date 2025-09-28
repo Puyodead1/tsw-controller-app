@@ -17,7 +17,7 @@ const App = () => {
     <div className="p-2">
       <SelfUpdateBanner />
 
-      <div className="sticky top-2 tabs tabs-box">
+      <div className="sticky top-2 tabs tabs-box z-10">
         <input
           type="radio"
           className="tab"

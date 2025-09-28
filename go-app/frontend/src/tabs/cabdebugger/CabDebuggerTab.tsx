@@ -7,7 +7,10 @@ import useSWR from "swr";
 export const CabDebuggerTab = () => {
   const { data: syncControlState, mutate: refetchSyncControlState } = useSWR(
     "sync-control-state",
-    () => GetSyncControlState(),
+    () =>
+      GetSyncControlState().then((r) =>
+        r.sort((a, b) => a.Identifier.localeCompare(b.Identifier)),
+      ),
   );
 
   useEffect(() => {
