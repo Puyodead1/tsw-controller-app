@@ -537,6 +537,10 @@ func (a *App) InstallTrainSimWorldMod() error {
 		return err
 	}
 
+	if path.Base(tsw_exe_path) != "TrainSimWorld.exe" {
+		return fmt.Errorf("you need to select the TrainSimWorld.exe file to install the mod")
+	}
+
 	var manifest InstallationAssets_Manifest
 	manifest_json_bytes, err := installation_assets.ReadFile("installation_assets/manifest.json")
 	if err != nil {
