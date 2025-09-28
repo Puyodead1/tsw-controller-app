@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "semver": "^7.7.2"
-  },
-  "devDependencies": {
-    "@types/semver": "^7.7.1"
-  }
-}
