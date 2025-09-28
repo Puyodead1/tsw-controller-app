@@ -6,7 +6,7 @@ import {
   ClearProfile,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
-import { EventsOn } from "../../../wailsjs/runtime/runtime";
+import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
 import { events } from "../../events";
 import { useForm } from "react-hook-form";
 
@@ -32,6 +32,10 @@ export const MainTab = () => {
   const handleReload = () => {
     LoadConfiguration();
   };
+
+  const openInWindow = (url: string) => {
+    BrowserOpenURL(url)
+  }
 
   useEffect(() => {
     watch(() => {
@@ -68,6 +72,20 @@ export const MainTab = () => {
       <button className="btn btn-sm" onClick={handleReload}>
         Reload Configurations
       </button>
+      {/* steam://controllerconfig/2967990/3576092503 */}
+      <div role="alert" className="alert">
+        <span>
+          For this app to correctly work you will need to make sure Train Sim
+          World is not able to process the controller input. You can achieve
+          this by configuring your controller in using Steam Input and applying
+          the following "Disabled Controller" layout preset for the game.
+          Alternatively, you can also a software like{" "}
+          <button className="inline link" onClick={() => openInWindow('https://ds4-windows.com/download/hidhide/')}>
+            HidHide
+          </button>{" "}
+          to hide the controller from the game altogether
+        </span>
+      </div>
     </div>
   );
 };
