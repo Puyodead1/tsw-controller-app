@@ -1,11 +1,15 @@
 import useSWR from "swr";
+import { lt as semverLt } from "semver";
 import {
   GetProfiles,
   LoadConfiguration,
   SelectProfile,
   ClearProfile,
   GetSelectedProfile,
-  InstallMod
+  InstallTrainSimWorldMod,
+  OpenConfigDirectory,
+  GetLastInstalledModVersion,
+  GetVersion,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
@@ -17,6 +21,17 @@ type FormValues = {
 };
 
 export const MainTab = () => {
+  const { data: versionInfo, mutate: refetchVersionInfo } = useSWR(
+    "version-info",
+    () =>
+      Promise.all([GetVersion(), GetLastInstalledModVersion()]).then(
+        ([version, lastInstalledModVersion]) => ({
+          version,
+          lastInstalledModVersion,
+        }),
+      ),
+    { revalidateOnMount: true },
+  );
   const { data: profiles, mutate: refetchProfiles } = useSWR(
     "profiles",
     () => GetProfiles(),
@@ -31,8 +46,12 @@ export const MainTab = () => {
     }),
   });
 
-  const handleReload = () => {
+  const handleReloadConfiguration = () => {
     LoadConfiguration();
+  };
+
+  const handleBrowseConfig = () => {
+    OpenConfigDirectory();
   };
 
   const openInWindow = (url: string) => {
@@ -40,10 +59,10 @@ export const MainTab = () => {
   };
 
   const handleInstall = () => {
-    InstallMod().catch((err) => (
-      alert(String(err))
-    ))
-  }
+    InstallTrainSimWorldMod()
+      .then(() => refetchVersionInfo())
+      .catch((err) => alert(String(err)));
+  };
 
   useEffect(() => {
     watch(() => {
@@ -61,29 +80,64 @@ export const MainTab = () => {
 
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
-      <fieldset className="fieldset">
-        <legend className="fieldset-legend">Select profile</legend>
-        <select className="select w-full" {...register("profile")}>
-          <option selected value="">
-            Auto-detect
-          </option>
-          {profiles?.map((profile) => (
-            <option key={profile.Name} value={profile.Name}>
-              {profile.Name}
+      <div className="flex flex-row gap-2">
+        <fieldset className="fieldset grow">
+          <legend className="fieldset-legend">Select profile</legend>
+          <select className="select w-full" {...register("profile")}>
+            <option selected value="">
+              None
             </option>
-          ))}
-        </select>
-        <span className="label">
-          Auto-detect only works for certain supported controllers
-        </span>
-      </fieldset>
-      <button className="btn btn-sm" onClick={handleReload}>
-        Reload Configurations
-      </button>
-      <button className="btn btn-sm" onClick={handleInstall}>
-        Install or update mod
-      </button>
+            {profiles?.map((profile) => (
+              <option key={profile.Name} value={profile.Name}>
+                {profile.Name}
+              </option>
+            ))}
+          </select>
+          <span className="label">
+            Auto-detect only works for certain supported controllers
+          </span>
+        </fieldset>
+        <div className="dropdown dropdown-end mt-[34px]">
+          <div tabIndex={0} role="button" className="btn">
+            More
+          </div>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+          >
+            <li>
+              <button onClick={handleReloadConfiguration}>
+                Reload configuration
+              </button>
+            </li>
+            <li>
+              <button onClick={handleBrowseConfig}>Browse configuration</button>
+            </li>
+          </ul>
+        </div>
+      </div>
       {/* steam://controllerconfig/2967990/3576092503 */}
+      <button className="btn btn-sm w-full" onClick={handleInstall}>
+        Install/Reinstall Train Sim World mod
+      </button>
+      {!versionInfo?.lastInstalledModVersion && (
+        <div role="alert" className="alert alert-soft alert-warning">
+          <span>
+            It looks like you have not installed the Train Sim World mod yet,
+            make sure you install the mod first.
+          </span>
+        </div>
+      )}
+      {versionInfo?.lastInstalledModVersion &&
+        semverLt(versionInfo.lastInstalledModVersion, versionInfo.version) && (
+          <div role="alert" className="alert alert-soft alert-warning">
+            <span>
+              It looks like the app has updated since the last time you
+              installed the mod, make sure to reinstall the updated mod version
+              before starting the game.
+            </span>
+          </div>
+        )}
       <div role="alert" className="alert">
         <span>
           For this app to correctly work you will need to make sure Train Sim

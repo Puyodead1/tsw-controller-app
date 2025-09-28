@@ -6,15 +6,23 @@ export function ClearProfile():Promise<void>;
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
 
+export function GetLastInstalledModVersion():Promise<string>;
+
 export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
 export function GetSelectedProfile():Promise<string>;
 
-export function InstallMod():Promise<void>;
+export function GetVersion():Promise<string>;
+
+export function HasNewerVersion():Promise<boolean>;
+
+export function InstallTrainSimWorldMod():Promise<void>;
 
 export function LastRawEvent():Promise<main.Interop_RawEvent>;
 
 export function LoadConfiguration():Promise<void>;
+
+export function OpenConfigDirectory():Promise<void>;
 
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
 
@@ -23,3 +31,5 @@ export function SelectProfile(arg1:string):Promise<void>;
 export function SubscribeRaw(arg1:string):Promise<void>;
 
 export function UnsubscribeRaw():Promise<void>;
+
+export function UpdateApp():Promise<boolean>;

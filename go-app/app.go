@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
+	go_runtime "runtime"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
 	"tsw_controller_app/config_loader"
@@ -22,9 +24,13 @@ import (
 )
 
 const VERSION = "1.0.0"
+const PROGRAM_CONFIG_FILEPATH = "./config/program.json"
 
 //go:embed installation_assets/*
 var installation_assets embed.FS
+
+//go:embed config/profiles/*
+var default_profiles embed.FS
 
 type AppEventType = string
 
@@ -47,6 +53,7 @@ type AppRawSubscriber struct {
 
 type App struct {
 	ctx                context.Context
+	program_config     *config.Config_ProgramConfig
 	config_loader      *config_loader.ConfigLoader
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
@@ -70,6 +77,7 @@ func NewApp() *App {
 	sync_controller := profile_runner.NewSyncController(socket_connection)
 
 	return &App{
+		program_config:     config.LoadProgramConfigFromFile(PROGRAM_CONFIG_FILEPATH),
 		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
@@ -154,6 +162,14 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(ctx context.Context) {
 }
 
+func (a *App) GetVersion() string {
+	return VERSION
+}
+
+func (a *App) GetLastInstalledModVersion() string {
+	return a.program_config.LastInstalledModVersion
+}
+
 func (a *App) LoadConfiguration() {
 	/* load config from relative config directory */
 	sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory("./config")
@@ -182,31 +198,34 @@ func (a *App) LoadConfiguration() {
 
 func (a *App) GetControllers() []Interop_GenericController {
 	var controllers []Interop_GenericController
-	for _, c := range a.controller_manager.ConfiguredControllers {
+	a.controller_manager.ConfiguredControllers.ForEach(func(c controller_mgr.ControllerManager_ConfiguredController, _ controller_mgr.JoystickGUIDString) bool {
 		controllers = append(controllers, Interop_GenericController{
 			UsbID:        c.Joystick.ToString(),
 			Name:         c.Joystick.Name,
 			IsConfigured: true,
 		})
-	}
-	for _, c := range a.controller_manager.UnconfiguredControllers {
+		return true
+	})
+	a.controller_manager.UnconfiguredControllers.ForEach(func(c controller_mgr.ControllerManager_UnconfiguredController, key controller_mgr.JoystickGUIDString) bool {
 		controllers = append(controllers, Interop_GenericController{
 			GUID:         c.Joystick.GUID,
 			UsbID:        c.Joystick.ToString(),
 			Name:         c.Joystick.Name,
 			IsConfigured: false,
 		})
-	}
+		return true
+	})
 	return controllers
 }
 
 func (a *App) GetProfiles() []Interop_Profile {
 	var profiles []Interop_Profile
-	for _, profile := range a.profile_runner.Profiles {
+	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 		profiles = append(profiles, Interop_Profile{
 			Name: profile.Name,
 		})
-	}
+		return true
+	})
 	return profiles
 }
 
@@ -278,9 +297,9 @@ func (a *App) SubscribeRaw(guid string) error {
 	}
 
 	var joystick *sdl_mgr.SDLMgr_Joystick
-	if j, has_unconfigured_joystick := a.controller_manager.UnconfiguredControllers[guid]; has_unconfigured_joystick {
+	if j, has_unconfigured_joystick := a.controller_manager.UnconfiguredControllers.Get(guid); has_unconfigured_joystick {
 		joystick = &j.Joystick
-	} else if j, has_configured_joystick := a.controller_manager.ConfiguredControllers[guid]; has_configured_joystick {
+	} else if j, has_configured_joystick := a.controller_manager.ConfiguredControllers.Get(guid); has_configured_joystick {
 		joystick = &j.Joystick
 	}
 
@@ -384,19 +403,46 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	return nil
 }
 
-func (a *App) InstallMod() error {
-	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Train Sim World 5/6 directory",
-	})
+func (a *App) HasNewerVersion() bool {
+	return true
+}
+
+func (a *App) UpdateApp() bool {
+	return true
+}
+
+func (a *App) OpenConfigDirectory() error {
+	p, err := os.Getwd()
 	if err != nil {
+		logger.Logger.Error("[App::OpenProfilesDirectory] could not find directory")
 		return err
 	}
 
-	binaries_path := path.Join(dir, "WindowsNoEditor/TS2Prototype/Binaries/Win64")
-	tsw_exec_path := path.Join(binaries_path, "TrainSimWorld.exe")
-	if _, err := os.Stat(tsw_exec_path); err != nil {
-		logger.Logger.Error("[App::InstallMod] selected directory does not contain Train Sim World installation", "path", tsw_exec_path)
-		return fmt.Errorf("selected directory does not contain Train Sim World installation")
+	var cmd *exec.Cmd
+	config_path := path.Join(p, "config")
+
+	switch go_runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", config_path)
+	case "darwin":
+		cmd = exec.Command("open", config_path)
+	default:
+		cmd = exec.Command("xdg-open", config_path)
+	}
+	fmt.Printf("%#v\n", cmd)
+	if err := cmd.Start(); err != nil {
+		logger.Logger.Error("[App::OpenConfigDirectory] could not open config directory", "error", err)
+		return err
+	}
+	return nil
+}
+
+func (a *App) InstallTrainSimWorldMod() error {
+	tsw_exe_path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Train Sim World 5/6 executable (TrainSimWorld.exe)",
+	})
+	if err != nil {
+		return err
 	}
 
 	var manifest InstallationAssets_Manifest
@@ -409,11 +455,13 @@ func (a *App) InstallMod() error {
 	if err := json.Unmarshal(manifest_json_bytes, &manifest); err != nil {
 		return err
 	}
+
+	install_path := path.Dir(tsw_exe_path)
 	/* go through files to copy */
 	for _, file := range manifest.Manifest {
 		file_dir := path.Dir(file)
-		if err := os.MkdirAll(path.Join(binaries_path, file_dir), 0755); err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", path.Join(binaries_path, file_dir))
+		if err := os.MkdirAll(path.Join(install_path, file_dir), 0755); err != nil {
+			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", path.Join(install_path, file_dir))
 			return err
 		}
 
@@ -424,13 +472,13 @@ func (a *App) InstallMod() error {
 		}
 		defer fh.Close()
 
-		out, err := os.Create(path.Join(binaries_path, file))
+		out, err := os.Create(path.Join(install_path, file))
 		if err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create file", "file", path.Join(binaries_path, file))
+			logger.Logger.Error("[App::InstallMod] could not create file", "file", path.Join(install_path, file))
 			return fmt.Errorf("could not open create %e", err)
 		}
 		if _, err := io.Copy(out, fh); err != nil {
-			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", path.Join(binaries_path, file))
+			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", path.Join(install_path, file))
 			return fmt.Errorf("failed to copy file: %w", err)
 		}
 
@@ -438,7 +486,9 @@ func (a *App) InstallMod() error {
 	}
 
 	/* write version file */
-	os.WriteFile(path.Join(binaries_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
+	os.WriteFile(path.Join(install_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
+	a.program_config.LastInstalledModVersion = VERSION
+	a.program_config.Save(PROGRAM_CONFIG_FILEPATH)
 
 	return nil
 }

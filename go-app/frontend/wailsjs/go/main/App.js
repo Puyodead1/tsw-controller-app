@@ -10,6 +10,10 @@ export function GetControllers() {
   return window['go']['main']['App']['GetControllers']();
 }
 
+export function GetLastInstalledModVersion() {
+  return window['go']['main']['App']['GetLastInstalledModVersion']();
+}
+
 export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
@@ -18,8 +22,16 @@ export function GetSelectedProfile() {
   return window['go']['main']['App']['GetSelectedProfile']();
 }
 
-export function InstallMod() {
-  return window['go']['main']['App']['InstallMod']();
+export function GetVersion() {
+  return window['go']['main']['App']['GetVersion']();
+}
+
+export function HasNewerVersion() {
+  return window['go']['main']['App']['HasNewerVersion']();
+}
+
+export function InstallTrainSimWorldMod() {
+  return window['go']['main']['App']['InstallTrainSimWorldMod']();
 }
 
 export function LastRawEvent() {
@@ -28,6 +40,10 @@ export function LastRawEvent() {
 
 export function LoadConfiguration() {
   return window['go']['main']['App']['LoadConfiguration']();
+}
+
+export function OpenConfigDirectory() {
+  return window['go']['main']['App']['OpenConfigDirectory']();
 }
 
 export function SaveCalibration(arg1) {
@@ -44,4 +60,8 @@ export function SubscribeRaw(arg1) {
 
 export function UnsubscribeRaw() {
   return window['go']['main']['App']['UnsubscribeRaw']();
+}
+
+export function UpdateApp() {
+  return window['go']['main']['App']['UpdateApp']();
 }

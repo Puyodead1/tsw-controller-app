@@ -8,6 +8,7 @@ import (
 	"tsw_controller_app/config"
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/logger"
+	"tsw_controller_app/map_utils"
 )
 
 type ProfileRunnerSettings struct {
@@ -26,9 +27,9 @@ type ProfileRunner struct {
 	ControllerManager                 *controller_mgr.ControllerManager
 	DirectController                  *DirectController
 	SyncController                    *SyncController
-	Profiles                          map[string]config.Config_Controller_Profile
+	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
 	Settings                          ProfileRunnerSettings
-	PreviousControlAssignmentCallList map[string]*[]*ProfileRunnerAssignmentCall
+	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
 }
 
 func New(
@@ -42,12 +43,12 @@ func New(
 		ControllerManager: controller_manager,
 		DirectController:  direct_controller,
 		SyncController:    sync_controller,
-		Profiles:          map[string]config.Config_Controller_Profile{},
+		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			SelectedProfile:      nil,
 			PreferredControlMode: config.PreferredControlMode_DirectControl,
 		},
-		PreviousControlAssignmentCallList: map[string]*[]*ProfileRunnerAssignmentCall{},
+		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
 	}
 }
 
@@ -62,7 +63,7 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 }
 
 func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile) {
-	p.Profiles[profile.Name] = profile
+	p.Profiles.Set(profile.Name, profile)
 }
 
 func (p *ProfileRunner) ClearProfile() {
@@ -70,7 +71,7 @@ func (p *ProfileRunner) ClearProfile() {
 }
 
 func (p *ProfileRunner) SetProfile(name string) error {
-	profile, is_valid_profile := p.Profiles[name]
+	profile, is_valid_profile := p.Profiles.Get(name)
 	if is_valid_profile {
 		p.Settings.SelectedProfile = &profile
 		return nil
@@ -92,10 +93,10 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 	if action != nil {
 		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand)
 	}
-	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList[control.Name]
+	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList.Get(control.Name)
 	if !has_previous_control_call {
 		previous_control_assignments_call_list = &[]*ProfileRunnerAssignmentCall{}
-		p.PreviousControlAssignmentCallList[control.Name] = previous_control_assignments_call_list
+		p.PreviousControlAssignmentCallList.Set(control.Name, previous_control_assignments_call_list)
 	}
 	for len(*previous_control_assignments_call_list) <= assignment_index {
 		*previous_control_assignments_call_list = append(*previous_control_assignments_call_list, nil)
@@ -213,12 +214,13 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				selected_profile := p.Settings.SelectedProfile
 				if selected_profile == nil {
 					/* try to find default profile by USB ID */
-					for _, profile := range p.Profiles {
+					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 						if profile.UsbID != nil && *profile.UsbID == change_event.Joystick.ToString() {
 							selected_profile = &profile
-							break
+							return false
 						}
-					}
+						return true
+					})
 				}
 
 				if selected_profile == nil {
@@ -233,7 +235,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				}
 
 				assignments := control_profile.GetAssignments(p.Settings.PreferredControlMode)
-				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList[change_event.ControlName]
+				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList.Get(change_event.ControlName)
 				for assignment_index, control_assignment_item := range assignments {
 					logger.Logger.Debug("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
 					var previous_assignment_call *ProfileRunnerAssignmentCall = nil
