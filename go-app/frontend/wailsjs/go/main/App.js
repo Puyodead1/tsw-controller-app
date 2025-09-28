@@ -14,6 +14,10 @@ export function GetLastInstalledModVersion() {
   return window['go']['main']['App']['GetLastInstalledModVersion']();
 }
 
+export function GetLatestReleaseVersion() {
+  return window['go']['main']['App']['GetLatestReleaseVersion']();
+}
+
 export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
@@ -68,6 +72,10 @@ export function SubscribeRaw(arg1) {
 
 export function UnsubscribeRaw() {
   return window['go']['main']['App']['UnsubscribeRaw']();
+}
+
+export function UpateApp() {
+  return window['go']['main']['App']['UpateApp']();
 }
 
 export function UpdateApp() {

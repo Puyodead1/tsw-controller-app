@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	go_runtime "runtime"
+	"strings"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
 	"tsw_controller_app/config_loader"
@@ -19,6 +21,7 @@ import (
 	"tsw_controller_app/sdl_mgr"
 	"tsw_controller_app/string_utils"
 
+	"github.com/inconshreveable/go-update"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -97,6 +100,22 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	/* save all default profiles if profiles dir does not exist */
+	profiles_dir := "./config/profiles"
+	if _, err := os.Stat(profiles_dir); err != nil {
+		os.MkdirAll(profiles_dir, 0755)
+		files, _ := default_profiles.ReadDir("config/profiles")
+		for _, file := range files {
+			profile_handle, _ := default_profiles.Open(path.Join("config/profiles", file.Name()))
+			defer profile_handle.Close()
+			fh, fh_err := os.Create(path.Join(profiles_dir, file.Name()))
+			if fh_err == nil {
+				defer fh.Close()
+				io.Copy(fh, profile_handle)
+			}
+		}
+	}
+
 	a.LoadConfiguration()
 
 	go func() {
@@ -264,6 +283,49 @@ func (a *App) GetSyncControlState() []profile_runner.SyncController_ControlState
 		return true
 	})
 	return control_states
+}
+
+// https://github.com/LiamMartens/tsw-controller-app/releases/download/v0.2.6/beta.package.zip
+func (a *App) GetLatestReleaseVersion() string {
+	resp, err := http.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/RELEASE_VERSION")
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+
+	return strings.Split(string(body), "\n")[0]
+}
+
+func (a *App) UpateApp() error {
+	latest_version := a.GetLatestReleaseVersion()
+	if len(latest_version) == 0 {
+		return fmt.Errorf("could not find latest version to update to")
+	}
+
+	file_extension := ""
+	if go_runtime.GOOS == "windows" {
+		file_extension = ".exe"
+	}
+
+	/* eg: app.linux or app.windows.exe */
+	download_url := fmt.Sprintf("https://github.com/LiamMartens/tsw-controller-app/releases/download/v%s/app.%s%s", latest_version, go_runtime.GOOS, file_extension)
+	resp, err := http.Get(download_url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("could not download new release")
+	}
+
+	err = update.Apply(resp.Body, update.Options{})
+	return err
 }
 
 func (a *App) SelectProfile(name string) error {

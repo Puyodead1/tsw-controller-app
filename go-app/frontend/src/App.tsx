@@ -3,6 +3,7 @@ import { MainTab } from "./tabs/main";
 import { CalibrationTab } from "./tabs/calibration";
 import { LogsTab } from "./tabs/logs";
 import { CabDebuggerTab } from "./tabs/cabdebugger";
+import { SelfUpdateBanner } from "./SelfUpdateBanner";
 
 const App = () => {
   const tabsForm = useForm<{
@@ -14,6 +15,8 @@ const App = () => {
 
   return (
     <div className="p-2">
+      <SelfUpdateBanner />
+
       <div className="sticky top-2 tabs tabs-box">
         <input
           type="radio"

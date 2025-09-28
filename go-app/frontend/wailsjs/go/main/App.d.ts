@@ -9,6 +9,8 @@ export function GetControllers():Promise<Array<main.Interop_GenericController>>;
 
 export function GetLastInstalledModVersion():Promise<string>;
 
+export function GetLatestReleaseVersion():Promise<string>;
+
 export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
 export function GetSelectedProfile():Promise<string>;
@@ -36,5 +38,7 @@ export function SetLastInstalledModVersion(arg1:string):Promise<void>;
 export function SubscribeRaw(arg1:string):Promise<void>;
 
 export function UnsubscribeRaw():Promise<void>;
+
+export function UpateApp():Promise<void>;
 
 export function UpdateApp():Promise<boolean>;
