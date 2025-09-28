@@ -14,6 +14,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed installation_assets/*
+var installation_assets embed.FS
+
 func main() {
 	app := NewApp()
 	err := wails.Run(&options.App{
