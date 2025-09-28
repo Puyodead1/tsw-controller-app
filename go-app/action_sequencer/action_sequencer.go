@@ -55,7 +55,7 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 			case <-ctx_with_cancel.Done():
 				return
 			case action := <-seq.ActionsQueue:
-				logger.Logger.Info("[ActionSequencer::Run] received action from queue", "action", action)
+				logger.Logger.Debug("[ActionSequencer::Run] received action from queue", "action", action)
 				keys_list := strings.Split(action.Keys, "+")
 				modifier_keys := []string{}
 				other_keys := []string{}

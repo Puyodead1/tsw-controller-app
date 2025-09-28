@@ -124,10 +124,10 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 
 	if action != nil {
 		if action.ActionSequencerAction != nil {
-			logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] queueing sequencer action", "action", action.ActionSequencerAction)
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] queueing sequencer action", "action", action.ActionSequencerAction)
 			p.ActionSequencer.Enqueue(*action.ActionSequencerAction)
 		} else if action.DirectControlCommand != nil {
-			logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
 			p.DirectController.ControlChannel <- *action.DirectControlCommand
 		}
 	}
@@ -208,7 +208,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case <-context_with_cancel.Done():
 				return
 			case change_event := <-channel:
-				logger.Logger.Info("[ProfileRunner::Run] received change event", "event", change_event)
+				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
 				selected_profile := p.Settings.SelectedProfile
 				if selected_profile == nil {
@@ -235,7 +235,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				assignments := control_profile.GetAssignments(p.Settings.PreferredControlMode)
 				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList[change_event.ControlName]
 				for assignment_index, control_assignment_item := range assignments {
-					logger.Logger.Info("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
+					logger.Logger.Debug("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
 					var previous_assignment_call *ProfileRunnerAssignmentCall = nil
 					if has_previous_control_assignments_call_list && len(*previous_control_assignments_call_list) > assignment_index {
 						previous_assignment_call = (*previous_control_assignments_call_list)[assignment_index]

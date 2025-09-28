@@ -405,7 +405,7 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 	/* send for processing if configured */
 	configured, is_configured := mgr.ConfiguredControllers[joystick.GUID]
 	if is_configured {
-		logger.Logger.Error("[ControllerManager::Handler_JoyButtonEvent] processing button event", "event", event)
+		logger.Logger.Debug("[ControllerManager::Handler_JoyButtonEvent] processing button event", "event", event)
 		configured.ProcessEvent(event)
 	} else {
 		logger.Logger.Info("[ControllerManager::Handler_JoyButtonEvent] skipping processing because of unconfigured controller", "event", event)
