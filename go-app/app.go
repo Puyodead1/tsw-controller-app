@@ -21,7 +21,6 @@ import (
 	"tsw_controller_app/sdl_mgr"
 	"tsw_controller_app/string_utils"
 
-	"github.com/inconshreveable/go-update"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -299,33 +298,6 @@ func (a *App) GetLatestReleaseVersion() string {
 	}
 
 	return strings.Split(string(body), "\n")[0]
-}
-
-func (a *App) UpateApp() error {
-	latest_version := a.GetLatestReleaseVersion()
-	if len(latest_version) == 0 {
-		return fmt.Errorf("could not find latest version to update to")
-	}
-
-	file_extension := ""
-	if go_runtime.GOOS == "windows" {
-		file_extension = ".exe"
-	}
-
-	/* eg: app.linux or app.windows.exe */
-	download_url := fmt.Sprintf("https://github.com/LiamMartens/tsw-controller-app/releases/download/v%s/app.%s%s", latest_version, go_runtime.GOOS, file_extension)
-	resp, err := http.Get(download_url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("could not download new release")
-	}
-
-	err = update.Apply(resp.Body, update.Options{})
-	return err
 }
 
 func (a *App) SelectProfile(name string) error {

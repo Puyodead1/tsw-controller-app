@@ -1,13 +1,10 @@
 import useSWR from "swr";
 import { lt } from "semver";
-import {
-  GetLatestReleaseVersion,
-  GetVersion,
-  UpateApp,
-} from "../wailsjs/go/main/App";
+import { GetLatestReleaseVersion, GetVersion } from "../wailsjs/go/main/App";
+import { BrowserOpenURL } from "../wailsjs/runtime/runtime";
 
 export const SelfUpdateBanner = () => {
-  const { data: versionInfo, mutate: refetchVersionInfo } = useSWR(
+  const { data: versionInfo } = useSWR(
     "version-info-update-banner",
     () =>
       Promise.all([GetVersion(), GetLatestReleaseVersion()]).then(
@@ -20,7 +17,11 @@ export const SelfUpdateBanner = () => {
   );
 
   const handleUpdate = () => {
-    UpateApp().catch((err) => alert(err));
+    if (versionInfo) {
+      BrowserOpenURL(
+        `https://github.com/LiamMartens/tsw-controller-app/releases/tag/v${versionInfo.latestReleaseVersion}`,
+      );
+    }
   };
 
   if (
@@ -35,7 +36,9 @@ export const SelfUpdateBanner = () => {
         </div>{" "}
         <p className="text-xs">
           A new version is available{" "}
-          <button className="link" onClick={handleUpdate}>Update now</button>
+          <button className="link" onClick={handleUpdate}>
+            Update now
+          </button>
         </p>
       </div>
     );
