@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The name of this profile"
+    },
+    "controls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The given name of this control (as calibrated)",
+            "minLength": 1
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "$ref": "./profile.momentary_assignment.schema.json" },
+                { "$ref": "./profile.toggle_assignment.schema.json" },
+                { "$ref": "./profile.linear_assignment.schema.json" },
+                { "$ref": "./profile.direct_control_assignment.schema.json" }
+              ]
+            }
+          }
+        },
+        "required": ["name", "assignments"]
+      }
+    }
+  },
+  "required": ["name", "controls"]
+}

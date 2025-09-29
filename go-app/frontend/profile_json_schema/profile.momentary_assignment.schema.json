@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "title": "Momentary",
+  "description": "The momentary switch assignment essentially just acts like a normal button",
+  "properties": {
+    "type": {
+      "enum": ["momentary"]
+    },
+    "threshold": {
+      "type": "number",
+      "description": "The threshold which the gamepad control needs to exceed before triggering the action. For most momentary implementations this can be any value since most buttons report a value of 0 or 1"
+    },
+    "action_activate": {
+      "$ref": "./profile.assignment_action.schema.json",
+      "description": "The actual action to activate when the threshold is exceeded"
+    },
+    "action_deactivate": {
+      "$ref": "./profile.assignment_action.schema.json",
+      "description": "The action to activate when the threshold is not exceeded anymore. This defaults to just releasing the previously activated key(s)."
+    }
+  },
+  "required": ["type", "threshold", "action_activate"]
+}
