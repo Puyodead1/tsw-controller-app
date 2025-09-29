@@ -28,8 +28,8 @@ import (
 const VERSION = "1.0.0"
 const PROGRAM_CONFIG_FILEPATH = "./config/program.json"
 
-//go:embed installation_assets/*
-var installation_assets embed.FS
+//go:embed mod_assets/*
+var mod_assets embed.FS
 
 type AppEventType = string
 
@@ -41,7 +41,7 @@ const (
 	AppEventType_Log               AppEventType = "log"
 )
 
-type InstallationAssets_Manifest struct {
+type ModAssets_Manifest struct {
 	Manifest []string `json:"manifest"`
 }
 
@@ -494,8 +494,8 @@ func (a *App) InstallTrainSimWorldMod() error {
 		return fmt.Errorf("you need to select the TrainSimWorld.exe file to install the mod")
 	}
 
-	var manifest InstallationAssets_Manifest
-	manifest_json_bytes, err := installation_assets.ReadFile("installation_assets/manifest.json")
+	var manifest ModAssets_Manifest
+	manifest_json_bytes, err := mod_assets.ReadFile("mod_assets/manifest.json")
 	if err != nil {
 		logger.Logger.Error("[App::InstallMod] failed to read manfiest file", "error", err)
 		return err
@@ -514,7 +514,7 @@ func (a *App) InstallTrainSimWorldMod() error {
 			return err
 		}
 
-		fh, err := installation_assets.Open(path.Join("installation_assets", file))
+		fh, err := mod_assets.Open(path.Join("mod_assets", file))
 		if err != nil {
 			logger.Logger.Error("[App::InstallMod] could open file", "file", file)
 			return fmt.Errorf("could not open file %e", err)
