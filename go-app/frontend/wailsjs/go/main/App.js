@@ -54,6 +54,10 @@ export function OpenConfigDirectory() {
   return window['go']['main']['App']['OpenConfigDirectory']();
 }
 
+export function OpenProfileBuilder(arg1) {
+  return window['go']['main']['App']['OpenProfileBuilder'](arg1);
+}
+
 export function SaveCalibration(arg1) {
   return window['go']['main']['App']['SaveCalibration'](arg1);
 }

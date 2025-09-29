@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -371,6 +372,16 @@ func (a *App) SubscribeRaw(guid string) error {
 	a.raw_subscriber = &raw_subscriber
 
 	return nil
+}
+
+func (a *App) OpenProfileBuilder(name string) {
+	if len(name) == 0 {
+		runtime.BrowserOpenURL(a.ctx, "https://tsw-controller-app.vercel.app/")
+	} else if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+		profile_json, _ := json.Marshal(profile)
+		encoded := base64.StdEncoding.EncodeToString(profile_json)
+		runtime.BrowserOpenURL(a.ctx, fmt.Sprintf("https://tsw-controller-app.vercel.app/?profile=%s", encoded))
+	}
 }
 
 func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {

@@ -11,6 +11,7 @@ import {
   GetLastInstalledModVersion,
   SetLastInstalledModVersion,
   GetVersion,
+  OpenProfileBuilder
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
@@ -60,6 +61,14 @@ export const MainTab = () => {
   const handleBrowseConfig = () => {
     OpenConfigDirectory();
   };
+
+  const handleCreateProfile = () => {
+    OpenProfileBuilder("")
+  }
+
+  const handleOpenProfile = () => {
+    OpenProfileBuilder(getValues('profile'))
+  }
 
   const openInWindow = (url: string) => {
     BrowserOpenURL(url);
@@ -127,6 +136,12 @@ export const MainTab = () => {
             </li>
             <li>
               <button onClick={handleBrowseConfig}>Browse configuration</button>
+            </li>
+            <li>
+              <button onClick={handleCreateProfile}>Create new profile</button>
+            </li>
+            <li>
+              <button onClick={handleOpenProfile}>Open profile in builder</button>
             </li>
           </ul>
         </div>

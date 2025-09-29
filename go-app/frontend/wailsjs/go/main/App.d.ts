@@ -29,6 +29,8 @@ export function LoadConfiguration():Promise<void>;
 
 export function OpenConfigDirectory():Promise<void>;
 
+export function OpenProfileBuilder(arg1:string):Promise<void>;
+
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
 
 export function SelectProfile(arg1:string):Promise<void>;
