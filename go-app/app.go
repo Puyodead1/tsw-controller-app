@@ -31,9 +31,6 @@ const PROGRAM_CONFIG_FILEPATH = "./config/program.json"
 //go:embed installation_assets/*
 var installation_assets embed.FS
 
-//go:embed config/profiles/*
-var default_profiles embed.FS
-
 type AppEventType = string
 
 const (
@@ -99,22 +96,6 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	/* save all default profiles if profiles dir does not exist */
-	profiles_dir := "./config/profiles"
-	if _, err := os.Stat(profiles_dir); err != nil {
-		os.MkdirAll(profiles_dir, 0755)
-		files, _ := default_profiles.ReadDir("config/profiles")
-		for _, file := range files {
-			profile_handle, _ := default_profiles.Open(path.Join("config/profiles", file.Name()))
-			defer profile_handle.Close()
-			fh, fh_err := os.Create(path.Join(profiles_dir, file.Name()))
-			if fh_err == nil {
-				defer fh.Close()
-				io.Copy(fh, profile_handle)
-			}
-		}
-	}
-
 	a.LoadConfiguration()
 
 	go func() {
