@@ -4,8 +4,13 @@ import {
   SaveCalibration,
   UnsubscribeRaw,
   SubscribeRaw,
+  GetControllerConfiguration,
 } from "../../../wailsjs/go/main/App";
-import { useCalibrationForm } from "./useCalibrationForm";
+import {
+  CalibrationStateControl,
+  Kind,
+  useCalibrationForm,
+} from "./useCalibrationForm";
 import { CalibrationModalFormControl } from "./CalibrationModalFormControl";
 
 type Props = {
@@ -61,6 +66,30 @@ export const CalibrationModalForm = ({ controller, onClose }: Props) => {
       })();
     });
   };
+
+  useEffect(() => {
+    GetControllerConfiguration(controller.GUID).then((configuration) => {
+      form.reset({
+        name: configuration.Calibration.Name,
+        controls: configuration.Calibration.Controls.map(
+          (control): CalibrationStateControl => ({
+            kind: control.Kind as Kind,
+            index: control.Index,
+            name: control.Name,
+            min: control.Min,
+            max: control.Max,
+            idle: control.Idle,
+            deadzone: control.Deadzone,
+            invert: control.Invert,
+            value: control.Idle,
+            override: false,
+          }),
+        ).toSorted((a, b) =>
+          `${a.kind}_${a.index}`.localeCompare(`${b.kind}_${b.index}`),
+        ),
+      });
+    });
+  }, [controller]);
 
   return (
     <div>

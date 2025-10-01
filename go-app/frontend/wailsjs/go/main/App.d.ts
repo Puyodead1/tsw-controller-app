@@ -5,6 +5,8 @@ import {profile_runner} from '../models';
 
 export function ClearProfile():Promise<void>;
 
+export function GetControllerConfiguration(arg1:string):Promise<main.Interop_ControllerConfiguration>;
+
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
 
 export function GetLastInstalledModVersion():Promise<string>;

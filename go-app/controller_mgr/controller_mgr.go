@@ -71,6 +71,9 @@ type ControllerManager_ConfiguredController struct {
 
 type ControllerManager_UnconfiguredController struct {
 	Joystick sdl_mgr.SDLMgr_Joystick
+	/* may have  partial configuration */
+	SDLMapping  *config.Config_Controller_SDLMap
+	Calibration *config.Config_Controller_Calibration
 }
 
 type ControllerManager_Config struct {
@@ -344,7 +347,15 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 		}
 	} else {
 		unconfigured_controller := ControllerManager_UnconfiguredController{
-			Joystick: *joystick,
+			Joystick:    *joystick,
+			SDLMapping:  nil,
+			Calibration: nil,
+		}
+		if has_sdl_map {
+			unconfigured_controller.SDLMapping = &sdl_map
+		}
+		if has_calibration {
+			unconfigured_controller.Calibration = &calibration
 		}
 		mgr.UnconfiguredControllers.Set(joystick.GUID, unconfigured_controller)
 		for _, channel := range mgr.JoyDevicesUpdatedChannels {

@@ -221,6 +221,7 @@ func (a *App) GetControllers() []Interop_GenericController {
 	var controllers []Interop_GenericController
 	a.controller_manager.ConfiguredControllers.ForEach(func(c controller_mgr.ControllerManager_ConfiguredController, _ controller_mgr.JoystickGUIDString) bool {
 		controllers = append(controllers, Interop_GenericController{
+			GUID:         c.Joystick.GUID,
 			UsbID:        c.Joystick.ToString(),
 			Name:         c.Joystick.Name,
 			IsConfigured: true,
@@ -255,6 +256,47 @@ func (a *App) GetSelectedProfile() string {
 		return a.profile_runner.Settings.SelectedProfile.Name
 	}
 	return ""
+}
+
+func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString) *Interop_ControllerConfiguration {
+	if controller, has_controller := a.controller_manager.ConfiguredControllers.Get(guid); has_controller {
+		/* when configured the SDL map and calibration always exist */
+		sdl_mapping, _ := controller.Manager.Config.SDLMappingsByUsbID.Get(controller.Joystick.ToString())
+		calibration, _ := controller.Manager.Config.CalibrationsByUsbID.Get(controller.Joystick.ToString())
+		interop_calibration := Interop_ControllerCalibration{
+			Name:     controller.Joystick.Name,
+			UsbId:    calibration.UsbID,
+			Controls: []Interop_ControllerCalibration_Control{},
+		}
+		controller.Controls.ForEach(func(control controller_mgr.ControllerManager_Controller_Control, key string) bool {
+			calibration := Interop_ControllerCalibration_Control{
+				Kind:     control.SDLMapping.Kind,
+				Index:    control.SDLMapping.Index,
+				Name:     control.Name,
+				Min:      control.Calibration.Min,
+				Max:      control.Calibration.Max,
+				Idle:     0,
+				Deadzone: 0,
+				Invert:   false,
+			}
+			if control.Calibration.Idle != nil {
+				calibration.Idle = *control.Calibration.Idle
+			}
+			if control.Calibration.Deadzone != nil {
+				calibration.Deadzone = *control.Calibration.Deadzone
+			}
+			if control.Calibration.Invert != nil {
+				calibration.Invert = *control.Calibration.Invert
+			}
+			interop_calibration.Controls = append(interop_calibration.Controls, calibration)
+			return true
+		})
+		return &Interop_ControllerConfiguration{
+			SDLMapping:  sdl_mapping,
+			Calibration: interop_calibration,
+		}
+	}
+	return nil
 }
 
 func (a *App) GetSyncControlState() []profile_runner.SyncController_ControlState {

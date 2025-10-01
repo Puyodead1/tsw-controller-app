@@ -1,6 +1,9 @@
 package main
 
-import "tsw_controller_app/sdl_mgr"
+import (
+	"tsw_controller_app/config"
+	"tsw_controller_app/sdl_mgr"
+)
 
 type Interop_GenericController struct {
 	GUID         string
@@ -37,4 +40,9 @@ type Interop_ControllerCalibration struct {
 	Name     string
 	UsbId    string
 	Controls []Interop_ControllerCalibration_Control
+}
+
+type Interop_ControllerConfiguration struct {
+	Calibration Interop_ControllerCalibration
+	SDLMapping  config.Config_Controller_SDLMap
 }

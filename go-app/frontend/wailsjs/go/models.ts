@@ -74,6 +74,56 @@ export namespace config {
 		    return a;
 		}
 	}
+	export class Config_Controller_SDLMap_Control {
+	    kind: string;
+	    index: number;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Config_Controller_SDLMap_Control(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.index = source["index"];
+	        this.name = source["name"];
+	    }
+	}
+	export class Config_Controller_SDLMap {
+	    name: string;
+	    usb_id: string;
+	    data: Config_Controller_SDLMap_Control[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Config_Controller_SDLMap(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.usb_id = source["usb_id"];
+	        this.data = this.convertValues(source["data"], Config_Controller_SDLMap_Control);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 
@@ -140,6 +190,38 @@ export namespace main {
 		}
 	}
 	
+	export class Interop_ControllerConfiguration {
+	    Calibration: Interop_ControllerCalibration;
+	    SDLMapping: config.Config_Controller_SDLMap;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_ControllerConfiguration(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Calibration = this.convertValues(source["Calibration"], Interop_ControllerCalibration);
+	        this.SDLMapping = this.convertValues(source["SDLMapping"], config.Config_Controller_SDLMap);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Interop_GenericController {
 	    GUID: string;
 	    UsbID: string;
