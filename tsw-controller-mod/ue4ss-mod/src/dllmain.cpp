@@ -116,6 +116,9 @@ struct GameplayStatistics_GetPlayerControllerParams
 class TSWControllerMod : public RC::CppUserModBase
 {
   private:
+    static inline std::shared_mutex DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP_MUTEX;
+    static inline std::unordered_map<Unreal::UObject*, std::unordered_map<Unreal::UObject*, RC::StringType>> DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP;
+
     static inline std::shared_mutex DIRECT_CONTROL_TARGET_STATE_MUTEX;
     /* map of control names and their target value and flags */
     static inline std::unordered_map<RC::StringType, std::tuple<float, std::vector<RC::StringType>>> DIRECT_CONTROL_TARGET_STATE;
@@ -217,6 +220,29 @@ class TSWControllerMod : public RC::CppUserModBase
         auto input_identifier = input_identifier_prop->ContainerPtrToValuePtr<void>(vhid_component);
         Unreal::FProperty* input_identifier_identifier_prop = input_identifier_struct->GetPropertyByNameInChain(STR("Identifier"));
         return input_identifier_identifier_prop->ContainerPtrToValuePtr<Unreal::FName>(input_identifier);
+    }
+
+    static void init_drivable_actor_control_property_map(Unreal::UObject* actor)
+    {
+        std::shared_lock<std::shared_mutex> property_map_lock(TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP_MUTEX);
+        if (TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP.find(actor) ==  TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP.end())
+        {
+            /* let's erase the whole map to reduce chances of mem leaks - we're really only interested in tracking the current drivable actor */
+            TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP.clear();
+            /* actor not mapped */
+            std::unordered_map<Unreal::UObject*, RC::StringType> control_map;
+            auto actor_class = actor->GetClassPrivate();
+            for (Unreal::FProperty* prop = actor_class->GetPropertyLink(); prop; prop = prop->GetPropertyLinkNext())
+            {
+                auto prop_name = prop->GetName();
+                if (Unreal::FObjectProperty* as_obj_prop = CastField<Unreal::FObjectProperty>(prop))
+                {
+                    auto prop_value_ptr = as_obj_prop->ContainerPtrToValuePtr<void>(actor);
+                    control_map[as_obj_prop->GetPropertyValue(prop_value_ptr)] = prop_name;
+                }
+            }
+            TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP[actor] = control_map;
+        }
     }
 
     static bool is_vhid_component_changing(Unreal::UObject* vhid_component)
@@ -457,20 +483,13 @@ class TSWControllerMod : public RC::CppUserModBase
             }
 
             /* loop over class properties to find raw controller identifier */
-            RC::StringType control_property_name = RC::StringType(STR(""));
-            auto drivable_actor_class = drivable_actor_result.DrivableActor->GetClassPrivate();
-            for (Unreal::FProperty* prop = drivable_actor_class->GetPropertyLink(); prop; prop = prop->GetPropertyLinkNext())
+            TSWControllerMod::init_drivable_actor_control_property_map(drivable_actor_result.DrivableActor);
+            auto drivable_actor_control_map = TSWControllerMod::DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP.at(drivable_actor_result.DrivableActor);
+            auto control_property_name = RC::StringType(STR(""));
+            auto find_control_property_name_it = drivable_actor_control_map.find(context.Context);
+            if (find_control_property_name_it !=drivable_actor_control_map.end())
             {
-                auto prop_name = prop->GetName();
-                if (Unreal::FObjectProperty* as_obj_prop = CastField<Unreal::FObjectProperty>(prop))
-                {
-                    auto prop_value_ptr = as_obj_prop->ContainerPtrToValuePtr<void>(drivable_actor_result.DrivableActor);
-                    if (as_obj_prop->GetPropertyValue(prop_value_ptr) == context.Context)
-                    {
-                        control_property_name = prop_name;
-                        break;
-                    }
-                }
+                control_property_name = find_control_property_name_it->second;
             }
 
             /* get normalised input value */
