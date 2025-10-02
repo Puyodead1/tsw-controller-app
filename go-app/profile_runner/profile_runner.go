@@ -46,7 +46,7 @@ func New(
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			SelectedProfile:      nil,
-			PreferredControlMode: config.PreferredControlMode_SyncControl,
+			PreferredControlMode: config.PreferredControlMode_DirectControl,
 		},
 		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
 	}
