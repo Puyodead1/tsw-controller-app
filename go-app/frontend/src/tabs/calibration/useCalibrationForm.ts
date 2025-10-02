@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { EventsOn } from "../../../wailsjs/runtime/runtime";
 import { events } from "../../events";
 import { main } from "../../../wailsjs/go/models";
@@ -15,6 +15,7 @@ export type CalibrationStateControl = {
   idle: number;
   deadzone: number;
   invert: boolean;
+  easingCurve: number[];
   override: boolean;
 }
 export type CalibrationState = {
@@ -34,6 +35,7 @@ const EMPTY_CONTROL_STATE: Omit<CalibrationStateControl, 'kind' | 'index'> = {
   idle: Number.MAX_SAFE_INTEGER,
   /* default to MIN_SAFE_INTEGER so any value is > max */
   max: Number.MIN_SAFE_INTEGER,
+  easingCurve: [0.0, 0.0, 1.0, 1.0],
   override: false,
 }
 

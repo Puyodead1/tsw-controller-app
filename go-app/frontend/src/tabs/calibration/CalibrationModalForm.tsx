@@ -58,6 +58,7 @@ export const CalibrationModalForm = ({ controller, onClose }: Props) => {
           Idle: control.idle,
           Deadzone: control.deadzone,
           Invert: control.invert,
+          EasingCurve: control.easingCurve,
         }));
         SaveCalibration(data);
         setIsRunning(false);
@@ -82,6 +83,7 @@ export const CalibrationModalForm = ({ controller, onClose }: Props) => {
             deadzone: control.Deadzone,
             invert: control.Invert,
             value: control.Idle,
+            easingCurve: control.EasingCurve,
             override: false,
           }),
         ).toSorted((a, b) =>

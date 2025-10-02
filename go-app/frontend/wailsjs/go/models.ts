@@ -137,6 +137,7 @@ export namespace main {
 	    Max: number;
 	    Idle: number;
 	    Deadzone: number;
+	    EasingCurve: number[];
 	    Invert: boolean;
 	
 	    static createFrom(source: any = {}) {
@@ -152,6 +153,7 @@ export namespace main {
 	        this.Max = source["Max"];
 	        this.Idle = source["Idle"];
 	        this.Deadzone = source["Deadzone"];
+	        this.EasingCurve = source["EasingCurve"];
 	        this.Invert = source["Invert"];
 	    }
 	}
