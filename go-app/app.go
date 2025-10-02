@@ -269,14 +269,15 @@ func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString)
 		}
 		controller.Controls.ForEach(func(control controller_mgr.ControllerManager_Controller_Control, key string) bool {
 			calibration := Interop_ControllerCalibration_Control{
-				Kind:     control.SDLMapping.Kind,
-				Index:    control.SDLMapping.Index,
-				Name:     control.Name,
-				Min:      control.Calibration.Min,
-				Max:      control.Calibration.Max,
-				Idle:     0,
-				Deadzone: 0,
-				Invert:   false,
+				Kind:        control.SDLMapping.Kind,
+				Index:       control.SDLMapping.Index,
+				Name:        control.Name,
+				Min:         control.Calibration.Min,
+				Max:         control.Calibration.Max,
+				Idle:        0,
+				Deadzone:    0,
+				Invert:      false,
+				EasingCurve: []float64{0.0, 0.0, 1.0, 1.0},
 			}
 			if control.Calibration.Idle != nil {
 				calibration.Idle = *control.Calibration.Idle
@@ -286,6 +287,9 @@ func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString)
 			}
 			if control.Calibration.Invert != nil {
 				calibration.Invert = *control.Calibration.Invert
+			}
+			if control.Calibration.EasingCurve != nil {
+				calibration.EasingCurve = *control.Calibration.EasingCurve
 			}
 			interop_calibration.Controls = append(interop_calibration.Controls, calibration)
 			return true
@@ -450,7 +454,7 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 					Idle:        &control.Idle,
 					Deadzone:    &control.Deadzone,
 					Invert:      &control.Invert,
-					EasingCurve: &[]float64{0.0, 0.0, 1.0, 1.0},
+					EasingCurve: &control.EasingCurve,
 				})
 			}
 		}

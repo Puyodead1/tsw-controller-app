@@ -11,8 +11,8 @@ import (
 
 type Config_Controller_CalibrationData struct {
 	/** the ID of the controller button or trigger as named in the controller mapping config (see other file - eg: "throttle1", "throttle2", "button1") */
-	Id           string     `json:"id" validate:"required"`
-	IsCalibrated bool       `json:"is_calibrated"`
+	Id           string `json:"id" validate:"required"`
+	IsCalibrated bool
 	Deadzone     *float64   `json:"deadzone,omitempty"`
 	Invert       *bool      `json:"invert,omitempty"`
 	Min          float64    `json:"min" validate:"required"`

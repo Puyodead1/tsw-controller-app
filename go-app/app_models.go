@@ -26,14 +26,15 @@ type Interop_RawEvent struct {
 }
 
 type Interop_ControllerCalibration_Control struct {
-	Kind     sdl_mgr.SDLMgr_Control_Kind
-	Index    int
-	Name     string
-	Min      float64
-	Max      float64
-	Idle     float64
-	Deadzone float64
-	Invert   bool
+	Kind        sdl_mgr.SDLMgr_Control_Kind
+	Index       int
+	Name        string
+	Min         float64
+	Max         float64
+	Idle        float64
+	Deadzone    float64
+	EasingCurve []float64
+	Invert      bool
 }
 
 type Interop_ControllerCalibration struct {
