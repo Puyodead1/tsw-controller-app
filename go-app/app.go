@@ -262,10 +262,9 @@ func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString)
 	if controller, has_controller := a.controller_manager.ConfiguredControllers.Get(guid); has_controller {
 		/* when configured the SDL map and calibration always exist */
 		sdl_mapping, _ := controller.Manager.Config.SDLMappingsByUsbID.Get(controller.Joystick.ToString())
-		calibration, _ := controller.Manager.Config.CalibrationsByUsbID.Get(controller.Joystick.ToString())
 		interop_calibration := Interop_ControllerCalibration{
-			Name:     controller.Joystick.Name,
-			UsbId:    calibration.UsbID,
+			Name:     sdl_mapping.Name,
+			UsbId:    sdl_mapping.UsbID,
 			Controls: []Interop_ControllerCalibration_Control{},
 		}
 		controller.Controls.ForEach(func(control controller_mgr.ControllerManager_Controller_Control, key string) bool {
@@ -458,16 +457,18 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	}
 
 	sdl_mapping_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "Select SDL mapping file save location",
-		DefaultFilename: fmt.Sprintf("%s.sdl.json", string_utils.Sluggify(data.Name)),
+		Title:            "Select SDL mapping file save location",
+		DefaultFilename:  fmt.Sprintf("%s.sdl.json", string_utils.Sluggify(data.Name)),
+		DefaultDirectory: "./config/sdl_mappings",
 	})
 	if err != nil {
 		return err
 	}
 
 	calibration_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "Select calibration file save location",
-		DefaultFilename: fmt.Sprintf("%s.calibration.json", string_utils.Sluggify(data.Name)),
+		Title:            "Select calibration file save location",
+		DefaultFilename:  fmt.Sprintf("%s.calibration.json", string_utils.Sluggify(data.Name)),
+		DefaultDirectory: "./config/calibration",
 	})
 	if err != nil {
 		return err
@@ -486,11 +487,13 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	defer calibration_file.Close()
 
 	encoder_sdl_mapping_file := json.NewEncoder(sdl_mapping_file)
+	encoder_sdl_mapping_file.SetIndent("", "  ")
 	if err := encoder_sdl_mapping_file.Encode(sdl_mapping); err != nil {
 		return err
 	}
 
 	encoder_calibration_file := json.NewEncoder(calibration_file)
+	encoder_calibration_file.SetIndent("", "  ")
 	if err := encoder_calibration_file.Encode(calibration); err != nil {
 		return err
 	}
