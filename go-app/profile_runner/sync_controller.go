@@ -28,9 +28,6 @@ func (c *SyncController) UpdateControlStateMoving(identifier string, moving int)
 	if state, has_state := c.ControlState.Get(identifier); has_state {
 		state.Moving = moving
 		c.ControlState.Set(identifier, state)
-		for _, channel := range c.ControlStateChangedChannels {
-			channel <- state
-		}
 	}
 }
 

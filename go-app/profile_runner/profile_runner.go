@@ -46,7 +46,7 @@ func New(
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			SelectedProfile:      nil,
-			PreferredControlMode: config.PreferredControlMode_DirectControl,
+			PreferredControlMode: config.PreferredControlMode_SyncControl,
 		},
 		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
 	}
@@ -393,21 +393,27 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				should_start_increasing := change_event.TargetValue > change_event.CurrentValue && math.Abs(change_event.TargetValue-change_event.CurrentValue) > MARGIN_OF_ERROR && change_event.Moving == 0
 				should_start_decreasing := change_event.TargetValue < change_event.CurrentValue && math.Abs(change_event.TargetValue-change_event.CurrentValue) > MARGIN_OF_ERROR && change_event.Moving == 0
 
-				if should_stop_moving {
-					action_to_release := sync_control_assignment.SyncControl.ActionIncrease
+				release_previous_action := func() {
 					if change_event.Moving == -1 {
-						action_to_release = sync_control_assignment.SyncControl.ActionDecrease
+						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, true))
+					} else {
+						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, true))
 					}
-					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(action_to_release, true))
+				}
+
+				if should_stop_moving {
+					release_previous_action()
 					p.SyncController.UpdateControlStateMoving(change_event.Identifier, 0)
 				}
 
 				if should_start_increasing {
+					release_previous_action()
 					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, false))
 					p.SyncController.UpdateControlStateMoving(change_event.Identifier, 1)
 				}
 
 				if should_start_decreasing {
+					release_previous_action()
 					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, false))
 					p.SyncController.UpdateControlStateMoving(change_event.Identifier, -1)
 				}

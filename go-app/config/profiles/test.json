@@ -1,25 +1,26 @@
 {
-  "name": "m7",
+  "name": "njt-arrow3",
   "controls": [
     {
       "name": "Lever2",
-      "description": "MasterController",
+      "description": "Throttle",
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "MasterController",
+          "controls": "Throttle",
           "input_value": {
-            "min": 0.1,
+            "min": -1.0,
             "max": 1.0,
-            "steps": [0.1, null, 0.4, 0.5, 0.6, null, 1.0]
+            "step": 0.2
           }
         },
         {
           "type": "sync_control",
           "identifier": "Throttle",
           "input_value": {
-            "min": 0.0,
-            "max": 1.0
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.2
           },
           "action_increase": {
             "keys": "a"
@@ -30,22 +31,33 @@
         }
       ]
     },
-
     {
-      "name": "Lever1",
-      "description": "Master key",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.5,
-        "action_activate": {
-          "keys": "a",
-          "press_time": 0.3
+      "name": "Lever3",
+      "description": "Automatic Brake",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "AutomaticBrake_26C",
+          "input_value": {
+            "min": 0.0,
+            "max": 1.0
+          }
         },
-        "action_deactivate": {
-          "keys": "b",
-          "press_time": 0.3
+        {
+          "type": "sync_control",
+          "identifier": "AutomaticBrake",
+          "input_value": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          "action_increase": {
+            "keys": "'"
+          },
+          "action_decrease": {
+            "keys": ";"
+          }
         }
-      }
+      ]
     },
 
     {
@@ -55,7 +67,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "d"
+          "keys": "'"
         }
       }
     },
@@ -66,7 +78,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "a"
+          "keys": ";"
         }
       }
     },
@@ -122,18 +134,12 @@
     },
     {
       "name": "Lever2Button1",
-      "description": "Charge Brakes",
+      "description": "Sand",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "controls": "BrakeCharging",
-          "value": 1.0,
-          "hold": true
-        },
-        "action_deactivate": {
-          "controls": "BrakeCharging",
-          "value": 0.0
+          "keys": "x"
         }
       }
     },
@@ -183,9 +189,21 @@
         }
       }
     },
+
+    {
+      "name": "Button2",
+      "description": "Cab Light",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "l"
+        }
+      }
+    },
     {
       "name": "Button1",
-      "description": "Headlights Dial Right",
+      "description": "Headlights Increase",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
@@ -196,26 +214,12 @@
     },
     {
       "name": "Button4",
-      "description": "Headlights Dial Left",
+      "description": "Headlights Decrease",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
           "keys": "shift+h"
-        }
-      }
-    },
-    {
-      "name": "Button2",
-      "description": "Cab Light",
-      "assignment": {
-        "type": "toggle",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "l"
-        },
-        "action_deactivate": {
-          "keys": "shift+l"
         }
       }
     }
