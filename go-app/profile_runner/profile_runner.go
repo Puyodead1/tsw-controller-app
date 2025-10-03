@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"time"
 	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/logger"
@@ -129,7 +131,7 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 			p.ActionSequencer.Enqueue(*action.ActionSequencerAction)
 		} else if action.DirectControlCommand != nil {
 			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
-			p.DirectController.ControlChannel <- *action.DirectControlCommand
+			chan_utils.SendTimeout(p.DirectController.ControlChannel, time.Second, *action.DirectControlCommand)
 		}
 	}
 	return nil

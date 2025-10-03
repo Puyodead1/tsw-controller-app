@@ -2,6 +2,8 @@ package controller_mgr
 
 import (
 	"context"
+	"time"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
@@ -154,12 +156,12 @@ func (ctrl *ControllerManager_Controller_Control) UpdateValue(value float64, is_
 	}
 
 	for _, channel := range ctrl.Manager.ChangeEventChannels {
-		channel <- ControllerManager_Control_ChangeEvent{
+		chan_utils.SendTimeout(channel, 1*time.Second, ControllerManager_Control_ChangeEvent{
 			Joystick:     &ctrl.Joystick,
 			Control:      ctrl,
 			ControlName:  ctrl.Name,
 			ControlState: ctrl.State,
-		}
+		})
 	}
 }
 
@@ -415,10 +417,10 @@ func (mgr *ControllerManager) Handler_JoyAxisEvent(event *sdl.JoyAxisEvent) erro
 
 	/* only send if the channel is being read */
 	for _, channel := range mgr.RawEventChannels {
-		channel <- ControllerManager_RawEvent{
+		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
 			Joystick: joystick,
 			Event:    event,
-		}
+		})
 	}
 
 	/* send for processing if configured */
@@ -439,10 +441,10 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 
 	/* only send if the channel is being read */
 	for _, channel := range mgr.RawEventChannels {
-		channel <- ControllerManager_RawEvent{
+		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
 			Joystick: joystick,
 			Event:    event,
-		}
+		})
 	}
 
 	/* send for processing if configured */
@@ -466,10 +468,10 @@ func (mgr *ControllerManager) Handler_JoyHatEvent(event *sdl.JoyHatEvent) error 
 
 	/* only send if the channel is being read */
 	for _, channel := range mgr.RawEventChannels {
-		channel <- ControllerManager_RawEvent{
+		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
 			Joystick: joystick,
 			Event:    event,
-		}
+		})
 	}
 
 	/* send for processing if configured */

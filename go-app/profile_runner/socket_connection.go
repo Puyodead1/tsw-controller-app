@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
 
@@ -117,7 +119,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 			socket_message := SocketConnectionMessage_FromString(string(msg))
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received message from client", "message", socket_message)
 			for _, sub := range c.Subscribers {
-				sub <- socket_message
+				chan_utils.SendTimeout(sub, time.Second, socket_message)
 			}
 		} else {
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received unsupported message %d", "message_type", msg_type)
@@ -146,7 +148,7 @@ func (c *SocketConnection) Start() error {
 
 func (c *SocketConnection) Send(m SocketConnection_Message) {
 	c.OutgoingChannels.ForEach(func(channel chan SocketConnection_Message, key uuid.UUID) bool {
-		channel <- m
+		chan_utils.SendTimeout(channel, time.Second, m)
 		return true
 	})
 }

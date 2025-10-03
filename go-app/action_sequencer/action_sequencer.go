@@ -3,6 +3,8 @@ package action_sequencer
 import (
 	"context"
 	"strings"
+	"time"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/logger"
 
 	"github.com/go-vgo/robotgo"
@@ -26,7 +28,7 @@ func New() *ActionSequencer {
 }
 
 func (seq *ActionSequencer) Enqueue(action ActionSequencerAction) {
-	seq.ActionsQueue <- action
+	chan_utils.SendTimeout(seq.ActionsQueue, time.Second, action)
 }
 
 func (seq *ActionSequencer) ToggleKeys(keys []string, modifiers []string, state string) {

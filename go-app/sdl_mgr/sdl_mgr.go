@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/logger"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -112,41 +113,41 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 				/* pass event to channel */
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
-					event_channel <- &sdl.JoyDeviceAddedEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceAddedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					}
+					})
 				case *sdl.JoyDeviceRemovedEvent:
-					event_channel <- &sdl.JoyDeviceRemovedEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceRemovedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					}
+					})
 				case *sdl.JoyAxisEvent:
-					event_channel <- &sdl.JoyAxisEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyAxisEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Axis:      e.Axis,
 						Value:     e.Value,
-					}
+					})
 				case *sdl.JoyButtonEvent:
-					event_channel <- &sdl.JoyButtonEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyButtonEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Button:    e.Button,
 						State:     e.State,
-					}
+					})
 				case *sdl.JoyHatEvent:
-					event_channel <- &sdl.JoyHatEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyHatEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Hat:       e.Hat,
 						Value:     e.Value,
-					}
+					})
 				}
 			}
 		}

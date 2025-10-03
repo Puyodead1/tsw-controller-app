@@ -3,6 +3,8 @@ package profile_runner
 import (
 	"context"
 	"strconv"
+	"time"
+	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/map_utils"
 )
@@ -47,7 +49,7 @@ func (c *SyncController) UpdateControlStateTargetValue(identifier string, target
 	c.ControlState.Set(identifier, state)
 
 	for _, channel := range c.ControlStateChangedChannels {
-		channel <- state
+		chan_utils.SendTimeout(channel, time.Second, state)
 	}
 }
 
@@ -100,7 +102,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 				control_state.CurrentValue = current_value
 				control_state.CurrentNormalizedValue = current_normalized_value
 				for _, channel := range c.ControlStateChangedChannels {
-					channel <- control_state
+					chan_utils.SendTimeout(channel, time.Second, control_state)
 				}
 				c.ControlState.Set(msg.Properties["name"], control_state)
 			}
