@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/chan_utils"
@@ -14,6 +15,7 @@ import (
 )
 
 type ProfileRunnerSettings struct {
+	Mutex                sync.Mutex
 	SelectedProfile      *config.Config_Controller_Profile
 	PreferredControlMode config.PreferredControlMode
 }
@@ -47,6 +49,7 @@ func New(
 		SyncController:    sync_controller,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
+			Mutex:                sync.Mutex{},
 			SelectedProfile:      nil,
 			PreferredControlMode: config.PreferredControlMode_DirectControl,
 		},
@@ -69,10 +72,16 @@ func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile
 }
 
 func (p *ProfileRunner) ClearProfile() {
+	p.Settings.Mutex.Lock()
+	defer p.Settings.Mutex.Unlock()
+
 	p.Settings.SelectedProfile = nil
 }
 
 func (p *ProfileRunner) SetProfile(name string) error {
+	p.Settings.Mutex.Lock()
+	defer p.Settings.Mutex.Unlock()
+
 	profile, is_valid_profile := p.Profiles.Get(name)
 	if is_valid_profile {
 		p.Settings.SelectedProfile = &profile
@@ -82,6 +91,9 @@ func (p *ProfileRunner) SetProfile(name string) error {
 }
 
 func (p *ProfileRunner) SetPreferredControlMode(mode config.PreferredControlMode) {
+	p.Settings.Mutex.Lock()
+	defer p.Settings.Mutex.Unlock()
+
 	p.Settings.PreferredControlMode = mode
 }
 

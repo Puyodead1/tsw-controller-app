@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 )
 
 type GlobalLogger struct {
+	mutex     sync.RWMutex
 	slogger   *slog.Logger
 	listeners []chan string
 }
 
 func (g *GlobalLogger) Listen() (chan string, func()) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
 	channel := make(chan string)
 	g.listeners = append(g.listeners, channel)
 	unsubscribe := func() {
@@ -42,6 +47,9 @@ func (g *GlobalLogger) Debug(msg string, args ...any) {
 }
 
 func (g *GlobalLogger) Info(msg string, args ...any) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
 	g.slogger.Info(msg, args...)
 
 	if len(g.listeners) > 0 {
@@ -53,6 +61,9 @@ func (g *GlobalLogger) Info(msg string, args ...any) {
 }
 
 func (g *GlobalLogger) Error(msg string, args ...any) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
 	g.slogger.Error(msg, args...)
 
 	if len(g.listeners) > 0 {
