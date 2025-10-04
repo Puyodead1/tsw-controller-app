@@ -9,6 +9,7 @@ import (
 	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
+	"tsw_controller_app/pubsub_utils"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -23,7 +24,7 @@ type SocketConnection struct {
 	WsUpgrader       *websocket.Upgrader
 	Server           *http.Server
 	OutgoingChannels *map_utils.LockMap[uuid.UUID, chan SocketConnection_Message]
-	Subscribers      []chan SocketConnection_Message
+	Subscribers      *pubsub_utils.PubSubSlice[SocketConnection_Message]
 }
 
 func SocketConnectionMessage_FromString(msg string) SocketConnection_Message {
@@ -118,9 +119,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 		if msg_type == websocket.TextMessage {
 			socket_message := SocketConnectionMessage_FromString(string(msg))
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received message from client", "message", socket_message)
-			for _, sub := range c.Subscribers {
-				chan_utils.SendTimeout(sub, time.Second, socket_message)
-			}
+			c.Subscribers.EmitTimeout(time.Second, socket_message)
 		} else {
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received unsupported message %d", "message_type", msg_type)
 		}
@@ -130,16 +129,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (c *SocketConnection) Subscribe() (chan SocketConnection_Message, func()) {
-	channel := make(chan SocketConnection_Message)
-	c.Subscribers = append(c.Subscribers, channel)
-	return channel, func() {
-		for index, sub := range c.Subscribers {
-			if sub == channel {
-				c.Subscribers = append(c.Subscribers[:index], c.Subscribers[index+1:]...)
-				break
-			}
-		}
-	}
+	return c.Subscribers.Subscribe()
 }
 
 func (c *SocketConnection) Start() error {
@@ -163,6 +153,7 @@ func NewSocketConnection() *SocketConnection {
 		WsUpgrader:       &websocket.Upgrader{},
 		Server:           server,
 		OutgoingChannels: map_utils.NewLockMap[uuid.UUID, chan SocketConnection_Message](),
+		Subscribers:      pubsub_utils.NewPubSubSlice[SocketConnection_Message](),
 	}
 	mux.HandleFunc("/", controller.WebsocketHandler)
 	return &controller

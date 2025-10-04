@@ -4,9 +4,9 @@ import (
 	"context"
 	"strconv"
 	"time"
-	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/map_utils"
+	"tsw_controller_app/pubsub_utils"
 )
 
 type SyncController_ControlState struct {
@@ -23,7 +23,7 @@ type SyncController_ControlState struct {
 type SyncController struct {
 	SocketConnection            *SocketConnection
 	ControlState                *map_utils.LockMap[string, SyncController_ControlState]
-	ControlStateChangedChannels []chan SyncController_ControlState
+	ControlStateChangedChannels *pubsub_utils.PubSubSlice[SyncController_ControlState]
 }
 
 func (c *SyncController) UpdateControlStateMoving(identifier string, moving int) {
@@ -48,23 +48,11 @@ func (c *SyncController) UpdateControlStateTargetValue(identifier string, target
 	state.TargetValue = targetValue
 	c.ControlState.Set(identifier, state)
 
-	for _, channel := range c.ControlStateChangedChannels {
-		chan_utils.SendTimeout(channel, time.Second, state)
-	}
+	c.ControlStateChangedChannels.EmitTimeout(time.Second, state)
 }
 
 func (c *SyncController) Subscribe() (chan SyncController_ControlState, func()) {
-	channel := make(chan SyncController_ControlState)
-	c.ControlStateChangedChannels = append(c.ControlStateChangedChannels, channel)
-	unsubscribe := func() {
-		for index, ch := range c.ControlStateChangedChannels {
-			if ch == channel {
-				c.ControlStateChangedChannels = append(c.ControlStateChangedChannels[:index], c.ControlStateChangedChannels[index+1:]...)
-				break
-			}
-		}
-	}
-	return channel, unsubscribe
+	return c.ControlStateChangedChannels.Subscribe()
 }
 
 func (c *SyncController) Run(ctx context.Context) func() {
@@ -101,9 +89,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 				control_state.PropertyName = msg.Properties["property"]
 				control_state.CurrentValue = current_value
 				control_state.CurrentNormalizedValue = current_normalized_value
-				for _, channel := range c.ControlStateChangedChannels {
-					chan_utils.SendTimeout(channel, time.Second, control_state)
-				}
+				c.ControlStateChangedChannels.EmitTimeout(time.Second, control_state)
 				c.ControlState.Set(msg.Properties["name"], control_state)
 			}
 		}
@@ -116,7 +102,7 @@ func NewSyncController(connection *SocketConnection) *SyncController {
 	controller := SyncController{
 		SocketConnection:            connection,
 		ControlState:                map_utils.NewLockMap[string, SyncController_ControlState](),
-		ControlStateChangedChannels: []chan SyncController_ControlState{},
+		ControlStateChangedChannels: pubsub_utils.NewPubSubSlice[SyncController_ControlState](),
 	}
 	return &controller
 }

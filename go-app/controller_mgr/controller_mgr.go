@@ -3,11 +3,11 @@ package controller_mgr
 import (
 	"context"
 	"time"
-	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
 	"tsw_controller_app/math_utils"
+	"tsw_controller_app/pubsub_utils"
 	"tsw_controller_app/sdl_mgr"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -91,9 +91,9 @@ type ControllerManager struct {
 	ConfiguredControllers   *map_utils.LockMap[JoystickGUIDString, ControllerManager_ConfiguredController]
 	UnconfiguredControllers *map_utils.LockMap[JoystickGUIDString, ControllerManager_UnconfiguredController]
 
-	RawEventChannels          []chan ControllerManager_RawEvent
-	ChangeEventChannels       []chan ControllerManager_Control_ChangeEvent
-	JoyDevicesUpdatedChannels []chan ControllerManager_Control_JoyDevicesUpdated
+	RawEventChannels          *pubsub_utils.PubSubSlice[ControllerManager_RawEvent]
+	ChangeEventChannels       *pubsub_utils.PubSubSlice[ControllerManager_Control_ChangeEvent]
+	JoyDevicesUpdatedChannels *pubsub_utils.PubSubSlice[ControllerManager_Control_JoyDevicesUpdated]
 }
 
 func (ctrl *ControllerManager_Controller_Control) Reset() {
@@ -155,14 +155,12 @@ func (ctrl *ControllerManager_Controller_Control) UpdateValue(value float64, is_
 		}
 	}
 
-	for _, channel := range ctrl.Manager.ChangeEventChannels {
-		chan_utils.SendTimeout(channel, 1*time.Second, ControllerManager_Control_ChangeEvent{
-			Joystick:     &ctrl.Joystick,
-			Control:      ctrl,
-			ControlName:  ctrl.Name,
-			ControlState: ctrl.State,
-		})
-	}
+	ctrl.Manager.ChangeEventChannels.EmitTimeout(time.Second, ControllerManager_Control_ChangeEvent{
+		Joystick:     &ctrl.Joystick,
+		Control:      ctrl,
+		ControlName:  ctrl.Name,
+		ControlState: ctrl.State,
+	})
 }
 
 func (ctrl *ControllerManager_Controller_Control) ProcessEvent(event sdl.Event) {
@@ -221,7 +219,9 @@ func New(sdlmgr *sdl_mgr.SDLMgr) *ControllerManager {
 		ConfiguredControllers:   map_utils.NewLockMap[JoystickGUIDString, ControllerManager_ConfiguredController](),
 		UnconfiguredControllers: map_utils.NewLockMap[JoystickGUIDString, ControllerManager_UnconfiguredController](),
 
-		RawEventChannels: []chan ControllerManager_RawEvent{},
+		RawEventChannels:          pubsub_utils.NewPubSubSlice[ControllerManager_RawEvent](),
+		ChangeEventChannels:       pubsub_utils.NewPubSubSlice[ControllerManager_Control_ChangeEvent](),
+		JoyDevicesUpdatedChannels: pubsub_utils.NewPubSubSlice[ControllerManager_Control_JoyDevicesUpdated](),
 	}
 }
 
@@ -321,9 +321,7 @@ func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SD
 	})
 
 	if didConfigureJoystick {
-		for _, channel := range mgr.JoyDevicesUpdatedChannels {
-			channel <- ControllerManager_Control_JoyDevicesUpdated{}
-		}
+		mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 	}
 }
 
@@ -344,9 +342,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 	if has_sdl_map && has_calibration {
 		configured_controller := mgr.ConfigureJoystick(joystick, sdl_map, calibration)
 		mgr.ConfiguredControllers.Set(joystick.GUID, configured_controller)
-		for _, channel := range mgr.JoyDevicesUpdatedChannels {
-			channel <- ControllerManager_Control_JoyDevicesUpdated{}
-		}
+		mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 	} else {
 		unconfigured_controller := ControllerManager_UnconfiguredController{
 			Joystick:    *joystick,
@@ -360,9 +356,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 			unconfigured_controller.Calibration = &calibration
 		}
 		mgr.UnconfiguredControllers.Set(joystick.GUID, unconfigured_controller)
-		for _, channel := range mgr.JoyDevicesUpdatedChannels {
-			channel <- ControllerManager_Control_JoyDevicesUpdated{}
-		}
+		mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 	}
 
 	return nil
@@ -373,9 +367,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemov
 		if configured_controller.Joystick.Index == int(event.Which) {
 			logger.Logger.Info("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device", "name", configured_controller.Joystick.Name)
 			defer func() {
-				for _, channel := range mgr.JoyDevicesUpdatedChannels {
-					channel <- ControllerManager_Control_JoyDevicesUpdated{}
-				}
+				mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 			}()
 			return map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_ConfiguredController]{
 				Action: map_utils.LockMapMutateActionType_Delete,
@@ -391,9 +383,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceRemoved(event *sdl.JoyDeviceRemov
 		if unconfigured_controller.Joystick.Index == int(event.Which) {
 			logger.Logger.Info("[ControllerManager:Handler_JoyDeviceRemoved] Removing joy device", "name", unconfigured_controller.Joystick.Name)
 			defer func() {
-				for _, channel := range mgr.JoyDevicesUpdatedChannels {
-					channel <- ControllerManager_Control_JoyDevicesUpdated{}
-				}
+				mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 			}()
 			return map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_UnconfiguredController]{
 				Action: map_utils.LockMapMutateActionType_Delete,
@@ -416,12 +406,10 @@ func (mgr *ControllerManager) Handler_JoyAxisEvent(event *sdl.JoyAxisEvent) erro
 	}
 
 	/* only send if the channel is being read */
-	for _, channel := range mgr.RawEventChannels {
-		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
-			Joystick: joystick,
-			Event:    event,
-		})
-	}
+	mgr.RawEventChannels.EmitTimeout(time.Second, ControllerManager_RawEvent{
+		Joystick: joystick,
+		Event:    event,
+	})
 
 	/* send for processing if configured */
 	configured, is_configured := mgr.ConfiguredControllers.Get(joystick.GUID)
@@ -440,12 +428,10 @@ func (mgr *ControllerManager) Handler_JoyButtonEvent(event *sdl.JoyButtonEvent) 
 	}
 
 	/* only send if the channel is being read */
-	for _, channel := range mgr.RawEventChannels {
-		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
-			Joystick: joystick,
-			Event:    event,
-		})
-	}
+	mgr.RawEventChannels.EmitTimeout(time.Second, ControllerManager_RawEvent{
+		Joystick: joystick,
+		Event:    event,
+	})
 
 	/* send for processing if configured */
 	configured, is_configured := mgr.ConfiguredControllers.Get(joystick.GUID)
@@ -467,12 +453,10 @@ func (mgr *ControllerManager) Handler_JoyHatEvent(event *sdl.JoyHatEvent) error 
 	}
 
 	/* only send if the channel is being read */
-	for _, channel := range mgr.RawEventChannels {
-		chan_utils.SendTimeout(channel, time.Second, ControllerManager_RawEvent{
-			Joystick: joystick,
-			Event:    event,
-		})
-	}
+	mgr.RawEventChannels.EmitTimeout(time.Second, ControllerManager_RawEvent{
+		Joystick: joystick,
+		Event:    event,
+	})
 
 	/* send for processing if configured */
 	configured, is_configured := mgr.ConfiguredControllers.Get(joystick.GUID)
@@ -524,44 +508,13 @@ func (mgr *ControllerManager) Attach(ctx context.Context) context.CancelFunc {
 }
 
 func (mgr *ControllerManager) SubscribeRaw() (chan ControllerManager_RawEvent, func()) {
-	channel := make(chan ControllerManager_RawEvent)
-	mgr.RawEventChannels = append(mgr.RawEventChannels, channel)
-	unsubscribe := func() {
-		for index, c := range mgr.RawEventChannels {
-			if c == channel {
-				mgr.RawEventChannels = append(mgr.RawEventChannels[:index], mgr.RawEventChannels[index+1:]...)
-				break
-			}
-		}
-		close(channel)
-	}
-	return channel, unsubscribe
+	return mgr.RawEventChannels.Subscribe()
 }
 
 func (mgr *ControllerManager) SubscribeChangeEvent() (chan ControllerManager_Control_ChangeEvent, func()) {
-	channel := make(chan ControllerManager_Control_ChangeEvent)
-	mgr.ChangeEventChannels = append(mgr.ChangeEventChannels, channel)
-	unsubscribe := func() {
-		for index, c := range mgr.ChangeEventChannels {
-			if c == channel {
-				mgr.ChangeEventChannels = append(mgr.ChangeEventChannels[:index], mgr.ChangeEventChannels[index+1:]...)
-				break
-			}
-		}
-	}
-	return channel, unsubscribe
+	return mgr.ChangeEventChannels.Subscribe()
 }
 
 func (mgr *ControllerManager) SubscribeJoyDevicesUpdated() (chan ControllerManager_Control_JoyDevicesUpdated, func()) {
-	channel := make(chan ControllerManager_Control_JoyDevicesUpdated)
-	mgr.JoyDevicesUpdatedChannels = append(mgr.JoyDevicesUpdatedChannels, channel)
-	unsubscribe := func() {
-		for index, c := range mgr.JoyDevicesUpdatedChannels {
-			if c == channel {
-				mgr.JoyDevicesUpdatedChannels = append(mgr.JoyDevicesUpdatedChannels[:index], mgr.JoyDevicesUpdatedChannels[index+1:]...)
-				break
-			}
-		}
-	}
-	return channel, unsubscribe
+	return mgr.JoyDevicesUpdatedChannels.Subscribe()
 }
