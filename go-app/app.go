@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path"
 	go_runtime "runtime"
+	"sort"
 	"strings"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
@@ -247,6 +248,9 @@ func (a *App) GetProfiles() []Interop_Profile {
 			Name: profile.Name,
 		})
 		return true
+	})
+	sort.Slice(profiles, func(i, j int) bool {
+		return profiles[i].Name < profiles[j].Name
 	})
 	return profiles
 }
