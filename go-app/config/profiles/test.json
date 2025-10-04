@@ -1,26 +1,26 @@
 {
-  "name": "njt-arrow3",
+  "name": "class802",
   "controls": [
     {
-      "name": "Lever2",
-      "description": "Throttle",
+      "name": "Lever3",
+      "description": "Combined Power and brake",
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "Throttle",
+          "controls": "PowerHandle(IrregularLever)",
           "input_value": {
-            "min": -1.0,
+            "min": -0.9,
             "max": 1.0,
-            "step": 0.2
+            "invert": true
           }
         },
         {
           "type": "sync_control",
           "identifier": "Throttle",
           "input_value": {
-            "min": -1.0,
+            "min": -0.9,
             "max": 1.0,
-            "step": 0.2
+            "invert": true
           },
           "action_increase": {
             "keys": "a"
@@ -31,54 +31,43 @@
         }
       ]
     },
+
     {
-      "name": "Lever3",
-      "description": "Automatic Brake",
-      "assignments": [
-        {
-          "type": "direct_control",
-          "controls": "AutomaticBrake_26C",
-          "input_value": {
-            "min": 0.0,
-            "max": 1.0
-          }
+      "name": "Lever1",
+      "description": "Master key",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.5,
+        "action_activate": {
+          "keys": "ctrl+w",
+          "press_time": 0.3
         },
-        {
-          "type": "sync_control",
-          "identifier": "AutomaticBrake",
-          "input_value": {
-            "min": 0.0,
-            "max": 1.0
-          },
-          "action_increase": {
-            "keys": "'"
-          },
-          "action_decrease": {
-            "keys": ";"
-          }
+        "action_deactivate": {
+          "keys": "ctrl+w",
+          "press_time": 0.3
         }
-      ]
+      }
     },
 
     {
       "name": "Lever3Button1",
-      "description": "Increase Brake",
+      "description": "Decrease throttle",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "'"
+          "keys": "d"
         }
       }
     },
     {
       "name": "Lever3Trigger1",
-      "description": "Decrease Brake",
+      "description": "Increase throttle",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": ";"
+          "keys": "a"
         }
       }
     },
@@ -90,7 +79,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "Q+PageDown"
+          "keys": "Q"
         }
       }
     },
@@ -101,7 +90,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "w",
+          "keys": "s",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -114,7 +103,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "s",
+          "keys": "w",
           "press_time": 0.3,
           "wait_time": 0.2
         }
@@ -172,7 +161,7 @@
       "description": "Wipers Increase",
       "assignment": {
         "type": "momentary",
-        "threshold": 0.9,
+        "threshold": 0.5,
         "action_activate": {
           "keys": "v"
         }
@@ -183,7 +172,7 @@
       "description": "Wipers Decrease",
       "assignment": {
         "type": "momentary",
-        "threshold": 0.9,
+        "threshold": 0.5,
         "action_activate": {
           "keys": "shift+v"
         }
@@ -203,23 +192,12 @@
     },
     {
       "name": "Button1",
-      "description": "Headlights Increase",
+      "description": "Headlights Toggle",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
           "keys": "h"
-        }
-      }
-    },
-    {
-      "name": "Button4",
-      "description": "Headlights Decrease",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "shift+h"
         }
       }
     }

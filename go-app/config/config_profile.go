@@ -383,12 +383,18 @@ This calculates the actual value which would be sent to the game
 func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue) CalculateOutputValue(value float64) float64 {
 	input_value := value
 	if c.Invert != nil && *c.Invert {
-		input_value = -input_value
+		if value < 0.0 {
+			input_value = -1.0 - value
+		} else {
+			input_value = 1.0 - value
+		}
 	}
+
 	total_distance := math.Abs(c.Max - c.Min)
 	normal := (input_value * total_distance) + c.Min
 	normal_steps := c.GetNormalSteps()
 	free_zones := c.GetFreeRangeZones()
+	fmt.Printf("calc output value from %#v | %#v\n", total_distance, normal)
 
 	if normal_steps == nil && c.Step != nil {
 		var auto_steps []float64
