@@ -15,9 +15,9 @@ import (
 )
 
 type ProfileRunnerSettings struct {
-	Mutex                sync.RWMutex
-	SelectedProfile      *config.Config_Controller_Profile
-	PreferredControlMode config.PreferredControlMode
+	Mutex                  sync.RWMutex
+	SelectedProfilesByGUID *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile]
+	PreferredControlMode   config.PreferredControlMode
 }
 
 type ProfileRunnerAssignmentCall struct {
@@ -42,10 +42,10 @@ func (s *ProfileRunnerSettings) Update(mutator func(s *ProfileRunnerSettings)) {
 	mutator(s)
 }
 
-func (s *ProfileRunnerSettings) GetSelectedProfile() *config.Config_Controller_Profile {
+func (s *ProfileRunnerSettings) GetSelectedProfiles() *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile] {
 	s.Mutex.RLock()
 	defer s.Mutex.RUnlock()
-	return s.SelectedProfile
+	return s.SelectedProfilesByGUID
 }
 
 func (s *ProfileRunnerSettings) GetPreferredControlMode() config.PreferredControlMode {
@@ -67,9 +67,9 @@ func New(
 		SyncController:    sync_controller,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
-			Mutex:                sync.RWMutex{},
-			SelectedProfile:      nil,
-			PreferredControlMode: config.PreferredControlMode_DirectControl,
+			Mutex:                  sync.RWMutex{},
+			SelectedProfilesByGUID: map_utils.NewLockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile](),
+			PreferredControlMode:   config.PreferredControlMode_DirectControl,
 		},
 		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
 	}
@@ -89,18 +89,18 @@ func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile
 	p.Profiles.Set(profile.Name, profile)
 }
 
-func (p *ProfileRunner) ClearProfile() {
+func (p *ProfileRunner) ClearProfile(guid controller_mgr.JoystickGUIDString) {
 	p.Settings.Update(func(s *ProfileRunnerSettings) {
-		s.SelectedProfile = nil
+		s.SelectedProfilesByGUID.Delete(guid)
 	})
 }
 
-func (p *ProfileRunner) SetProfile(name string) error {
+func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, name string) error {
 	var err error = nil
 	p.Settings.Update(func(s *ProfileRunnerSettings) {
 		profile, is_valid_profile := p.Profiles.Get(name)
 		if is_valid_profile {
-			s.SelectedProfile = &profile
+			s.SelectedProfilesByGUID.Set(guid, &profile)
 		} else {
 			err = fmt.Errorf("could not find profile by name %s", name)
 		}
@@ -310,8 +310,8 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case change_event := <-channel:
 				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
-				selected_profile := p.Settings.GetSelectedProfile()
-				if selected_profile == nil {
+				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(change_event.Joystick.GUID)
+				if selected_profile == nil || !has_selected_profile {
 					/* try to find default profile by USB ID */
 					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 						if profile.UsbID != nil && *profile.UsbID == change_event.Joystick.ToString() {
@@ -461,13 +461,19 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				return
 			case sync_control_state := <-channel:
 				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
-				if p.Settings.GetSelectedProfile() == nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+				if sync_control_state.SourceEvent != nil && p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+					continue
+				}
+
+				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(sync_control_state.SourceEvent.Joystick.GUID)
+				if selected_profile == nil || !has_selected_profile {
+					/* skip if no profile selected for controller */
 					continue
 				}
 
 				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
 			control_loop:
-				for _, cp := range p.Settings.GetSelectedProfile().Controls {
+				for _, cp := range selected_profile.Controls {
 					assignments := p.GetAssignments(&cp, sync_control_state.SourceEvent)
 					for _, assignment := range assignments {
 						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == sync_control_state.Identifier {

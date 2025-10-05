@@ -255,11 +255,13 @@ func (a *App) GetProfiles() []Interop_Profile {
 	return profiles
 }
 
-func (a *App) GetSelectedProfile() string {
-	if a.profile_runner.Settings.GetSelectedProfile() != nil {
-		return a.profile_runner.Settings.GetSelectedProfile().Name
-	}
-	return ""
+func (a *App) GetSelectedProfiles() map[controller_mgr.JoystickGUIDString]string {
+	selected_profiles := map[controller_mgr.JoystickGUIDString]string{}
+	a.profile_runner.Settings.GetSelectedProfiles().ForEach(func(value *config.Config_Controller_Profile, key controller_mgr.JoystickGUIDString) bool {
+		selected_profiles[key] = value.Name
+		return true
+	})
+	return selected_profiles
 }
 
 func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString) *Interop_ControllerConfiguration {
@@ -338,16 +340,16 @@ func (a *App) GetLatestReleaseVersion() string {
 	return strings.Split(string(body), "\n")[0]
 }
 
-func (a *App) SelectProfile(name string) error {
-	if err := a.profile_runner.SetProfile(name); err != nil {
+func (a *App) SelectProfile(guid controller_mgr.JoystickGUIDString, name string) error {
+	if err := a.profile_runner.SetProfile(guid, name); err != nil {
 		logger.Logger.Error("selected profile", "profile", name)
 		return err
 	}
 	return nil
 }
 
-func (a *App) ClearProfile() {
-	a.profile_runner.ClearProfile()
+func (a *App) ClearProfile(guid controller_mgr.JoystickGUIDString) {
+	a.profile_runner.ClearProfile(guid)
 }
 
 func (a *App) LastRawEvent() *Interop_RawEvent {

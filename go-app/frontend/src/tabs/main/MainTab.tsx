@@ -5,13 +5,14 @@ import {
   LoadConfiguration,
   SelectProfile,
   ClearProfile,
-  GetSelectedProfile,
+  GetSelectedProfiles,
   InstallTrainSimWorldMod,
   OpenConfigDirectory,
   GetLastInstalledModVersion,
   SetLastInstalledModVersion,
   GetVersion,
-  OpenProfileBuilder
+  GetControllers,
+  OpenProfileBuilder,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
@@ -19,7 +20,7 @@ import { events } from "../../events";
 import { useForm } from "react-hook-form";
 
 type FormValues = {
-  profile: string;
+  profiles: Record<`${string}`, string>;
 };
 
 export const MainTab = () => {
@@ -37,23 +38,28 @@ export const MainTab = () => {
   const { data: profiles, mutate: refetchProfiles } = useSWR(
     "profiles",
     () => GetProfiles(),
-    {
-      revalidateOnMount: true,
-    },
+    { revalidateOnMount: true },
+  );
+  const { data: controllers, mutate: refetchControllers } = useSWR(
+    "controllers",
+    () => GetControllers(),
+    { revalidateOnMount: true },
   );
 
   const { register, watch, getValues } = useForm<FormValues>({
     defaultValues: async () => ({
-      profile: await GetSelectedProfile(),
+      profiles: await GetSelectedProfiles(),
     }),
   });
 
   const handleReloadConfiguration = () => {
     LoadConfiguration().then(() => {
       /* re-select profile after reloading */
-      const selectedProfile = getValues('profile')
-      if (selectedProfile.length) {
-        SelectProfile(selectedProfile)
+      const profiles = getValues("profiles");
+      for (const guid in profiles) {
+        if (profiles[guid]) {
+          SelectProfile(guid, profiles[guid]);
+        }
       }
     });
   };
@@ -63,12 +69,13 @@ export const MainTab = () => {
   };
 
   const handleCreateProfile = () => {
-    OpenProfileBuilder("")
-  }
+    OpenProfileBuilder("");
+  };
 
-  const handleOpenProfile = () => {
-    OpenProfileBuilder(getValues('profile'))
-  }
+  const handleOpenProfile = (guid: string) => {
+    const profile = getValues(`profiles.${guid}`);
+    if (profile) OpenProfileBuilder(profile);
+  };
 
   const openInWindow = (url: string) => {
     BrowserOpenURL(url);
@@ -90,9 +97,11 @@ export const MainTab = () => {
 
   useEffect(() => {
     watch(() => {
-      const profile = getValues("profile");
-      if (profile.length) SelectProfile(profile);
-      else ClearProfile();
+      const profiles = getValues("profiles");
+      for (const guid in profiles) {
+        if (profiles[guid]) SelectProfile(guid, profiles[guid]);
+        else ClearProfile(guid);
+      }
     });
   }, []);
 
@@ -102,50 +111,69 @@ export const MainTab = () => {
     });
   }, []);
 
+  useEffect(() => {
+    return EventsOn(events.joydevices_updated, () => {
+      refetchControllers();
+    });
+  }, []);
+
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
-      <div className="flex flex-row gap-2">
-        <fieldset className="fieldset grow">
-          <legend className="fieldset-legend">Select profile</legend>
-          <select className="select w-full" {...register("profile")}>
-            <option selected value="">
-              None
-            </option>
-            {profiles?.map((profile) => (
-              <option key={profile.Name} value={profile.Name}>
-                {profile.Name}
+      {controllers?.map((c) => (
+        <div key={c.GUID} className="flex flex-row gap-2">
+          <fieldset className="fieldset grow">
+            <legend className="fieldset-legend">
+              Select profile for {c.Name}
+            </legend>
+            <select
+              className="select w-full"
+              {...register(`profiles.${c.GUID}`)}
+            >
+              <option selected value="">
+                None
               </option>
-            ))}
-          </select>
-          <span className="label">
-            Auto-detect only works for certain supported controllers
-          </span>
-        </fieldset>
-        <div className="dropdown dropdown-end mt-[34px]">
-          <div tabIndex={0} role="button" className="btn">
-            More
+              {profiles?.map((profile) => (
+                <option key={profile.Name} value={profile.Name}>
+                  {profile.Name}
+                </option>
+              ))}
+            </select>
+            <span className="label">
+              Auto-detect only works for certain supported controllers
+            </span>
+          </fieldset>
+          <div className="dropdown dropdown-end mt-[34px]">
+            <div tabIndex={0} role="button" className="btn">
+              More
+            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+            >
+              <li>
+                <button onClick={handleReloadConfiguration}>
+                  Reload configuration
+                </button>
+              </li>
+              <li>
+                <button onClick={handleBrowseConfig}>
+                  Browse configuration
+                </button>
+              </li>
+              <li>
+                <button onClick={handleCreateProfile}>
+                  Create new profile
+                </button>
+              </li>
+              <li>
+                <button onClick={() => handleOpenProfile(c.GUID)}>
+                  Open profile in builder
+                </button>
+              </li>
+            </ul>
           </div>
-          <ul
-            tabIndex={0}
-            className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-          >
-            <li>
-              <button onClick={handleReloadConfiguration}>
-                Reload configuration
-              </button>
-            </li>
-            <li>
-              <button onClick={handleBrowseConfig}>Browse configuration</button>
-            </li>
-            <li>
-              <button onClick={handleCreateProfile}>Create new profile</button>
-            </li>
-            <li>
-              <button onClick={handleOpenProfile}>Open profile in builder</button>
-            </li>
-          </ul>
         </div>
-      </div>
+      ))}
       {/* steam://controllerconfig/2967990/3576092503 */}
       <button className="btn btn-sm w-full" onClick={handleInstall}>
         Install/Reinstall Train Sim World mod
