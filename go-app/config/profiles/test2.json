@@ -1,0 +1,16 @@
+{
+  "name": "class802_xbox",
+  "controls": [
+    {
+      "name": "Y",
+      "description": "ytest",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.5,
+        "action_activate": {
+          "keys": "w"
+        }
+      }
+    }
+  ]
+}

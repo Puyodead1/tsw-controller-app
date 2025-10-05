@@ -1,0 +1,46 @@
+{
+  "name": "Xbox",
+  "usb_id": "045E:028E",
+  "data": [
+    {
+      "kind": "button",
+      "index": 3,
+      "name": "Y"
+    },
+    {
+      "kind": "button",
+      "index": 1,
+      "name": "B"
+    },
+    {
+      "kind": "button",
+      "index": 0,
+      "name": "A"
+    },
+    {
+      "kind": "button",
+      "index": 2,
+      "name": "X"
+    },
+    {
+      "kind": "axis",
+      "index": 3,
+      "name": "StickAxis3"
+    },
+    {
+      "kind": "axis",
+      "index": 1,
+      "name": "StickAxis1"
+    },
+    {
+      "kind": "axis",
+      "index": 4,
+      "name": "StickAxis4"
+    },
+    {
+      "kind": "axis",
+      "index": 0,
+      "name": "StickAxis0"
+    }
+  ]
+}

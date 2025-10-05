@@ -238,6 +238,9 @@ func (a *App) GetControllers() []Interop_GenericController {
 		})
 		return true
 	})
+	sort.Slice(controllers, func(i, j int) bool {
+		return controllers[i].GUID < controllers[j].GUID
+	})
 	return controllers
 }
 

@@ -76,7 +76,7 @@ func (g *GlobalLogger) Error(msg string, args ...any) {
 
 var Logger = GlobalLogger{
 	slogger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelError,
+		Level: slog.LevelDebug,
 	})),
 	listeners: []chan string{},
 }
