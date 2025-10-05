@@ -47,3 +47,13 @@ type Interop_ControllerConfiguration struct {
 	Calibration Interop_ControllerCalibration
 	SDLMapping  config.Config_Controller_SDLMap
 }
+
+type Interop_SyncController_ControlState struct {
+	Identifier             string
+	PropertyName           string
+	CurrentValue           float64
+	CurrentNormalizedValue float64
+	TargetValue            float64
+	/** [-1,0,1] -> decreasing, idle, increasing */
+	Moving int
+}

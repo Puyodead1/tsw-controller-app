@@ -36,6 +36,24 @@ type ProfileRunner struct {
 	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
 }
 
+func (s *ProfileRunnerSettings) Update(mutator func(s *ProfileRunnerSettings)) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	mutator(s)
+}
+
+func (s *ProfileRunnerSettings) GetSelectedProfile() *config.Config_Controller_Profile {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	return s.SelectedProfile
+}
+
+func (s *ProfileRunnerSettings) GetPreferredControlMode() config.PreferredControlMode {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	return s.PreferredControlMode
+}
+
 func New(
 	action_sequencer *action_sequencer.ActionSequencer,
 	controller_manager *controller_mgr.ControllerManager,
@@ -72,29 +90,28 @@ func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile
 }
 
 func (p *ProfileRunner) ClearProfile() {
-	p.Settings.Mutex.Lock()
-	defer p.Settings.Mutex.Unlock()
-
-	p.Settings.SelectedProfile = nil
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		s.SelectedProfile = nil
+	})
 }
 
 func (p *ProfileRunner) SetProfile(name string) error {
-	p.Settings.Mutex.Lock()
-	defer p.Settings.Mutex.Unlock()
-
-	profile, is_valid_profile := p.Profiles.Get(name)
-	if is_valid_profile {
-		p.Settings.SelectedProfile = &profile
-		return nil
-	}
-	return fmt.Errorf("could not find profile by name %s", name)
+	var err error = nil
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		profile, is_valid_profile := p.Profiles.Get(name)
+		if is_valid_profile {
+			s.SelectedProfile = &profile
+		} else {
+			err = fmt.Errorf("could not find profile by name %s", name)
+		}
+	})
+	return err
 }
 
 func (p *ProfileRunner) SetPreferredControlMode(mode config.PreferredControlMode) {
-	p.Settings.Mutex.Lock()
-	defer p.Settings.Mutex.Unlock()
-
-	p.Settings.PreferredControlMode = mode
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		s.PreferredControlMode = mode
+	})
 }
 
 func (p *ProfileRunner) CallAssignmentActionForControl(
@@ -207,10 +224,8 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 
 func (p *ProfileRunner) GetAssignments(
 	control *config.Config_Controller_Profile_Control,
+	source_event *controller_mgr.ControllerManager_Control_ChangeEvent,
 ) []config.Config_Controller_Profile_Control_Assignment {
-	p.Settings.Mutex.RLock()
-	defer p.Settings.Mutex.RUnlock()
-
 	var assignments []config.Config_Controller_Profile_Control_Assignment
 	if control.Assignment != nil {
 		assignments = append(assignments, *control.Assignment)
@@ -224,7 +239,33 @@ func (p *ProfileRunner) GetAssignments(
 	has_sync_control := false
 	var assignments_without_sync_control []config.Config_Controller_Profile_Control_Assignment
 	var assignments_without_direct_control []config.Config_Controller_Profile_Control_Assignment
+	var assignments_without_any_control []config.Config_Controller_Profile_Control_Assignment
+
+check_assignments_loop:
 	for _, assignment := range assignments {
+		/* conditions can only be evaluated if there is a source event */
+		if source_event != nil && assignment.Conditions != nil && len(*assignment.Conditions) > 0 {
+			for _, condition := range *assignment.Conditions {
+				dependency_control, has_dependency_control := source_event.Controller.Controls.Get(condition.Control)
+				if !has_dependency_control {
+					logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because dependency control does not exist")
+					continue
+				}
+				switch condition.Operator {
+				case "gte":
+					if dependency_control.State.NormalizedValues.Value < condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				case "lte":
+					if dependency_control.State.NormalizedValues.Value > condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				}
+			}
+		}
+
 		if assignment.DirectControl != nil {
 			has_direct_control = true
 			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
@@ -232,20 +273,21 @@ func (p *ProfileRunner) GetAssignments(
 			has_sync_control = true
 			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
 		} else {
+			assignments_without_any_control = append(assignments_without_any_control, assignment)
 			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
 			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
 		}
 	}
 
-	if p.Settings.PreferredControlMode == config.PreferredControlMode_DirectControl && has_direct_control {
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_DirectControl && has_direct_control {
 		return assignments_without_sync_control
 	}
 
-	if p.Settings.PreferredControlMode == config.PreferredControlMode_SyncControl && has_sync_control {
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_sync_control {
 		return assignments_without_direct_control
 	}
 
-	return assignments
+	return assignments_without_any_control
 }
 
 func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
@@ -268,7 +310,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case change_event := <-channel:
 				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
-				selected_profile := p.Settings.SelectedProfile
+				selected_profile := p.Settings.GetSelectedProfile()
 				if selected_profile == nil {
 					/* try to find default profile by USB ID */
 					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
@@ -291,7 +333,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 					continue
 				}
 
-				assignments := p.GetAssignments(control_profile)
+				assignments := p.GetAssignments(control_profile, &change_event)
 				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList.Get(change_event.ControlName)
 				for assignment_index, control_assignment_item := range assignments {
 					logger.Logger.Debug("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
@@ -401,7 +443,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 					}
 					if control_assignment_item.SyncControl != nil {
 						output_value := control_assignment_item.SyncControl.InputValue.CalculateOutputValue(change_event.Control.State.NormalizedValues.Value)
-						p.SyncController.UpdateControlStateTargetValue(control_assignment_item.SyncControl.Identifier, output_value, *control_assignment_item.SyncControl)
+						p.SyncController.UpdateControlStateTargetValue(control_assignment_item.SyncControl.Identifier, output_value, control_assignment_item.SyncControl, &change_event)
 					}
 				}
 			}
@@ -417,18 +459,18 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			select {
 			case <-context_with_cancel.Done():
 				return
-			case change_event := <-channel:
+			case sync_control_state := <-channel:
 				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
-				if p.Settings.SelectedProfile == nil || p.Settings.PreferredControlMode != config.PreferredControlMode_SyncControl {
+				if p.Settings.GetSelectedProfile() == nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
 					continue
 				}
 
 				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
 			control_loop:
-				for _, cp := range p.Settings.SelectedProfile.Controls {
-					assignments := p.GetAssignments(&cp)
+				for _, cp := range p.Settings.GetSelectedProfile().Controls {
+					assignments := p.GetAssignments(&cp, sync_control_state.SourceEvent)
 					for _, assignment := range assignments {
-						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == change_event.Identifier {
+						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == sync_control_state.Identifier {
 							sync_control_assignment = &assignment
 							break control_loop
 						}
@@ -442,16 +484,16 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				const MARGIN_OF_ERROR = 0.005
 				should_stop_moving := (
 				/* was increasing and has now exceeded value */
-				change_event.CurrentValue >= change_event.TargetValue && change_event.Moving == 1 ||
+				sync_control_state.CurrentValue >= sync_control_state.TargetValue && sync_control_state.Moving == 1 ||
 					/* was decreasing and has now subceeded value */
-					change_event.CurrentValue <= change_event.TargetValue && change_event.Moving == -1 ||
+					sync_control_state.CurrentValue <= sync_control_state.TargetValue && sync_control_state.Moving == -1 ||
 					/* otherwise is within margin of error and was moving */
-					math.Abs(change_event.CurrentValue-change_event.TargetValue) < MARGIN_OF_ERROR && change_event.Moving != 0)
-				should_start_increasing := change_event.TargetValue > change_event.CurrentValue && math.Abs(change_event.TargetValue-change_event.CurrentValue) > MARGIN_OF_ERROR && change_event.Moving == 0
-				should_start_decreasing := change_event.TargetValue < change_event.CurrentValue && math.Abs(change_event.TargetValue-change_event.CurrentValue) > MARGIN_OF_ERROR && change_event.Moving == 0
+					math.Abs(sync_control_state.CurrentValue-sync_control_state.TargetValue) < MARGIN_OF_ERROR && sync_control_state.Moving != 0)
+				should_start_increasing := sync_control_state.TargetValue > sync_control_state.CurrentValue && math.Abs(sync_control_state.TargetValue-sync_control_state.CurrentValue) > MARGIN_OF_ERROR && sync_control_state.Moving == 0
+				should_start_decreasing := sync_control_state.TargetValue < sync_control_state.CurrentValue && math.Abs(sync_control_state.TargetValue-sync_control_state.CurrentValue) > MARGIN_OF_ERROR && sync_control_state.Moving == 0
 
 				release_previous_action := func() {
-					if change_event.Moving == -1 {
+					if sync_control_state.Moving == -1 {
 						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, true))
 					} else {
 						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, true))
@@ -460,19 +502,19 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 
 				if should_stop_moving {
 					release_previous_action()
-					p.SyncController.UpdateControlStateMoving(change_event.Identifier, 0)
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, 0)
 				}
 
 				if should_start_increasing {
 					release_previous_action()
 					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, false))
-					p.SyncController.UpdateControlStateMoving(change_event.Identifier, 1)
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, 1)
 				}
 
 				if should_start_decreasing {
 					release_previous_action()
 					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, false))
-					p.SyncController.UpdateControlStateMoving(change_event.Identifier, -1)
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, -1)
 				}
 			}
 		}

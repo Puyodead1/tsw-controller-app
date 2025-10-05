@@ -187,28 +187,25 @@ func (ctrl *ControllerManager_Controller_Control) ProcessEvent(event sdl.Event) 
 func (controller *ControllerManager_ConfiguredController) ProcessEvent(event sdl.Event) {
 	switch e := event.(type) {
 	case *sdl.JoyAxisEvent:
-		controller.Controls.ForEach(func(maybe_axis ControllerManager_Controller_Control, _ string) bool {
+		controller.Controls.ForEachMap(func(maybe_axis ControllerManager_Controller_Control, _ string) ControllerManager_Controller_Control {
 			if maybe_axis.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Axis && maybe_axis.SDLMapping.Index == int(e.Axis) {
 				maybe_axis.ProcessEvent(event)
-				return false
 			}
-			return true
+			return maybe_axis
 		})
 	case *sdl.JoyButtonEvent:
-		controller.Controls.ForEach(func(maybe_button ControllerManager_Controller_Control, _ string) bool {
+		controller.Controls.ForEachMap(func(maybe_button ControllerManager_Controller_Control, _ string) ControllerManager_Controller_Control {
 			if maybe_button.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Button && maybe_button.SDLMapping.Index == int(e.Button) {
 				maybe_button.ProcessEvent(event)
-				return false
 			}
-			return true
+			return maybe_button
 		})
 	case *sdl.JoyHatEvent:
-		controller.Controls.ForEach(func(maybe_hat ControllerManager_Controller_Control, _ string) bool {
+		controller.Controls.ForEachMap(func(maybe_hat ControllerManager_Controller_Control, _ string) ControllerManager_Controller_Control {
 			if maybe_hat.SDLMapping.Kind == sdl_mgr.SDLMgr_Control_Kind_Hat && maybe_hat.SDLMapping.Index == int(e.Hat) {
 				maybe_hat.ProcessEvent(event)
-				return false
 			}
-			return true
+			return maybe_hat
 		})
 	}
 }

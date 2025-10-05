@@ -256,8 +256,8 @@ func (a *App) GetProfiles() []Interop_Profile {
 }
 
 func (a *App) GetSelectedProfile() string {
-	if a.profile_runner.Settings.SelectedProfile != nil {
-		return a.profile_runner.Settings.SelectedProfile.Name
+	if a.profile_runner.Settings.GetSelectedProfile() != nil {
+		return a.profile_runner.Settings.GetSelectedProfile().Name
 	}
 	return ""
 }
@@ -306,10 +306,17 @@ func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString)
 	return nil
 }
 
-func (a *App) GetSyncControlState() []profile_runner.SyncController_ControlState {
-	control_states := []profile_runner.SyncController_ControlState{}
+func (a *App) GetSyncControlState() []Interop_SyncController_ControlState {
+	control_states := []Interop_SyncController_ControlState{}
 	a.sync_controller.ControlState.ForEach(func(value profile_runner.SyncController_ControlState, key string) bool {
-		control_states = append(control_states, value)
+		control_states = append(control_states, Interop_SyncController_ControlState{
+			Identifier:             value.Identifier,
+			PropertyName:           value.PropertyName,
+			CurrentValue:           value.CurrentValue,
+			CurrentNormalizedValue: value.CurrentNormalizedValue,
+			TargetValue:            value.TargetValue,
+			Moving:                 value.Moving,
+		})
 		return true
 	})
 	return control_states

@@ -59,14 +59,23 @@ func (m *LockMap[T, V]) ForEach(callback func(value V, key T) bool) {
 	}
 }
 
+func (m *LockMap[T, V]) ForEachMap(callback func(value V, key T) V) {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+	for key, value := range m.Map {
+		m.Map[key] = callback(value, key)
+	}
+}
+
 func (m *LockMap[T, V]) Mutate(callback func(value V, key T) LockMapMutateAction[T, V]) {
 	m.Mutex.Lock()
 	defer m.Mutex.Unlock()
 	for key, value := range m.Map {
 		action := callback(value, key)
-		if action.Action == LockMapMutateActionType_Delete {
+		switch action.Action {
+		case LockMapMutateActionType_Delete:
 			delete(m.Map, action.Key)
-		} else if action.Action == LockMapMutateActionType_Replace {
+		case LockMapMutateActionType_Replace:
 			m.Map[action.Key] = action.Value
 		}
 	}

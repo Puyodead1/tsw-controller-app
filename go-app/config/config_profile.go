@@ -44,6 +44,13 @@ type Config_Controller_Profile_Control_Assignment_Action struct {
 	DirectControl *Config_Controller_Profile_Control_Assignment_Action_DirectControl `json:"-"`
 }
 
+type Config_Controller_Profile_Control_Assignment_Condition struct {
+	/* this is the other control name to depend on */
+	Control  string  `json:"control" validate:"required"`
+	Operator string  `json:"operator" validate:"required,oneof=gte,lte"`
+	Value    float64 `json:"value"`
+}
+
 type Config_Controller_Profile_Control_Assignment_Momentary struct {
 	Type      string  `json:"type" validate:"required,eq=momentary"`
 	Threshold float64 `json:"threshold"`
@@ -112,6 +119,7 @@ type Config_Controller_Profile_Control_Assignment struct {
 	Toggle        *Config_Controller_Profile_Control_Assignment_Toggle        `json:"-"`
 	DirectControl *Config_Controller_Profile_Control_Assignment_DirectControl `json:"-"`
 	SyncControl   *Config_Controller_Profile_Control_Assignment_SyncControl   `json:"-"`
+	Conditions    *[]Config_Controller_Profile_Control_Assignment_Condition   `json:"conditions,omitempty"`
 }
 
 type Config_Controller_Profile_Control struct {
@@ -173,15 +181,20 @@ func (c Config_Controller_Profile_Control_Assignment_Action) MarshalJSON() ([]by
 }
 
 func (c *Config_Controller_Profile_Control_Assignment) UnmarshalJSON(data []byte) error {
+	v := validator.New()
+
 	var peek struct {
-		Type string `type:"type"`
+		Type       string                                                    `type:"type"`
+		Conditions *[]Config_Controller_Profile_Control_Assignment_Condition `json:"conditions,omitempty"`
 	}
 	if err := json.Unmarshal(data, &peek); err != nil {
 		return err
 	}
+	if err := v.Struct(peek); err != nil {
+		return err
+	}
 
-	v := validator.New()
-
+	c.Conditions = peek.Conditions
 	switch peek.Type {
 	case "momentary":
 		var momentary Config_Controller_Profile_Control_Assignment_Momentary

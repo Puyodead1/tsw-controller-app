@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 	"tsw_controller_app/config"
+	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/map_utils"
 	"tsw_controller_app/pubsub_utils"
 )
@@ -17,7 +18,8 @@ type SyncController_ControlState struct {
 	TargetValue            float64
 	/** [-1,0,1] -> decreasing, idle, increasing */
 	Moving         int
-	ControlProfile config.Config_Controller_Profile_Control_Assignment_SyncControl
+	ControlProfile *config.Config_Controller_Profile_Control_Assignment_SyncControl
+	SourceEvent    *controller_mgr.ControllerManager_Control_ChangeEvent
 }
 
 type SyncController struct {
@@ -33,7 +35,7 @@ func (c *SyncController) UpdateControlStateMoving(identifier string, moving int)
 	}
 }
 
-func (c *SyncController) UpdateControlStateTargetValue(identifier string, targetValue float64, profile config.Config_Controller_Profile_Control_Assignment_SyncControl) {
+func (c *SyncController) UpdateControlStateTargetValue(identifier string, targetValue float64, profile *config.Config_Controller_Profile_Control_Assignment_SyncControl, event *controller_mgr.ControllerManager_Control_ChangeEvent) {
 	state, has_state := c.ControlState.Get(identifier)
 	if !has_state {
 		state = SyncController_ControlState{
@@ -42,7 +44,10 @@ func (c *SyncController) UpdateControlStateTargetValue(identifier string, target
 			CurrentValue:           0.0,
 			CurrentNormalizedValue: 0.0,
 			Moving:                 0,
-			ControlProfile:         profile,
+			/* we don't have the property name yet at this point */
+			PropertyName:   "",
+			ControlProfile: profile,
+			SourceEvent:    event,
 		}
 	}
 	state.TargetValue = targetValue
