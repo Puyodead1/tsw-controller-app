@@ -93,9 +93,8 @@ type Config_Controller_Profile_Control_Assignment_DirectControl struct {
 	/* will hold the control in changing */
 	Hold *bool `json:"hold"`
 	/* whether to apply raw or normalized values */
-	UseNormalized *bool `json:"use_normalized,omitempty"`
-
-	InputValue Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue `json:"input_value" validate:"required"`
+	UseNormalized *bool                                                                       `json:"use_normalized,omitempty"`
+	InputValue    Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue `json:"input_value" validate:"required"`
 }
 
 type Config_Controller_Profile_Control_Assignment_SyncControl struct {
@@ -431,51 +430,6 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputV
 	}
 
 	return math_utils.Clamp(normal, c.Min, c.Max)
-}
-
-func (c *Config_Controller_Profile_Control) GetAssignments(preferred_control_mode PreferredControlMode) []Config_Controller_Profile_Control_Assignment {
-	var assignments []Config_Controller_Profile_Control_Assignment
-	if c.Assignment != nil {
-		assignments = append(assignments, *c.Assignment)
-	} else if c.Assignments != nil {
-		/* copy by value clone */
-		assignments = append(assignments, *c.Assignments...)
-	}
-
-	has_direct_control := false
-	has_sync_control := false
-	for _, assignemnt := range assignments {
-		if assignemnt.DirectControl != nil {
-			has_direct_control = true
-		}
-		if assignemnt.SyncControl != nil {
-			has_sync_control = true
-		}
-	}
-
-	if preferred_control_mode == PreferredControlMode_DirectControl && has_direct_control {
-		/* filter out sync control */
-		var assignments_without_sync_control []Config_Controller_Profile_Control_Assignment
-		for _, assignment := range assignments {
-			if assignment.SyncControl == nil {
-				assignments_without_sync_control = append(assignments_without_sync_control, assignment)
-			}
-		}
-		return assignments_without_sync_control
-	}
-
-	if preferred_control_mode == PreferredControlMode_SyncControl && has_sync_control {
-		/* filter out direct control */
-		var assignments_without_direct_control []Config_Controller_Profile_Control_Assignment
-		for _, assignment := range assignments {
-			if assignment.DirectControl == nil {
-				assignments_without_direct_control = append(assignments_without_direct_control, assignment)
-			}
-		}
-		return assignments_without_direct_control
-	}
-
-	return assignments
 }
 
 func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Controller_Profile_Control {

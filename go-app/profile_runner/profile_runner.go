@@ -15,7 +15,7 @@ import (
 )
 
 type ProfileRunnerSettings struct {
-	Mutex                sync.Mutex
+	Mutex                sync.RWMutex
 	SelectedProfile      *config.Config_Controller_Profile
 	PreferredControlMode config.PreferredControlMode
 }
@@ -49,7 +49,7 @@ func New(
 		SyncController:    sync_controller,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
-			Mutex:                sync.Mutex{},
+			Mutex:                sync.RWMutex{},
 			SelectedProfile:      nil,
 			PreferredControlMode: config.PreferredControlMode_DirectControl,
 		},
@@ -205,6 +205,49 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 	return nil
 }
 
+func (p *ProfileRunner) GetAssignments(
+	control *config.Config_Controller_Profile_Control,
+) []config.Config_Controller_Profile_Control_Assignment {
+	p.Settings.Mutex.RLock()
+	defer p.Settings.Mutex.RUnlock()
+
+	var assignments []config.Config_Controller_Profile_Control_Assignment
+	if control.Assignment != nil {
+		assignments = append(assignments, *control.Assignment)
+	} else if control.Assignments != nil {
+		/* copy by value clone */
+		assignments = append(assignments, *control.Assignments...)
+	}
+
+	/* filter out conditional assignments */
+	has_direct_control := false
+	has_sync_control := false
+	var assignments_without_sync_control []config.Config_Controller_Profile_Control_Assignment
+	var assignments_without_direct_control []config.Config_Controller_Profile_Control_Assignment
+	for _, assignment := range assignments {
+		if assignment.DirectControl != nil {
+			has_direct_control = true
+			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+		} else if assignment.SyncControl != nil {
+			has_sync_control = true
+			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+		} else {
+			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+		}
+	}
+
+	if p.Settings.PreferredControlMode == config.PreferredControlMode_DirectControl && has_direct_control {
+		return assignments_without_sync_control
+	}
+
+	if p.Settings.PreferredControlMode == config.PreferredControlMode_SyncControl && has_sync_control {
+		return assignments_without_direct_control
+	}
+
+	return assignments
+}
+
 func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 	/*
 		the runner handles a few different things:
@@ -248,7 +291,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 					continue
 				}
 
-				assignments := control_profile.GetAssignments(p.Settings.PreferredControlMode)
+				assignments := p.GetAssignments(control_profile)
 				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList.Get(change_event.ControlName)
 				for assignment_index, control_assignment_item := range assignments {
 					logger.Logger.Debug("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
@@ -383,7 +426,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
 			control_loop:
 				for _, cp := range p.Settings.SelectedProfile.Controls {
-					assignments := cp.GetAssignments(p.Settings.PreferredControlMode)
+					assignments := p.GetAssignments(&cp)
 					for _, assignment := range assignments {
 						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == change_event.Identifier {
 							sync_control_assignment = &assignment

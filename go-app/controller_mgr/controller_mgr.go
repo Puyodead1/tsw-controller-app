@@ -24,6 +24,7 @@ type ControllerManager_RawEvent struct {
 
 type ControllerManager_Control_ChangeEvent struct {
 	Joystick     *sdl_mgr.SDLMgr_Joystick
+	Controller   *ControllerManager_ConfiguredController
 	Control      *ControllerManager_Controller_Control
 	ControlName  string
 	ControlState ControllerManager_Controller_ControlState
@@ -58,8 +59,11 @@ type ControllerManager_Controller_ControlState struct {
 
 type ControllerManager_Controller_Control struct {
 	Manager     *ControllerManager
-	Joystick    sdl_mgr.SDLMgr_Joystick
+	Controller  *ControllerManager_ConfiguredController
+	Joystick    *sdl_mgr.SDLMgr_Joystick
 	Name        string
+	Kind        sdl_mgr.SDLMgr_Control_Kind
+	Index       int
 	SDLMapping  config.Config_Controller_SDLMap_Control
 	Calibration config.Config_Controller_CalibrationData
 	State       ControllerManager_Controller_ControlState
@@ -67,12 +71,12 @@ type ControllerManager_Controller_Control struct {
 
 type ControllerManager_ConfiguredController struct {
 	Manager  *ControllerManager
-	Joystick sdl_mgr.SDLMgr_Joystick
+	Joystick *sdl_mgr.SDLMgr_Joystick
 	Controls *map_utils.LockMap[string, ControllerManager_Controller_Control]
 }
 
 type ControllerManager_UnconfiguredController struct {
-	Joystick sdl_mgr.SDLMgr_Joystick
+	Joystick *sdl_mgr.SDLMgr_Joystick
 	/* may have  partial configuration */
 	SDLMapping  *config.Config_Controller_SDLMap
 	Calibration *config.Config_Controller_Calibration
@@ -156,7 +160,8 @@ func (ctrl *ControllerManager_Controller_Control) UpdateValue(value float64, is_
 	}
 
 	ctrl.Manager.ChangeEventChannels.EmitTimeout(time.Second, ControllerManager_Control_ChangeEvent{
-		Joystick:     &ctrl.Joystick,
+		Joystick:     ctrl.Joystick,
+		Controller:   ctrl.Controller,
 		Control:      ctrl,
 		ControlName:  ctrl.Name,
 		ControlState: ctrl.State,
@@ -226,7 +231,11 @@ func New(sdlmgr *sdl_mgr.SDLMgr) *ControllerManager {
 }
 
 func (mgr *ControllerManager) ConfigureJoystick(joystick *sdl_mgr.SDLMgr_Joystick, sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) ControllerManager_ConfiguredController {
-	controls := map_utils.NewLockMap[string, ControllerManager_Controller_Control]()
+	controller := ControllerManager_ConfiguredController{
+		Manager:  mgr,
+		Joystick: joystick,
+		Controls: map_utils.NewLockMap[string, ControllerManager_Controller_Control](),
+	}
 	for _, control := range sdl_map.Data {
 		var calibration_data config.Config_Controller_CalibrationData = config.Config_Controller_CalibrationData{
 			Id:           control.Name,
@@ -241,44 +250,52 @@ func (mgr *ControllerManager) ConfigureJoystick(joystick *sdl_mgr.SDLMgr_Joystic
 		}
 
 		idle_value := 0.0
-		normal_idle_value := 0.0
 		if calibration_data.Idle != nil {
 			idle_value = *calibration_data.Idle
 		}
-		normal_idle_value = calibration_data.NormalizeRawValue(idle_value).Value
+
+		current_raw_value := idle_value
+		switch control.Kind {
+		case sdl_mgr.SDLMgr_Control_Kind_Axis:
+			current_raw_value = float64(joystick.InternalJoystick.Axis(control.Index))
+		case sdl_mgr.SDLMgr_Control_Kind_Button:
+			current_raw_value = float64(joystick.InternalJoystick.Button(control.Index))
+		case sdl_mgr.SDLMgr_Control_Kind_Hat:
+			current_raw_value = float64(joystick.InternalJoystick.Hat(control.Index))
+		}
+		current_normal_value := calibration_data.NormalizeRawValue(current_raw_value).Value
 
 		control := ControllerManager_Controller_Control{
 			Manager:     mgr,
-			Joystick:    *joystick,
+			Joystick:    joystick,
+			Controller:  &controller,
 			Name:        control.Name,
+			Kind:        control.Kind,
+			Index:       control.Index,
 			SDLMapping:  control,
 			Calibration: calibration_data,
 			State: ControllerManager_Controller_ControlState{
 				Direction: ControllerManager_Controller_ControlState_DirectionChangeMarker{
 					Direction:   0,
-					ChangeValue: idle_value,
+					ChangeValue: current_raw_value,
 				},
 				NormalizedValues: ControllerManager_Controller_ControlStateValues{
-					Value:         normal_idle_value,
-					PreviousValue: normal_idle_value,
-					InitialValue:  normal_idle_value,
+					Value:         current_normal_value,
+					PreviousValue: current_normal_value,
+					InitialValue:  current_normal_value,
 				},
 				RawValues: ControllerManager_Controller_ControlStateValues{
-					Value:         idle_value,
-					PreviousValue: idle_value,
-					InitialValue:  idle_value,
+					Value:         current_raw_value,
+					PreviousValue: current_raw_value,
+					InitialValue:  current_raw_value,
 				},
 			},
 		}
 		control.Reset()
-		controls.Set(control.Name, control)
+		controller.Controls.Set(control.Name, control)
 	}
 
-	return ControllerManager_ConfiguredController{
-		Manager:  mgr,
-		Joystick: *joystick,
-		Controls: controls,
-	}
+	return controller
 }
 
 func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SDLMap, calibration config.Config_Controller_Calibration) {
@@ -291,7 +308,7 @@ func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SD
 	/* configure unconfigured controller */
 	mgr.UnconfiguredControllers.Mutate(func(unconfigured ControllerManager_UnconfiguredController, guid JoystickGUIDString) map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_UnconfiguredController] {
 		if unconfigured.Joystick.ToString() == sdl_map.UsbID {
-			configured_controller := mgr.ConfigureJoystick(&unconfigured.Joystick, sdl_map, calibration)
+			configured_controller := mgr.ConfigureJoystick(unconfigured.Joystick, sdl_map, calibration)
 			mgr.ConfiguredControllers.Set(guid, configured_controller)
 			didConfigureJoystick = true
 			return map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_UnconfiguredController]{
@@ -307,7 +324,7 @@ func (mgr *ControllerManager) RegisterConfig(sdl_map config.Config_Controller_SD
 	/* replace configured controller */
 	mgr.ConfiguredControllers.Mutate(func(configured ControllerManager_ConfiguredController, guid JoystickGUIDString) map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_ConfiguredController] {
 		if configured.Joystick.ToString() == sdl_map.UsbID {
-			configured_controller := mgr.ConfigureJoystick(&configured.Joystick, sdl_map, calibration)
+			configured_controller := mgr.ConfigureJoystick(configured.Joystick, sdl_map, calibration)
 			didConfigureJoystick = true
 			return map_utils.LockMapMutateAction[JoystickGUIDString, ControllerManager_ConfiguredController]{
 				Action: map_utils.LockMapMutateActionType_Replace,
@@ -345,7 +362,7 @@ func (mgr *ControllerManager) Handler_JoyDeviceAdded(event *sdl.JoyDeviceAddedEv
 		mgr.JoyDevicesUpdatedChannels.EmitTimeout(time.Second, ControllerManager_Control_JoyDevicesUpdated{})
 	} else {
 		unconfigured_controller := ControllerManager_UnconfiguredController{
-			Joystick:    *joystick,
+			Joystick:    joystick,
 			SDLMapping:  nil,
 			Calibration: nil,
 		}

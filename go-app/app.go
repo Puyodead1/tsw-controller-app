@@ -393,9 +393,9 @@ func (a *App) SubscribeRaw(guid string) error {
 
 	var joystick *sdl_mgr.SDLMgr_Joystick
 	if j, has_unconfigured_joystick := a.controller_manager.UnconfiguredControllers.Get(guid); has_unconfigured_joystick {
-		joystick = &j.Joystick
+		joystick = j.Joystick
 	} else if j, has_configured_joystick := a.controller_manager.ConfiguredControllers.Get(guid); has_configured_joystick {
-		joystick = &j.Joystick
+		joystick = j.Joystick
 	}
 
 	if joystick == nil {
