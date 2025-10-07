@@ -53,11 +53,40 @@ jobs:
           go-version: 1.24.5
 
 
-      - name: Install SDL2
-        run: choco install sdl2 -y
+      - name: Download and install SDL2
+        shell: pwsh
+        run: |
+          # Variables
+          $url = "https://github.com/libsdl-org/SDL/releases/download/release-2.32.6/SDL2-2.32.6-win32-x64.zip"
+          $zipPath = "$env:RUNNER_TEMP\SDL2.zip"
+          $extractPath = "$env:RUNNER_TEMP\SDL2"
+          $globalPath = "C:\SDL2"
 
-      - name: Verify SDL2
-        run: Get-ChildItem "C:/ProgramData/chocolatey/lib/sdl2/tools" -Recurse -Filter SDL2.dll
+          # Download SDL2
+          Write-Host "Downloading SDL2..."
+          Invoke-WebRequest -Uri $url -OutFile $zipPath
+
+          # Extract
+          Write-Host "Extracting SDL2..."
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+
+          # Create global directory
+          Write-Host "Creating global directory..."
+          New-Item -ItemType Directory -Force -Path $globalPath | Out-Null
+
+          # Find and copy DLL
+          $dll = Get-ChildItem -Path $extractPath -Recurse -Filter "SDL2.dll" | Select-Object -First 1
+          if (-not $dll) { throw "SDL2.dll not found after extraction!" }
+          Write-Host "Copying $($dll.FullName) to $globalPath"
+          Copy-Item -Path $dll.FullName -Destination $globalPath -Force
+
+          # Add to PATH for this job
+          Write-Host "Adding SDL2 to PATH..."
+          "C:\SDL2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+
+          # Verify
+          Write-Host "Verifying SDL2.dll is accessible..."
+          Get-ChildItem "C:\SDL2"
 
   build-go-app-linux:
     runs-on: ubuntu-latest
