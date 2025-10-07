@@ -1,0 +1,53 @@
+name: Build
+
+permissions: write-all
+
+on:
+  push:
+    branches: [ feat/go-rewrite ]
+
+jobs:
+  build-ue4ss-mod:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # Specifically use MSVC toolset v19.39.33523
+      - name: Install VS2022 BuildTools 17.9.7
+        run: choco install -y visualstudio2022buildtools --version=117.9.7.0 --params "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --installChannelUri https://aka.ms/vs/17/release/180911598_-255012421/channel"
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: '2.9.3'
+
+      - name: Build
+        run: |
+          xmake f -m "Game__Shipping__Win64" --ue4ssProxyPath=C:/Windows/System32/dxgi.dll -y
+          xmake build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ue4ss-mod
+          path: |
+            Binaries/Game__Shipping__Win64/UE4SS/UE4SS.dll
+            Binaries/Game__Shipping__Win64/proxy/dxgi.dll
+
+      # - name: Make Archival Experimental Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     prerelease: true
+      #     tag_name: experimental
+      #     body_path: release/release_notes.md
+      #     files: |
+      #       release/UE4SS_v*.zip
+      #       release/zDEV-UE4SS_v*.zip
+      #       release/zCustomGameConfigs.zip
+      #       release/zMapGenBP.zip
