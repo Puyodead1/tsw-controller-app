@@ -56,6 +56,9 @@ jobs:
       - name: Install SDL2
         run: choco install sdl2 -y
 
+      - name: Verify SDL2
+        run: Get-ChildItem "C:/ProgramData/chocolatey/lib/sdl2/tools" -Recurse -Filter SDL2.dll
+
   build-go-app-linux:
     runs-on: ubuntu-latest
     steps:
