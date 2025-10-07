@@ -102,3 +102,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-2.0-0
+
+  build-go-app-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go 1.24.5
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.5
+
+
+      - name: Install SDL2 using Homebrew
+        run: |
+          brew update
+          brew install sdl2
