@@ -32,7 +32,7 @@ jobs:
       - name: Build
         working-directory: ./RE-UE4SS
         run: |
-          xmake f -m "Game__Shipping__Win64" --ue4ssProxyPath C:/Windows/System32/dxgi.dll -y
+          xmake f -m "Game__Shipping__Win64" --ue4ssProxyPath=C:/Windows/System32/dxgi.dll -y
           xmake build
 
       - uses: actions/upload-artifact@v4
