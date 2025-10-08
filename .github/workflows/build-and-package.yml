@@ -7,7 +7,7 @@ on:
     branches: [ feat/go-rewrite ]
 
 jobs:
-  build-socket-connection-lib:
+  build__socketconnectionlib:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +27,18 @@ jobs:
           key: ${{ runner.os }}_socketconnectionlib_cargo_${{ hashFiles('tsw-controller-mod/socket-connection-lib/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}_socketconnectionlib_cargo_
-      - run: cargo build --target x86_64-pc-windows-msvc --release
+      - run: |
+          cd ./tsw-controller-mod/socket-connection-lib
+          cargo build --target x86_64-pc-windows-msvc --release
       - uses: actions/upload-artifact@v4
         with:
           name: socketconnectionlib
           path: |
             tsw-controller-mod/socket-connection-lib/target/release/*.dll
 
-  build-ue4ss-mod:
+  build__ue4ssmod:
     runs-on: windows-2022
-    needs: [build-socket-connection-lib]
+    needs: [build__socketconnectionlib]
     steps:
       - uses: actions/checkout@v4
         with:
