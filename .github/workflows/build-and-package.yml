@@ -7,8 +7,36 @@ on:
     branches: [ feat/go-rewrite ]
 
 jobs:
+  build-socket-connection-lib:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tsw-controller-mod/socket-connection-lib/target
+          key: ${{ runner.os }}_socketconnectionlib_cargo_${{ hashFiles('tsw-controller-mod/socket-connection-lib/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}_socketconnectionlib_cargo_
+      - run: cargo build --target x86_64-pc-windows-msvc --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: socketconnectionlib
+          path: |
+            tsw-controller-mod/socket-connection-lib/target/release/*.dll
+
   build-ue4ss-mod:
-    runs-on: windows-latest
+    runs-on: windows-2022
+    needs: [build-socket-connection-lib]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,9 +57,19 @@ jobs:
         with:
           xmake-version: '2.9.3'
 
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            RE-UE4SS/.xmake
+            RE-UE4SS/Binaries
+            RE-UE4SS/Intermediates
+            C:/Users/runneradmin/AppData/Local/.xmake
+          key: ${{ runner.os }}_ue4ssmod_xmake_${{ hashFiles('RE-UE4SS/**/xmake.lua') }}
+
       - name: Build
-        working-directory: ./RE-UE4SS
         run: |
+          cd ./RE-UE4SS
           xmake f -m "Game__Shipping__Win64" -y --ue4ssProxyPath=C:/Windows/System32/dxgi.dll
           xmake build
 
@@ -39,8 +77,8 @@ jobs:
         with:
           name: ue4ss-mod
           path: |
-            Binaries/Game__Shipping__Win64/UE4SS/UE4SS.dll
-            Binaries/Game__Shipping__Win64/proxy/dxgi.dll
+            RE-UE4SS/Binaries/Game__Shipping__Win64/UE4SS/UE4SS.dll
+            RE-UE4SS/Binaries/Game__Shipping__Win64/proxy/dxgi.dll
 
   build-go-app-windows:
     runs-on: windows-latest
