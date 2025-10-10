@@ -82,6 +82,7 @@ jobs:
 
       - name: Copy custom mod
         run: |
+          Get-ChildItem -Path "socketconnectionlib" -Recurse -File
           Copy-Item -Path "tsw-controller-mod/ue4ss-mod" -Destination "RE-UE4SS/cppmods/TSWControllerMod" -Recurse -Force
           Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.h" -Destination "RE-UE4SS/cppmods/TSWControllerMod/include/tsw_controller_mod_socket_connection.h" -Force
           Copy-Item -Path "socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.dll" -Force
