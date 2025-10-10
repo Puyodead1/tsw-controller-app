@@ -35,6 +35,7 @@ jobs:
           name: socketconnectionlib
           path: |
             tsw-controller-mod/socket-connection-lib/target/release/*.dll
+            tsw-controller-mod/socket-connection-lib/target/release/*.lib
             tsw-controller-mod/socket-connection-lib/target/release/*.h
 
   build__ue4ssmod:
@@ -70,6 +71,11 @@ jobs:
             C:/Users/runneradmin/AppData/Local/.xmake
           key: ${{ runner.os }}_ue4ssmod_xmake_${{ hashFiles('RE-UE4SS/**/xmake.lua') }}
 
+      - uses: actions/download-artifact@v5
+        name: Download socket connection lib
+        with:
+          name: socketconnectionlib
+
       - name: Copy proxy generator stub
         run: |
           cp -r RE-UE4SS_stub/* RE-UE4SS/
@@ -77,6 +83,9 @@ jobs:
       - name: Copy custom mod
         run: |
           Copy-Item -Path "tsw-controller-mod/ue4ss-mod" -Destination "RE-UE4SS/cppmods/TSWControllerMod" -Recurse -Force
+          Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.h" -Destination "RE-UE4SS/cppmods/TSWControllerMod/include/tsw_controller_mod_socket_connection.h" -Force
+          Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.dll" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.dll" -Force
+          Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.dll.lib" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.lib" -Force
           @"
           includes("KismetDebuggerMod")
           includes("TSWControllerMod")
