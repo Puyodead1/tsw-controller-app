@@ -75,6 +75,7 @@ jobs:
         name: Download socket connection lib
         with:
           name: socketconnectionlib
+          path: socketconnectionlib
 
       - name: Copy proxy generator stub
         run: |
