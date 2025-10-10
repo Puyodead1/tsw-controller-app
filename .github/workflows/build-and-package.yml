@@ -81,11 +81,6 @@ jobs:
         run: |
           Copy-Item -Path RE-UE4SS_stub -Destination RE-UE4SS -Recurse -Force
 
-
-      - name: Print files
-        run: |
-          Get-ChildItem -Path socketconnectionlib -Recurse -File
-
       - name: Copy custom mod
         run: |
           Copy-Item -Path "tsw-controller-mod/ue4ss-mod" -Destination "RE-UE4SS/cppmods/TSWControllerMod" -Recurse -Force
@@ -126,10 +121,10 @@ jobs:
         name: Download previously built artifacts
       - run: |
           mkdir mod_assets
-          cp ue4ssproxy/dxgi.dll mod_assets/dxgi.dll
-          cp ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
-          cp socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
-          cp tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
+          install -D ue4ssproxy/dxgi.dll mod_assets/dxgi.dll
+          install -D ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
+          install -D socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
+          install -D tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
       - uses: actions/upload-artifact@v4
         with:
           name: mod_assets
