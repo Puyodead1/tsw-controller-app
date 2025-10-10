@@ -197,8 +197,19 @@ jobs:
         name: Download mod_assets artifact
         with:
           name: mod_assets
+          path: mod_assets
 
       - run: find mod_assets
+      - run: cp -r mod_assets go-app/mod_assets
+      - run: find go-app/mod_assets
+      - run: |
+          cd go-app
+          wails build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tswcontrollerapp_linux
+          path: |
+            go-app/build/bin/tsw-controller-app
 
 
   build-go-app-macos:
