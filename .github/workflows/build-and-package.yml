@@ -188,6 +188,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-2.0-0
 
+      - name: Install RobotGo dependencies
+        run: |
+          sudo apt-get install -y libx11-dev xorg-dev libxtst-dev xsel xclip libpng++-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev libxkbcommon-dev
+
       - name: Setup Go 1.24.5
         uses: actions/setup-go@v5
         with:
@@ -217,6 +221,7 @@ jobs:
 
   build-go-app-macos:
     runs-on: macos-latest
+    needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
 
