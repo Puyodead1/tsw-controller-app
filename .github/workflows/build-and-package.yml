@@ -182,6 +182,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-2.0-0
 
+      - uses: actions/download-artifact@v5
+        name: Download mod_assets artifact
+        with:
+          name: mod_assets
+
+      - run: find mod_assets
+
 
   build-go-app-macos:
     runs-on: macos-latest
