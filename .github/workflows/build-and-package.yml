@@ -83,7 +83,7 @@ jobs:
 
       - name: Print files
         run: |
-          Get-ChildItem -Path . -Recurse -File
+          Get-ChildItem -Path socketconnectionlib -Recurse -File
 
       - name: Copy custom mod
         run: |
