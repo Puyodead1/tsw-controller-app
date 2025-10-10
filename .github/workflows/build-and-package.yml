@@ -84,8 +84,8 @@ jobs:
         run: |
           Copy-Item -Path "tsw-controller-mod/ue4ss-mod" -Destination "RE-UE4SS/cppmods/TSWControllerMod" -Recurse -Force
           Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.h" -Destination "RE-UE4SS/cppmods/TSWControllerMod/include/tsw_controller_mod_socket_connection.h" -Force
-          Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.dll" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.dll" -Force
-          Copy-Item -Path "socketconnectionlib/tsw_controller_mod_socket_connection.dll.lib" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.lib" -Force
+          Copy-Item -Path "socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.dll" -Force
+          Copy-Item -Path "socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll.lib" -Destination "RE-UE4SS/cppmods/TSWControllerMod/lib/tsw_controller_mod_socket_connection.lib" -Force
           @"
           includes("KismetDebuggerMod")
           includes("TSWControllerMod")
@@ -122,7 +122,7 @@ jobs:
           mkdir mod_assets
           cp ue4ssproxy/dxgi.dll mod_assets/dxgi.dll
           cp ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
-          cp socketconnectionlib/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
+          cp socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
           cp tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
       - uses: actions/upload-artifact@v4
         with:
