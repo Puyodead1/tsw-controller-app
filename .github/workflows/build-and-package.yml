@@ -178,6 +178,7 @@ jobs:
 
   build-go-app-linux:
     runs-on: ubuntu-latest
+    needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
 
