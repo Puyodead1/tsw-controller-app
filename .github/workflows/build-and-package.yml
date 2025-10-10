@@ -36,7 +36,7 @@ jobs:
           path: |
             tsw-controller-mod/socket-connection-lib/target/release/*.dll
             tsw-controller-mod/socket-connection-lib/target/release/*.lib
-            tsw-controller-mod/socket-connection-lib/target/release/*.h
+            tsw-controller-mod/socket-connection-lib/*.h
 
   build__ue4ssmod:
     runs-on: windows-2022
