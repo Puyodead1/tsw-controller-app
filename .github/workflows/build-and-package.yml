@@ -78,7 +78,7 @@ jobs:
 
       - name: Copy proxy generator stub
         run: |
-          cp -r RE-UE4SS_stub/* RE-UE4SS/
+          Copy-Item -Path RE-UE4SS_stub -Destination RE-UE4SS -Recurse -Force
 
       - name: Copy custom mod
         run: |
