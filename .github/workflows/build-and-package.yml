@@ -70,6 +70,10 @@ jobs:
             C:/Users/runneradmin/AppData/Local/.xmake
           key: ${{ runner.os }}_ue4ssmod_xmake_${{ hashFiles('RE-UE4SS/**/xmake.lua') }}
 
+      - name: Copy proxy generator stub
+        run: |
+          cp -r RE-UE4SS_stub/* RE-UE4SS/
+
       - name: Copy custom mod
         run: |
           Copy-Item -Path "tsw-controller-mod/ue4ss-mod" -Destination "RE-UE4SS/cppmods/TSWControllerMod" -Recurse -Force
@@ -97,7 +101,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tswcontrollermod
-          path: RE-UE4SS/Binaries/Game__Shipping__Win64/cppmods/TSWControllerMod/*.dll
+          path: RE-UE4SS/Binaries/Game__Shipping__Win64/TSWControllerMod/*.dll
 
   build__mod_assets:
     runs-on: ubuntu-latest
@@ -105,8 +109,16 @@ jobs:
     steps:
       - uses: actions/download-artifact@v5
         name: Download previously built artifacts
-      - run: find .
-
+      - run: |
+          mkdir mod_assets
+          cp ue4ssproxy/dxgi.dll mod_assets/dxgi.dll
+          cp ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
+          cp socketconnectionlib/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
+          cp tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mod_assets
+          path: mod_assets
 
 
   build-go-app-windows:
