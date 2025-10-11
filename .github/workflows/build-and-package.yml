@@ -114,7 +114,7 @@ jobs:
           path: RE-UE4SS/Binaries/Game__Shipping__Win64/TSWControllerMod/*.dll
 
   build__mod_assets:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [build__socketconnectionlib, build__ue4ssmod]
     steps:
       - uses: actions/download-artifact@v5
@@ -131,16 +131,11 @@ jobs:
           path: mod_assets
 
 
-  build-go-app-windows:
-    runs-on: windows-latest
+  build__goapp__windows:
+    runs-on: windows-2022
+    needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Go 1.24.5
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24.5
-
 
       - name: Download and install SDL2
         shell: pwsh
@@ -177,8 +172,30 @@ jobs:
           Write-Host "Verifying SDL2.dll is accessible..."
           Get-ChildItem "C:\SDL2"
 
-  build-go-app-linux:
-    runs-on: ubuntu-latest
+      - name: Setup Go 1.24.5
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.5
+
+      - name: Install wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.10
+
+      - uses: actions/download-artifact@v5
+        name: Download mod_assets artifact
+        with:
+          name: mod_assets
+          path: mod_assets
+
+      - run: Copy-Item -Path mod_assets -Destination go-app/mod_assets -Recurse -Force
+      - run: |
+          cd go-app
+          wails build
+      - run: |
+          cd go-app
+          Get-ChildItem -Recurse build
+
+  build__goapp__linux:
+    runs-on: ubuntu-22.04
     needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
@@ -206,12 +223,12 @@ jobs:
           name: mod_assets
           path: mod_assets
 
-      - run: find mod_assets
       - run: cp -r mod_assets go-app/mod_assets
       - run: find go-app/mod_assets
       - run: |
           cd go-app
           wails build
+
       - uses: actions/upload-artifact@v4
         with:
           name: tswcontrollerapp_linux
@@ -219,8 +236,8 @@ jobs:
             go-app/build/bin/tsw-controller-app
 
 
-  build-go-app-macos:
-    runs-on: macos-latest
+  build__goapp__macos:
+    runs-on: macos-12
     needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
@@ -252,4 +269,4 @@ jobs:
         with:
           name: tswcontrollerapp_macos
           path: |
-            go-app/build/bin/tsw-controller-app
+            go-app/build/bin/tsw-controller-app.app
