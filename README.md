@@ -28,22 +28,20 @@ You can find some demos below:
 - [LIRR Demo](https://f001.backblazeb2.com/file/tsw-controller-app-demos/lirr.mp4)
 
 ## Installation
-To install the mod and program just head to the [releases page](https://github.com/LiamMartens/tsw-controller-app/releases) and download the latest release for your platform.  
-Windows users will be able to use the installer. Linux and MacOS users can download the respective app for the release.
 
-**Note for macOS and linux**  
+### Automatic installation
+To install the mod and program just head to the [releases page](https://github.com/LiamMartens/tsw-controller-app/releases) and download the latest installer for your platform. Once you launch the app you will just need to use the "Install mod" action to install the latest mod into Train Sim World  
+
+### Manual installation
+You can also manually install if you alread have your own UE4SS installed and want to use your existing installation. To do so you will need to download the respective binary for you platform as well as the UE4SS mod and manually place the mod files into the UE4SS directory.
+
+**Note linux**  
 SDL2 is required for this app to work and will need to be installed.  
   
 On Ubuntu/Debian you can install it using apt  
 ```
 sudo apt install -y  libsdl2-2.0-0
 ```
-  
-On macOS you can use [Homebrew](https://brew.sh/) to install SDL2
-```
-brew install sdl2
-```
-
 
 ## Contributing
 
