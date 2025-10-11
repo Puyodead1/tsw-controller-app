@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.0.0
+**MAJOR RELEASE - BREAKING CHANGES**
+- Complete runtime and UI overhaul
+- Added visual Cab Debugger
+- Added visual Calibration mode
+- Added controller specific profile selection
+- Added conditional assignments
+
 ## 0.2.5
 - Fix calibration for calibrating multiple controllers.
 
