@@ -390,7 +390,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 							// deactivate the intermediate thresholds by iterating from end of previously passed up until but not including the currently exceeding threshold
 							for i := len(thresholds_previously_passed) - 1; i > len(thresholds_currently_exceeding)-1; i-- {
 								threshold := thresholds_previously_passed[i]
-								if control_assignment_item.Momentary.ActionDeactivate != nil {
+								if threshold.ActionDeactivate != nil {
 									action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, *threshold.ActionDeactivate, false)
 									p.CallAssignmentActionForControl(change_event.Control, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
 								} else if threshold.ActionActivate.Keys != nil {

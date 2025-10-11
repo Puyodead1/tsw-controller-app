@@ -53,6 +53,22 @@ func (seq *ActionSequencer) ToggleKeys(keys []string, modifiers []string, state 
 }
 
 func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
+	modifier_keys_map := map[string]bool{
+		"cmd":     true,
+		"lcmd":    true,
+		"rcmd":    true,
+		"alt":     true,
+		"lalt":    true,
+		"ralt":    true,
+		"ctrl":    true,
+		"lctrl":   true,
+		"rctrl":   true,
+		"control": true,
+		"shift":   true,
+		"lshift":  true,
+		"rshift":  true,
+	}
+
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
 	go func() {
 		for {
@@ -67,7 +83,7 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 				other_keys := []string{}
 				for _, input := range keys_list {
 					key := strings.ToLower(input)
-					if key == "ctrl" || key == "control" || key == "alt" || key == "meta" || key == "cmd" || key == "command" {
+					if is_modifier_key, has_is_modifier_key := modifier_keys_map[key]; has_is_modifier_key && is_modifier_key {
 						modifier_keys = append(modifier_keys, key)
 					} else if is_alpha_rx.MatchString(input) {
 						/* if alphabetical key - keep difference between upper and lower */
