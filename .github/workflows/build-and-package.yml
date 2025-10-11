@@ -137,40 +137,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and install SDL2
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+        shell: pwsh
+
+      - name: Download SDL2 DLL
         shell: pwsh
         run: |
-          # Variables
           $url = "https://github.com/libsdl-org/SDL/releases/download/release-2.32.6/SDL2-2.32.6-win32-x64.zip"
-          $zipPath = "$env:RUNNER_TEMP\SDL2.zip"
-          $extractPath = "$env:RUNNER_TEMP\SDL2"
-          $globalPath = "C:\SDL2"
-
-          # Download SDL2
-          Write-Host "Downloading SDL2..."
+          $zipPath = "$PWD/SDL2.zip"
+          $extractPath = "$PWD"
           Invoke-WebRequest -Uri $url -OutFile $zipPath
-
-          # Extract
-          Write-Host "Extracting SDL2..."
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
 
-          # Create global directory
-          Write-Host "Creating global directory..."
-          New-Item -ItemType Directory -Force -Path $globalPath | Out-Null
 
-          # Find and copy DLL
-          $dll = Get-ChildItem -Path $extractPath -Recurse -Filter "SDL2.dll" | Select-Object -First 1
-          if (-not $dll) { throw "SDL2.dll not found after extraction!" }
-          Write-Host "Copying $($dll.FullName) to $globalPath"
-          Copy-Item -Path $dll.FullName -Destination $globalPath -Force
-
-          # Add to PATH for this job
-          Write-Host "Adding SDL2 to PATH..."
-          "C:\SDL2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-
-          # Verify
-          Write-Host "Verifying SDL2.dll is accessible..."
-          Get-ChildItem "C:\SDL2"
+      - name: Install vcpkg dependencies
+        run: |
+          cd go-app
+          ..\vcpkg\vcpkg install
+        shell: pwsh
 
       - name: Setup Go 1.24.5
         uses: actions/setup-go@v5
@@ -189,10 +176,13 @@ jobs:
       - run: Copy-Item -Path mod_assets -Destination go-app/mod_assets -Recurse -Force
       - run: |
           cd go-app
-          wails build
-      - run: |
-          cd go-app
-          Get-ChildItem -Recurse build
+           ./windows_build.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tswcontrollerapp_windows
+          path: |
+            go-app/build/bin/tsw-controller-app.exe
 
   build__goapp__linux:
     runs-on: ubuntu-22.04
@@ -237,7 +227,7 @@ jobs:
 
 
   build__goapp__macos:
-    runs-on: macos-12
+    runs-on: macos-latest
     needs: [build__mod_assets]
     steps:
       - uses: actions/checkout@v4
