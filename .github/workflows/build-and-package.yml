@@ -174,7 +174,7 @@ jobs:
 
       - run: Copy-Item -Path mod_assets -Destination go-app/mod_assets -Recurse -Force
       - run: |
-          $env:VERSION=Get-Content RELEASE_VERSION
+          $env:VERSION=(Get-Content RELEASE_VERSION)[0]
           cd go-app
            ./windows_build.ps1
 
@@ -190,6 +190,7 @@ jobs:
 
       - name: Compile installer
         run: |
+          $env:VERSION=(Get-Content RELEASE_VERSION)[0]
           cd go-app
           iscc windows_inno_setup.iss
 
@@ -231,7 +232,7 @@ jobs:
       - run: cp -r mod_assets go-app/mod_assets
       - run: find go-app/mod_assets
       - run: |
-          VERSION=$(cat RELEASE_VERSION)
+          VERSION=$(head -n 1 RELEASE_VERSION)
           cd go-app
           wails build -ldflags="-X 'main.VERSION=$VERSION'"
 
@@ -242,7 +243,7 @@ jobs:
             go-app/build/bin/tsw-controller-app
 
       - run: |
-          VERSION=$(cat RELEASE_VERSION)
+          VERSION=$(head -n 1 RELEASE_VERSION)
           mkdir tswcontrollerapp_debian_amd64
           mkdir -p tswcontrollerapp_debian_amd64/DEBIAN
           mkdir -p tswcontrollerapp_debian_amd64/usr/local/bin
@@ -292,13 +293,12 @@ jobs:
           path: mod_assets
       - run: cp -r mod_assets go-app/mod_assets
       - run: |
-          VERSION=$(cat RELEASE_VERSION)
+          VERSION=$(head -n 1 RELEASE_VERSION)
           cd go-app
           wails build -ldflags="-X 'main.VERSION=$VERSION'"
           find build
-          find /opt/homebrew/lib
           mkdir -p build/bin/tsw-controller-app.app/Contents/Frameworks
-          cp /opt/homebrew/lib/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/
+          cp /opt/homebrew/lib/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2.dylib
           install_name_tool -change /opt/homebrew/lib/libSDL2.dylib @executable_path/../Frameworks/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           install_name_tool -id @rpath/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2.
           install_name_tool -add_rpath @executable_path/../Frameworks build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
