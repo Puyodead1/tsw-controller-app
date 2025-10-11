@@ -163,6 +163,25 @@ Used by `DirectControl` and `SyncControl` to map axis input to control values.
 
 ---
 
+## 🔁 Conditional assignments
+It is also possible to only execute assignments depending on one or more conditions. This can be used to create multi-key assignments. (eg: the action of a button changes depending on the position of a lever).
+This can be added to any assignment using the `conditions` key:
+```
+{
+  "type": "momentary",
+  "conditions": [
+    {
+      "control": "mylever",
+      "operator": "gte",
+      "value": 0.5
+    }
+  ]
+}
+```
+In the above example, the assignment will only execute if `mylever` exceeds 0.5
+
+---
+
 ## ✅ Best Practices
 
 - Use `DirectControl` for stable, high-resolution mappings.

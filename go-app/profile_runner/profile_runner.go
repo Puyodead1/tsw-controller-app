@@ -262,6 +262,16 @@ check_assignments_loop:
 						/* condition doesn't match -> skip */
 						continue check_assignments_loop
 					}
+				case "gt":
+					if dependency_control.State.NormalizedValues.Value <= condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				case "lt":
+					if dependency_control.State.NormalizedValues.Value >= condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
 				}
 			}
 		}

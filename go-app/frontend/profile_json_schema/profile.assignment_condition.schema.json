@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "control": {
+      "type": "string",
+      "description": "This is the control which needs to meet the condition"
+    },
+    "operator": {
+      "enum": ["gte", "lte", "gt", "lt"],
+      "description": "The operation to apply to the control value (greater than, less than, ..)"
+    },
+    "value": {
+      "type": "number",
+      "description": "The comparison value"
+    }
+  },
+  "required": ["control"]
+}
