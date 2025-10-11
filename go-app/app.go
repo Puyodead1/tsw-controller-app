@@ -27,7 +27,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const VERSION = "1.0.0"
 const PROGRAM_CONFIG_FILEPATH = "./config/program.json"
 
 //go:embed mod_assets/*

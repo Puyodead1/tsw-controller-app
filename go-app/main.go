@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"tsw_controller_app/logger"
 
 	"github.com/wailsapp/wails/v2"
@@ -11,10 +12,14 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
+var VERSION = "0.0.0-dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
+	fmt.Printf("Version %s\n", VERSION)
+
 	app := NewApp()
 	err := wails.Run(&options.App{
 		Title:  "TSW Controller Utility",
