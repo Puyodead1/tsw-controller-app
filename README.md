@@ -31,7 +31,7 @@ You can find some demos below:
 To install the mod and program just head to the [releases page](https://github.com/LiamMartens/tsw-controller-app/releases) and download the latest release for your platform.  
 Windows users will be able to use the installer. Linux and MacOS users can download the respective app for the release.
 
-**Note for macOS and linux**
+**Note for macOS and linux**  
 SDL2 is required for this app to work and will need to be installed.  
   
 On Ubuntu/Debian you can install it using apt  
