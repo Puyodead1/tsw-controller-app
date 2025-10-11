@@ -1,12 +1,19 @@
 # CHANGELOG
 
 ## 1.0.0
-**MAJOR RELEASE - BREAKING CHANGES**
+#### MAJOR RELEASE - BREAKING CHANGES
 - Complete runtime and UI overhaul
 - Added visual Cab Debugger
 - Added visual Calibration mode
 - Added controller specific profile selection
 - Added conditional assignments
+
+#### UPGRADE GUIDE FROM < 1.0.0
+If you are already using the previous software you can do one of either:
+- Manually download the program and replace the mod and program as normal.
+- Remove the current UE4SS + mod installation. Download the new release and install the mod using the graphical mod installer.
+
+#### NORMAL INSTALLATION GUIDE CAN BE FOUND ON THE [HOME README PAGE](./README.md)
 
 ## 0.2.5
 - Fix calibration for calibrating multiple controllers.
