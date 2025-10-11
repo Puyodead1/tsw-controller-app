@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 	"fmt"
+	"os"
+	"path"
 	"tsw_controller_app/logger"
 
 	"github.com/wailsapp/wails/v2"
@@ -20,8 +22,27 @@ var assets embed.FS
 func main() {
 	fmt.Printf("Version %s\n", VERSION)
 
-	app := NewApp()
-	err := wails.Run(&options.App{
+	config_dir, err := os.UserConfigDir()
+	if err != nil {
+		panic(fmt.Errorf("could not find user config directory %e", err))
+	}
+
+	exec_file, err := os.Executable()
+	if err != nil {
+		panic(fmt.Errorf("could not find executable %e", err))
+	}
+
+	global_config_dir := path.Join(config_dir, "tswcontrollerapp/config")
+	local_config_dir := path.Join(path.Dir(exec_file), "config")
+	os.MkdirAll(global_config_dir, 0o755)
+	os.MkdirAll(local_config_dir, 0o755)
+
+	app := NewApp(AppConfig{
+		GlobalConfigDir: global_config_dir,
+		LocalConfigDir:  local_config_dir,
+	})
+
+	err = wails.Run(&options.App{
 		Title:  "TSW Controller Utility",
 		Width:  600,
 		Height: 400,

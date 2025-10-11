@@ -27,8 +27,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const PROGRAM_CONFIG_FILEPATH = "./config/program.json"
-
 //go:embed mod_assets/*
 var mod_assets embed.FS
 
@@ -52,8 +50,14 @@ type AppRawSubscriber struct {
 	LastEvent *controller_mgr.ControllerManager_RawEvent
 }
 
+type AppConfig struct {
+	GlobalConfigDir string
+	LocalConfigDir  string
+}
+
 type App struct {
 	ctx                context.Context
+	config             AppConfig
 	program_config     *config.Config_ProgramConfig
 	config_loader      *config_loader.ConfigLoader
 	sdl_manager        *sdl_mgr.SDLMgr
@@ -67,7 +71,9 @@ type App struct {
 	raw_subscriber *AppRawSubscriber
 }
 
-func NewApp() *App {
+func NewApp(
+	appconfig AppConfig,
+) *App {
 	sdl_manager := sdl_mgr.New()
 	sdl_manager.PanicInit()
 
@@ -78,7 +84,8 @@ func NewApp() *App {
 	sync_controller := profile_runner.NewSyncController(socket_connection)
 
 	return &App{
-		program_config:     config.LoadProgramConfigFromFile(PROGRAM_CONFIG_FILEPATH),
+		config:             appconfig,
+		program_config:     config.LoadProgramConfigFromFile(path.Join(appconfig.GlobalConfigDir, "program.json")),
 		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
@@ -187,32 +194,42 @@ func (a *App) GetLastInstalledModVersion() string {
 
 func (a *App) SetLastInstalledModVersion(version string) {
 	a.program_config.LastInstalledModVersion = version
-	a.program_config.Save(PROGRAM_CONFIG_FILEPATH)
+	a.program_config.Save(path.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
 func (a *App) LoadConfiguration() {
 	/* load config from relative config directory */
-	sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory("./config")
-	for _, err := range errors {
-		logger.Logger.Error("[App] encountered error while reading configuration files", "error", err)
+	dirs_to_load := []string{
+		a.config.GlobalConfigDir,
+		a.config.LocalConfigDir,
 	}
-	for _, sdl_mapping := range sdl_mappings {
-		var calibration *config.Config_Controller_Calibration
-		for _, c := range calibrations {
-			if c.UsbID == sdl_mapping.UsbID {
-				calibration = &c
-				break
+
+	for _, dir := range dirs_to_load {
+		sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory(dir)
+
+		for _, err := range errors {
+			logger.Logger.Error("[App] encountered error while reading configuration files", "error", err)
+		}
+
+		for _, sdl_mapping := range sdl_mappings {
+			var calibration *config.Config_Controller_Calibration
+			for _, c := range calibrations {
+				if c.UsbID == sdl_mapping.UsbID {
+					calibration = &c
+					break
+				}
+			}
+			if calibration != nil {
+				logger.Logger.Info("[App] registering SDL map and calibration for controller", "name", sdl_mapping.Name, "usb_id", sdl_mapping.UsbID)
+				a.controller_manager.RegisterConfig(sdl_mapping, *calibration)
 			}
 		}
-		if calibration != nil {
-			logger.Logger.Info("[App] registering SDL map and calibration for controller", "name", sdl_mapping.Name, "usb_id", sdl_mapping.UsbID)
-			a.controller_manager.RegisterConfig(sdl_mapping, *calibration)
+		for _, profile := range profiles {
+			logger.Logger.Info("[App] registering profile", "profile", profile.Name)
+			a.profile_runner.RegisterProfile(profile)
 		}
 	}
-	for _, profile := range profiles {
-		logger.Logger.Info("[App] registering profile", "profile", profile.Name)
-		a.profile_runner.RegisterProfile(profile)
-	}
+
 	runtime.EventsEmit(a.ctx, AppEventType_ProfilesUpdated)
 }
 
@@ -531,22 +548,14 @@ func (a *App) UpdateApp() bool {
 }
 
 func (a *App) OpenConfigDirectory() error {
-	p, err := os.Getwd()
-	if err != nil {
-		logger.Logger.Error("[App::OpenProfilesDirectory] could not find directory")
-		return err
-	}
-
 	var cmd *exec.Cmd
-	config_path := path.Join(p, "config")
-
 	switch go_runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("explorer", config_path)
+		cmd = exec.Command("explorer", a.config.GlobalConfigDir)
 	case "darwin":
-		cmd = exec.Command("open", config_path)
+		cmd = exec.Command("open", a.config.GlobalConfigDir)
 	default:
-		cmd = exec.Command("xdg-open", config_path)
+		cmd = exec.Command("xdg-open", a.config.GlobalConfigDir)
 	}
 	fmt.Printf("%#v\n", cmd)
 	if err := cmd.Start(); err != nil {
@@ -611,7 +620,7 @@ func (a *App) InstallTrainSimWorldMod() error {
 	/* write version file */
 	os.WriteFile(path.Join(install_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
 	a.program_config.LastInstalledModVersion = VERSION
-	a.program_config.Save(PROGRAM_CONFIG_FILEPATH)
+	a.program_config.Save(path.Join(a.config.GlobalConfigDir, "program.json"))
 
 	return nil
 }
