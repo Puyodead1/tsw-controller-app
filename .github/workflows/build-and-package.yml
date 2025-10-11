@@ -147,11 +147,10 @@ jobs:
         shell: pwsh
         run: |
           $url = "https://github.com/libsdl-org/SDL/releases/download/release-2.32.6/SDL2-2.32.6-win32-x64.zip"
-          $zipPath = "$PWD/SDL2.zip"
-          $extractPath = "$PWD"
+          $zipPath = "$PWD/go-app/SDL2.zip"
+          $extractPath = "$PWD/go-app"
           Invoke-WebRequest -Uri $url -OutFile $zipPath
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
 
       - name: Install vcpkg dependencies
         run: |
