@@ -242,6 +242,7 @@ jobs:
             go-app/build/bin/tsw-controller-app
 
       - run: |
+          VERSION=$(cat RELEASE_VERSION)
           mkdir tswcontrollerapp_debian_amd64
           mkdir -p tswcontrollerapp_debian_amd64/DEBIAN
           mkdir -p tswcontrollerapp_debian_amd64/usr/local/bin
@@ -295,7 +296,6 @@ jobs:
           cd go-app
           wails build -ldflags="-X 'main.VERSION=$VERSION'"
           find build
-          find /usr/local/lib
           find /opt/homebrew/lib
           mkdir -p build/bin/tsw-controller-app.app/Contents/Frameworks
           cp /opt/homebrew/lib/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/
