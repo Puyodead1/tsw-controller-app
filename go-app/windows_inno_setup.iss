@@ -36,8 +36,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\Users\Liam9\source\repos\go-app\build\bin\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\Liam9\source\repos\go-app\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\bin\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

@@ -184,6 +184,21 @@ jobs:
           path: |
             go-app/build/bin/tsw-controller-app.exe
 
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress --yes
+
+      - name: Compile installer
+        run: |
+          cd go-app
+          iscc windows_inno_setup.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tswcontrollerapp_windows_installer
+          path: |
+            go-app/*.exe
+
   build__goapp__linux:
     runs-on: ubuntu-22.04
     needs: [build__mod_assets]
