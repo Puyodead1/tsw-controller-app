@@ -461,7 +461,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				return
 			case sync_control_state := <-channel:
 				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
-				if sync_control_state.SourceEvent != nil && p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+				if sync_control_state.SourceEvent != nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
 					continue
 				}
 

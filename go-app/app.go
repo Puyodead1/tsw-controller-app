@@ -159,7 +159,6 @@ func (a *App) startup(ctx context.Context) {
 				runtime.EventsEmit(ctx, AppEventType_SyncControlState)
 			}
 		}
-
 	}()
 
 	go func() {

@@ -94,8 +94,8 @@ func (c *SyncController) Run(ctx context.Context) func() {
 				control_state.PropertyName = msg.Properties["property"]
 				control_state.CurrentValue = current_value
 				control_state.CurrentNormalizedValue = current_normalized_value
-				c.ControlStateChangedChannels.EmitTimeout(time.Second, control_state)
 				c.ControlState.Set(msg.Properties["name"], control_state)
+				c.ControlStateChangedChannels.EmitTimeout(time.Second, control_state)
 			}
 		}
 	}()
