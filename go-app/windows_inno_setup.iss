@@ -8,7 +8,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={F4952A94-654B-491C-A534-BF0A3D1590FE}
+AppId={{F4952A94-654B-491C-A534-BF0A3D1590FE}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 DefaultDirName={autopf}\TSWControllerApp
