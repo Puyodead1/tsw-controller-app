@@ -2,7 +2,6 @@ package action_sequencer
 
 import (
 	"context"
-	"regexp"
 	"strings"
 	"time"
 	"tsw_controller_app/chan_utils"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/go-vgo/robotgo"
 )
-
-const IS_ALPHA_RX = `^[a-zA-Z]$`
 
 type ActionSequencerAction struct {
 	Keys      string
@@ -77,7 +74,6 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 				return
 			case action := <-seq.ActionsQueue:
 				logger.Logger.Debug("[ActionSequencer::Run] received action from queue", "action", action)
-				is_alpha_rx := regexp.MustCompile(IS_ALPHA_RX)
 				keys_list := strings.Split(action.Keys, "+")
 				modifier_keys := []string{}
 				other_keys := []string{}
@@ -85,9 +81,6 @@ func (seq *ActionSequencer) Run(ctx context.Context) context.CancelFunc {
 					key := strings.ToLower(input)
 					if is_modifier_key, has_is_modifier_key := modifier_keys_map[key]; has_is_modifier_key && is_modifier_key {
 						modifier_keys = append(modifier_keys, key)
-					} else if is_alpha_rx.MatchString(input) {
-						/* if alphabetical key - keep difference between upper and lower */
-						other_keys = append(other_keys, input)
 					} else {
 						other_keys = append(other_keys, key)
 					}
