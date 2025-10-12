@@ -170,6 +170,7 @@ export namespace main {
 	}
 	export class Interop_Profile {
 	    Name: string;
+	    UsbID: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Interop_Profile(source);
@@ -178,6 +179,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
+	        this.UsbID = source["UsbID"];
 	    }
 	}
 	export class Interop_RawEvent {

@@ -13,11 +13,15 @@ import {
   GetVersion,
   GetControllers,
   OpenProfileBuilder,
+  SaveProfileForSharing,
+  ImportProfile,
 } from "../../../wailsjs/go/main/App";
 import { useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
 import { events } from "../../events";
 import { useForm } from "react-hook-form";
+import { MainTabControllerProfileSelector } from "./MainTabControllerProfileSelecor";
+import { main } from "../../../wailsjs/go/models";
 
 type FormValues = {
   profiles: Record<`${string}`, string>;
@@ -46,11 +50,12 @@ export const MainTab = () => {
     { revalidateOnMount: true },
   );
 
-  const { register, watch, getValues } = useForm<FormValues>({
+  const form = useForm<FormValues>({
     defaultValues: async () => ({
       profiles: await GetSelectedProfiles(),
     }),
   });
+  const { register, watch, getValues } = form;
 
   const handleReloadConfiguration = () => {
     LoadConfiguration().then(() => {
@@ -72,9 +77,16 @@ export const MainTab = () => {
     OpenProfileBuilder("");
   };
 
-  const handleOpenProfile = (guid: string) => {
-    const profile = getValues(`profiles.${guid}`);
+  const handleOpenProfile = (controller: main.Interop_GenericController) => {
+    const profile = getValues(`profiles.${controller.GUID}`);
     if (profile) OpenProfileBuilder(profile);
+  };
+
+  const handleSaveProfileForSharing = (
+    controller: main.Interop_GenericController,
+  ) => {
+    const profile = getValues(`profiles.${controller.GUID}`);
+    if (profile) SaveProfileForSharing(controller.GUID, profile);
   };
 
   const openInWindow = (url: string) => {
@@ -84,6 +96,12 @@ export const MainTab = () => {
   const handleInstall = () => {
     InstallTrainSimWorldMod()
       .then(() => refetchVersionInfo())
+      .catch((err) => alert(String(err)));
+  };
+
+  const handleImportProfile = () => {
+    ImportProfile()
+      .then(() => LoadConfiguration())
       .catch((err) => alert(String(err)));
   };
 
@@ -120,64 +138,28 @@ export const MainTab = () => {
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
       {controllers?.map((c) => (
-        <div key={c.GUID} className="flex flex-row gap-2">
-          <fieldset className="fieldset grow">
-            <legend className="fieldset-legend">
-              Select profile for {c.Name}
-            </legend>
-            <select
-              className="select w-full"
-              {...register(`profiles.${c.GUID}`)}
-            >
-              <option selected value="">
-                None
-              </option>
-              {profiles?.map((profile) => (
-                <option key={profile.Name} value={profile.Name}>
-                  {profile.Name}
-                </option>
-              ))}
-            </select>
-            <span className="label">
-              Auto-detect only works for certain supported controllers
-            </span>
-          </fieldset>
-          <div className="dropdown dropdown-end mt-[34px]">
-            <div tabIndex={0} role="button" className="btn">
-              More
-            </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-            >
-              <li>
-                <button onClick={handleReloadConfiguration}>
-                  Reload configuration
-                </button>
-              </li>
-              <li>
-                <button onClick={handleBrowseConfig}>
-                  Browse configuration
-                </button>
-              </li>
-              <li>
-                <button onClick={handleCreateProfile}>
-                  Create new profile
-                </button>
-              </li>
-              <li>
-                <button onClick={() => handleOpenProfile(c.GUID)}>
-                  Open profile in builder
-                </button>
-              </li>
-            </ul>
-          </div>
+        <div key={c.GUID}>
+          <MainTabControllerProfileSelector
+            controller={c}
+            profiles={profiles ?? []}
+            form={form}
+            onBrowseConfiguration={handleBrowseConfig}
+            onCreateProfile={handleCreateProfile}
+            onReloadConfiguration={handleReloadConfiguration}
+            onSaveControllerProfileForSharing={handleSaveProfileForSharing}
+            onOpenProfileForController={handleOpenProfile}
+          />
         </div>
       ))}
       {/* steam://controllerconfig/2967990/3576092503 */}
-      <button className="btn btn-sm w-full" onClick={handleInstall}>
-        Install/Reinstall Train Sim World mod
-      </button>
+      <div className="flex gap-2">
+        <button className="btn btn-sm grow" onClick={handleInstall}>
+          Install/Reinstall Train Sim World mod
+        </button>
+        <button className="btn btn-sm grow" onClick={handleImportProfile}>
+          Import profile (.tswprofile)
+        </button>
+      </div>
       {!versionInfo?.lastInstalledModVersion && (
         <div role="alert" className="alert alert-soft alert-warning">
           <span>

@@ -42,6 +42,10 @@ export function HasNewerVersion() {
   return window['go']['main']['App']['HasNewerVersion']();
 }
 
+export function ImportProfile() {
+  return window['go']['main']['App']['ImportProfile']();
+}
+
 export function InstallTrainSimWorldMod() {
   return window['go']['main']['App']['InstallTrainSimWorldMod']();
 }
@@ -64,6 +68,10 @@ export function OpenProfileBuilder(arg1) {
 
 export function SaveCalibration(arg1) {
   return window['go']['main']['App']['SaveCalibration'](arg1);
+}
+
+export function SaveProfileForSharing(arg1, arg2) {
+  return window['go']['main']['App']['SaveProfileForSharing'](arg1, arg2);
 }
 
 export function SelectProfile(arg1, arg2) {

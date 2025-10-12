@@ -183,6 +183,7 @@ jobs:
           name: tswcontrollerapp_windows
           path: |
             go-app/build/bin/tsw-controller-app.exe
+            go-app/SDL2.dll
 
       - name: Install Inno Setup
         run: |
@@ -307,3 +308,33 @@ jobs:
           name: tswcontrollerapp_macos
           path: |
             go-app/build/bin/tsw-controller-app.app
+
+  prerelease:
+    runs-on: ubuntu-latest
+    needs: [build__goapp__linux, build__goapp__windows, build__goapp__macos]
+    steps:
+      - uses: actions/download-artifact@v5
+        name: Download all artifacts
+
+      - name: debug
+        run: |
+          find .
+
+      - name: Collect all release assets
+        run: |
+          mkdir release_assets
+
+          cp tswcontrollerapp_windows/* release_assets/tswcontrollerapp_win64_binary
+          cp tswcontrollerapp_windows_installer/tswcontrollerapp-setup.exe release_assets/tswcontrollerapp_win64_setup.exe
+
+          cp tswcontrollerapp_linux/tsw-controller-app release_assets/tswcontrollerapp_linux_amd64_binary
+          cp tswcontrollerapp_linux_debian/tswcontrollerapp_debian_amd64.deb release_assets/tswcontrollerapp_debian_amd64.deb
+
+          cp -r tswcontrollerapp_macos/tsw-controller-app/tsw-controller-app.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
+
+          cp -r mod_assets release_assets/manual_ue4ss_mod_installation
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release_assets
+          path: release_assets

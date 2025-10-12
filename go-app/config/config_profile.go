@@ -128,11 +128,17 @@ type Config_Controller_Profile_Control struct {
 	Assignments *[]Config_Controller_Profile_Control_Assignment `json:"assignments,omitempty"`
 }
 
+type Config_Controller_Profile_Controller struct {
+	/* if defined ; specifies this profile can only be used with the below controller */
+	UsbID *string `json:"usb_id,omitempty"`
+	/* Can be defined to specify a specific SDL mapping for this controller and profile; useful for sharing */
+	Mapping *Config_Controller_SDLMap `json:"mapping,omitempty"`
+}
+
 type Config_Controller_Profile struct {
-	Name string `json:"name" validate:"required"`
-	/* if provided ; this profile will automatically be used for this controller */
-	UsbID    *string                             `json:"usb_id,omitempty"`
-	Controls []Config_Controller_Profile_Control `json:"controls" validate:"required"`
+	Name       string                                `json:"name" validate:"required"`
+	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
+	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
 }
 
 func (c *Config_Controller_Profile_Control_Assignment_Action) UnmarshalJSON(data []byte) error {

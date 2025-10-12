@@ -13,7 +13,8 @@ type Interop_GenericController struct {
 }
 
 type Interop_Profile struct {
-	Name string
+	Name  string
+	UsbID string
 }
 
 type Interop_RawEvent struct {

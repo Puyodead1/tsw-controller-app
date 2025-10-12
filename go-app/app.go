@@ -14,6 +14,7 @@ import (
 	go_runtime "runtime"
 	"sort"
 	"strings"
+	"time"
 	"tsw_controller_app/action_sequencer"
 	"tsw_controller_app/config"
 	"tsw_controller_app/config_loader"
@@ -262,8 +263,14 @@ func (a *App) GetControllers() []Interop_GenericController {
 func (a *App) GetProfiles() []Interop_Profile {
 	var profiles []Interop_Profile
 	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
+		UsbID := ""
+		if profile.Controller != nil && profile.Controller.UsbID != nil {
+			UsbID = *profile.Controller.UsbID
+		}
+
 		profiles = append(profiles, Interop_Profile{
-			Name: profile.Name,
+			Name:  profile.Name,
+			UsbID: UsbID,
 		})
 		return true
 	})
@@ -450,6 +457,61 @@ func (a *App) SubscribeRaw(guid string) error {
 	return nil
 }
 
+func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name string) error {
+	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+		controller, has_controller := a.controller_manager.ConfiguredControllers.Get(guid)
+		if !has_controller {
+			return fmt.Errorf("could not find controller")
+		}
+
+		joy_usbid := controller.Joystick.ToString()
+		profile_for_sharing := profile
+		if profile_for_sharing.Controller == nil {
+			profile_for_sharing.Controller = &config.Config_Controller_Profile_Controller{
+				UsbID:   &joy_usbid,
+				Mapping: nil,
+			}
+		}
+
+		if profile_for_sharing.Controller.Mapping == nil {
+			mapping := config.Config_Controller_SDLMap{
+				Name:  fmt.Sprintf("%s - %s", controller.Joystick.Name, name),
+				UsbID: joy_usbid,
+				Data:  []config.Config_Controller_SDLMap_Control{},
+			}
+			controller.Controls.ForEach(func(value controller_mgr.ControllerManager_Controller_Control, key string) bool {
+				mapping.Data = append(mapping.Data, value.SDLMapping)
+				return true
+			})
+			profile_for_sharing.Controller.Mapping = &mapping
+		}
+
+		profile_for_sharing_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+			Title:           "Select save location for profile",
+			DefaultFilename: fmt.Sprintf("%s.tswprofile", string_utils.Sluggify(profile_for_sharing.Name)),
+		})
+		if err != nil {
+			return err
+		}
+
+		profile_for_sharing_file, err := os.OpenFile(profile_for_sharing_filepath, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		defer profile_for_sharing_file.Close()
+
+		encoder_sdl_mapping_file := json.NewEncoder(profile_for_sharing_file)
+		encoder_sdl_mapping_file.SetIndent("", "  ")
+		if err := encoder_sdl_mapping_file.Encode(profile_for_sharing); err != nil {
+			return err
+		}
+
+		return nil
+	} else {
+		return fmt.Errorf("could not find profile")
+	}
+}
+
 func (a *App) OpenProfileBuilder(name string) {
 	if len(name) == 0 {
 		runtime.BrowserOpenURL(a.ctx, "https://tsw-controller-app.vercel.app/")
@@ -623,4 +685,42 @@ func (a *App) InstallTrainSimWorldMod() error {
 	a.program_config.Save(path.Join(a.config.GlobalConfigDir, "program.json"))
 
 	return nil
+}
+
+func (a *App) ImportProfile() error {
+	import_profile_path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select a profile (.tswprofile)",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "TSW Profiles",
+				Pattern:     "*.tswprofile",
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	if path.Ext(import_profile_path) != ".tswprofile" {
+		return fmt.Errorf("selected an invalid profile")
+	}
+
+	import_profile_file, err := os.Open(import_profile_path)
+	if err != nil {
+		return err
+	}
+	defer import_profile_file.Close()
+
+	original_filename, _ := strings.CutSuffix(path.Base(import_profile_path), ".tswprofile")
+	target_file_path := path.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", original_filename, time.Now().Unix()))
+	target_file, err := os.OpenFile(target_file_path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer target_file.Close()
+
+	if _, err = io.Copy(target_file, import_profile_file); err != nil {
+		return err
+	}
+	return target_file.Sync()
 }

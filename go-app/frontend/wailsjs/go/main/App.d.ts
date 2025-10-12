@@ -22,6 +22,8 @@ export function GetVersion():Promise<string>;
 
 export function HasNewerVersion():Promise<boolean>;
 
+export function ImportProfile():Promise<void>;
+
 export function InstallTrainSimWorldMod():Promise<void>;
 
 export function LastRawEvent():Promise<main.Interop_RawEvent>;
@@ -33,6 +35,8 @@ export function OpenConfigDirectory():Promise<void>;
 export function OpenProfileBuilder(arg1:string):Promise<void>;
 
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
+
+export function SaveProfileForSharing(arg1:string,arg2:string):Promise<void>;
 
 export function SelectProfile(arg1:string,arg2:string):Promise<void>;
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"tsw_controller_app/sdl_mgr"
 
 	"github.com/go-playground/validator/v10"
@@ -31,4 +32,14 @@ func ControllerSDLMapFromJSON(json_str string) (*Config_Controller_SDLMap, error
 	}
 
 	return &c, nil
+}
+
+func (c *Config_Controller_SDLMap) FindByKindAndIndex(kind sdl_mgr.SDLMgr_Control_Kind, index int) (Config_Controller_SDLMap_Control, error) {
+	for _, control := range c.Data {
+		if control.Kind == kind && control.Index == index {
+			return control, nil
+		}
+	}
+
+	return Config_Controller_SDLMap_Control{}, fmt.Errorf("could not find control")
 }
