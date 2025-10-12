@@ -305,7 +305,7 @@ jobs:
           codesign --force --deep --sign - build/bin/tsw-controller-app.app
       - uses: actions/upload-artifact@v4
         with:
-          name: tswcontrollerapp_macos
+          name: tswcontrollerapp_macos.app
           path: |
             go-app/build/bin/tsw-controller-app.app
 
@@ -331,7 +331,7 @@ jobs:
           cp tswcontrollerapp_linux_debian/tswcontrollerapp_debian_amd64.deb release_assets/tswcontrollerapp_debian_amd64.deb
 
           mkdir -p release_assets/tswcontrollerapp_macos
-          cp -r tswcontrollerapp_macos/tsw-controller-app.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
+          cp -r tswcontrollerapp_macos.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
 
           cp -r mod_assets release_assets/manual_ue4ss_mod_installation
 
