@@ -32,20 +32,18 @@ func (seq *ActionSequencer) Enqueue(action ActionSequencerAction) {
 }
 
 func (seq *ActionSequencer) ToggleKeys(keys []string, modifiers []string, state string) {
-	if state == "up" {
-		for _, key := range keys {
-			robotgo.KeyToggle(key, "up")
+	execution_groups := [][]string{}
+	switch state {
+	case "down":
+		execution_groups = [][]string{modifiers, keys}
+	case "up":
+		execution_groups = [][]string{keys, modifiers}
+	}
+	for _, key_group := range execution_groups {
+		for _, key := range key_group {
+			robotgo.KeyToggle(key, state)
 		}
-		for _, key := range modifiers {
-			robotgo.KeyToggle(key, "up")
-		}
-	} else if state == "down" {
-		for _, key := range modifiers {
-			robotgo.KeyToggle(key, "down")
-		}
-		for _, key := range keys {
-			robotgo.KeyToggle(key, "down")
-		}
+		robotgo.MilliSleep(30)
 	}
 }
 
