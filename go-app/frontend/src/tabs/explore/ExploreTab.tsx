@@ -1,13 +1,18 @@
 import useSWR from "swr";
 import {
+  GetControllers,
   GetSharedProfiles,
-  ImportSharedProfile,
-  LoadConfiguration,
 } from "../../../wailsjs/go/main/App";
+import { ExploreTabProfile } from "./ExploreTabProfile";
+import { useMemo } from "react";
 import { main } from "../../../wailsjs/go/models";
 
 export const ExploreTab = () => {
-  const { data: sharedProfiles } = useSWR(
+  const { data: controllers } = useSWR("controllers", () => GetControllers(), {
+    revalidateOnMount: true,
+  });
+
+  const { data: sharedProfiles, isLoading: isSharedProfilesLoading } = useSWR(
     "shared-profiles",
     () =>
       GetSharedProfiles().then((profiles) =>
@@ -16,31 +21,60 @@ export const ExploreTab = () => {
     { revalidateOnMount: true },
   );
 
-  const handleDownload = (profile: main.Interop_SharedProfile) => {
-    ImportSharedProfile(profile)
-      .then(() => LoadConfiguration().then(() => alert("Profile Downloaded")))
-      .catch((err) => alert(String(err)));
-  };
+  const [supportedSharedProfiles, unsupportedSharedProfiles] = useMemo(() => {
+    const controllerUsbIds = new Set(controllers?.map((c) => c.UsbID) ?? []);
+    const supportedSharedProfiles: main.Interop_SharedProfile[] = [];
+    const unsupportedSharedProfiles: main.Interop_SharedProfile[] = [];
+    sharedProfiles?.forEach((p) => {
+      (controllerUsbIds.has(p.UsbID)
+        ? supportedSharedProfiles
+        : unsupportedSharedProfiles
+      ).push(p);
+    });
+    return [supportedSharedProfiles, unsupportedSharedProfiles] as const;
+  }, [controllers, sharedProfiles]);
 
   return (
     <div>
-      <ul className="list bg-base-100 rounded-box shadow-md">
-        {sharedProfiles?.map((profile) => (
-          <li key={profile.Name} className="list-row">
-            <div className="list-col-grow">
-              <div>{profile.Name}</div>
-            </div>
-            <div>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => handleDownload(profile)}
-              >
-                Download Profile
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {isSharedProfilesLoading && (
+        <div className="flex justify-center py-6">
+          <span className="loading loading-spinner text-primary"></span>
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="text-md">Supported Controller Profiles</p>
+          <p className="text-sm mb-4 text-gray-400">
+            These profiles are available for your currently connected
+            controller(s)
+          </p>
+          {!!supportedSharedProfiles.length && (
+            <ul className="list bg-base-100 rounded-box shadow-md">
+              {supportedSharedProfiles?.map((profile) => (
+                <ExploreTabProfile key={profile.Name} profile={profile} />
+              ))}
+            </ul>
+          )}
+          {!supportedSharedProfiles.length && (
+            <p className="text-center py-16 text-gray-400">No shared profiles for your controller(s)</p>
+          )}
+        </div>
+
+        {!!unsupportedSharedProfiles.length && (
+          <div>
+            <p className="text-md">Unsupported Controller Profiles</p>
+            <p className="text-sm mb-4 text-gray-400">
+              These profiles are configured for different controllers and may
+              need manual re-configuration
+            </p>
+            <ul className="list bg-base-100 rounded-box shadow-md">
+              {unsupportedSharedProfiles?.map((profile) => (
+                <ExploreTabProfile key={profile.Name} profile={profile} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

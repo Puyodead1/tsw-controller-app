@@ -48,7 +48,7 @@ type ModAssets_Manifest struct {
 type Remote_SharedProfilesIndex_Profile struct {
 	File  string `json:"file"`
 	Name  string `json:"name"`
-	UsbID string `json""usb_id"`
+	UsbID string `json:"usb_id"`
 }
 
 type Remote_SharedProfilesIndex struct {
