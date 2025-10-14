@@ -2,6 +2,8 @@
   "name": "@liammartens/tsw-controller-app-website",
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^14.2.1",
+    "@tailwindcss/vite": "^4.1.14",
+    "tailwindcss": "^4.1.14",
     "vite": "^7.1.9"
   },
   "scripts": {
