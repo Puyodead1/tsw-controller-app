@@ -1,0 +1,315 @@
+{
+  "name": "class43_gwr",
+  "controls": [
+    {
+      "name": "Lever2",
+      "description": "Throttle",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "Throttle (IrregularLever)",
+          "input_value": {
+            "min": 0,
+            "max": 1,
+            "step": 0.2
+          }
+        },
+        {
+          "type": "sync_control",
+          "identifier": "Throttle",
+          "input_value": {
+            "min": 0,
+            "max": 1,
+            "step": 0.2
+          },
+          "action_increase": {
+            "keys": "a"
+          },
+          "action_decrease": {
+            "keys": "d"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lever3",
+      "description": "Train Brake",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "TrainBrake (IrregularLever)",
+          "input_value": {
+            "min": 0,
+            "max": 6,
+            "step": 1
+          }
+        },
+        {
+          "type": "sync_control",
+          "identifier": "AutomaticBrake",
+          "input_value": {
+            "min": 0,
+            "max": 6,
+            "step": 1
+          },
+          "action_increase": {
+            "keys": "'"
+          },
+          "action_decrease": {
+            "keys": ";"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lever1",
+      "description": "Reverser",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "Reverser (IrregularLever)",
+          "input_value": {
+            "min": -2,
+            "max": 1,
+            "step": 1
+          }
+        },
+        {
+          "type": "sync_control",
+          "identifier": "Reverser",
+          "input_value": {
+            "min": -2,
+            "max": 1,
+            "step": 1
+          },
+          "action_increase": {
+            "keys": "w"
+          },
+          "action_decrease": {
+            "keys": "s"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lever3Button1",
+      "description": "Increase brake",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "'"
+        }
+      }
+    },
+    {
+      "name": "Lever3Trigger1",
+      "description": "Decrease brake",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": ";"
+        }
+      }
+    },
+    {
+      "name": "Dial1Button",
+      "description": "AWS/Safety Reset",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "Q+PageDown"
+        }
+      }
+    },
+    {
+      "name": "Lever2Trigger1",
+      "description": "Horn",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "space"
+        }
+      }
+    },
+    {
+      "name": "Dial2State1",
+      "description": "Open Close Left Doors",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "y"
+        }
+      }
+    },
+    {
+      "name": "Dial2State3",
+      "description": "Open Close Right Doors",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "u"
+        }
+      }
+    },
+    {
+      "name": "Button2",
+      "description": "Cab Lights Toggle",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "l"
+        }
+      }
+    },
+    {
+      "name": "Button3",
+      "description": "Wipers Lever Left",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "v"
+        }
+      }
+    },
+    {
+      "name": "Button5",
+      "description": "Wipers Lever Right",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "shift+v"
+        }
+      }
+    },
+    {
+      "name": "Button1",
+      "description": "Headlights Dial Right",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "h"
+        }
+      }
+    },
+    {
+      "name": "Button4",
+      "description": "Headlights Dial Left",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "shift+h"
+        }
+      }
+    }
+  ],
+  "controller": {
+    "usb_id": "044F:040A",
+    "mapping": {
+      "name": "TCA Quadrant Boeing",
+      "usb_id": "044F:040A",
+      "data": [
+        {
+          "kind": "axis",
+          "index": 3,
+          "name": "Lever1"
+        },
+        {
+          "kind": "axis",
+          "index": 4,
+          "name": "Lever2"
+        },
+        {
+          "kind": "axis",
+          "index": 5,
+          "name": "Lever3"
+        },
+        {
+          "kind": "button",
+          "index": 1,
+          "name": "Lever2Button1"
+        },
+        {
+          "kind": "button",
+          "index": 2,
+          "name": "Lever3Button1"
+        },
+        {
+          "kind": "button",
+          "index": 4,
+          "name": "Lever2Trigger1"
+        },
+        {
+          "kind": "button",
+          "index": 5,
+          "name": "Lever3Trigger1"
+        },
+        {
+          "kind": "button",
+          "index": 6,
+          "name": "Button1"
+        },
+        {
+          "kind": "button",
+          "index": 7,
+          "name": "Button2"
+        },
+        {
+          "kind": "button",
+          "index": 8,
+          "name": "Button3"
+        },
+        {
+          "kind": "button",
+          "index": 9,
+          "name": "Button4"
+        },
+        {
+          "kind": "button",
+          "index": 10,
+          "name": "Button5"
+        },
+        {
+          "kind": "button",
+          "index": 11,
+          "name": "Dial2State1"
+        },
+        {
+          "kind": "button",
+          "index": 12,
+          "name": "Dial2State2"
+        },
+        {
+          "kind": "button",
+          "index": 13,
+          "name": "Dial2State3"
+        },
+        {
+          "kind": "button",
+          "index": 16,
+          "name": "Dial1Button"
+        },
+        {
+          "kind": "button",
+          "index": 14,
+          "name": "Dial1CCW"
+        },
+        {
+          "kind": "button",
+          "index": 15,
+          "name": "Dial1CW"
+        }
+      ]
+    }
+  }
+}
