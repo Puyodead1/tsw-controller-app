@@ -1,0 +1,12 @@
+{
+  "name": "@liammartens/tsw-controller-app-website",
+  "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^14.2.1",
+    "vite": "^7.1.9"
+  },
+  "scripts": {
+    "generate:profile-builder-jsonp-schema": "node ./profile-builder-json-schema/dereference.mjs",
+    "dev": "npm run generate:profile-builder-jsonp-schema && vite dev -c ./vite.config.mjs",
+    "build": "npm run generate:profile-builder-jsonp-schema && vite build -c ./vite.config.mjs"
+  }
+}
