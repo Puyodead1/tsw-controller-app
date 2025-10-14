@@ -58,3 +58,9 @@ type Interop_SyncController_ControlState struct {
 	/** [-1,0,1] -> decreasing, idle, increasing */
 	Moving int
 }
+
+type Interop_SharedProfile struct {
+	Name  string
+	UsbID string
+	Url   string
+}

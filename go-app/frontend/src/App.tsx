@@ -4,10 +4,11 @@ import { CalibrationTab } from "./tabs/calibration";
 import { LogsTab } from "./tabs/logs";
 import { CabDebuggerTab } from "./tabs/cabdebugger";
 import { SelfUpdateBanner } from "./SelfUpdateBanner";
+import { ExploreTab } from "./tabs/explore";
 
 const App = () => {
   const tabsForm = useForm<{
-    tab: "main" | "calibration" | "cab_debugger" | "logs";
+    tab: "main" | "explore" | "calibration" | "cab_debugger" | "logs";
   }>({
     defaultValues: { tab: "main" },
   });
@@ -24,6 +25,13 @@ const App = () => {
           aria-label="Main"
           value="main"
           {...tabsForm.register("tab", { value: "main" })}
+        />
+        <input
+          type="radio"
+          className="tab"
+          aria-label="Explore Profiles"
+          value="explore"
+          {...tabsForm.register("tab", { value: "explore" })}
         />
         <input
           type="radio"
@@ -50,6 +58,7 @@ const App = () => {
 
       <div className="p-2">
         {tab === "main" && <MainTab />}
+        {tab === "explore" && <ExploreTab />}
         {tab === 'cab_debugger' && <CabDebuggerTab />}
         {tab === "calibration" && <CalibrationTab />}
         {tab === "logs" && <LogsTab />}

@@ -204,6 +204,22 @@ export namespace main {
 	        this.Timestamp = source["Timestamp"];
 	    }
 	}
+	export class Interop_SharedProfile {
+	    Name: string;
+	    UsbID: string;
+	    Url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_SharedProfile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.UsbID = source["UsbID"];
+	        this.Url = source["Url"];
+	    }
+	}
 	export class Interop_SyncController_ControlState {
 	    Identifier: string;
 	    PropertyName: string;

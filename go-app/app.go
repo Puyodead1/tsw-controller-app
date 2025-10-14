@@ -45,6 +45,16 @@ type ModAssets_Manifest struct {
 	Manifest []string `json:"manifest"`
 }
 
+type Remote_SharedProfilesIndex_Profile struct {
+	File  string `json:"file"`
+	Name  string `json:"name"`
+	UsbID string `json""usb_id"`
+}
+
+type Remote_SharedProfilesIndex struct {
+	Profiles []Remote_SharedProfilesIndex_Profile `json:"profiles"`
+}
+
 type AppRawSubscriber struct {
 	Channel   chan controller_mgr.ControllerManager_RawEvent
 	Cancel    func()
@@ -363,6 +373,33 @@ func (a *App) GetLatestReleaseVersion() string {
 	}
 
 	return strings.Split(string(body), "\n")[0]
+}
+
+func (a *App) GetSharedProfiles() []Interop_SharedProfile {
+	resp, err := http.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/index.json")
+	if err != nil {
+		return []Interop_SharedProfile{}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []Interop_SharedProfile{}
+	}
+
+	var c Remote_SharedProfilesIndex
+	json.Unmarshal(body, &c)
+
+	profiles := []Interop_SharedProfile{}
+	for _, profile := range c.Profiles {
+		profiles = append(profiles, Interop_SharedProfile{
+			Name:  profile.Name,
+			UsbID: profile.UsbID,
+			Url:   fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+		})
+	}
+
+	return profiles
 }
 
 func (a *App) SelectProfile(guid controller_mgr.JoystickGUIDString, name string) error {
@@ -713,6 +750,8 @@ func (a *App) ImportProfile() error {
 
 	original_filename, _ := strings.CutSuffix(path.Base(import_profile_path), ".tswprofile")
 	target_file_path := path.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", original_filename, time.Now().Unix()))
+	os.MkdirAll(path.Dir(target_file_path), 0o755)
+
 	target_file, err := os.OpenFile(target_file_path, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -723,4 +762,27 @@ func (a *App) ImportProfile() error {
 		return err
 	}
 	return target_file.Sync()
+}
+
+func (a *App) ImportSharedProfile(profile Interop_SharedProfile) error {
+	resp, err := http.Get(profile.Url)
+	if err != nil {
+		return fmt.Errorf("could not download profile")
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("could not download profile")
+	}
+
+	target_file_path := path.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", string_utils.Sluggify(profile.Name), time.Now().Unix()))
+	os.MkdirAll(path.Dir(target_file_path), 0o755)
+
+	err = os.WriteFile(target_file_path, body, 0644)
+	if err != nil {
+		return fmt.Errorf("could not save profile (%e)", err)
+	}
+
+	return nil
 }

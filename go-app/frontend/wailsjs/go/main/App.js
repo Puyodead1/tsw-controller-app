@@ -30,6 +30,10 @@ export function GetSelectedProfiles() {
   return window['go']['main']['App']['GetSelectedProfiles']();
 }
 
+export function GetSharedProfiles() {
+  return window['go']['main']['App']['GetSharedProfiles']();
+}
+
 export function GetSyncControlState() {
   return window['go']['main']['App']['GetSyncControlState']();
 }
@@ -44,6 +48,10 @@ export function HasNewerVersion() {
 
 export function ImportProfile() {
   return window['go']['main']['App']['ImportProfile']();
+}
+
+export function ImportSharedProfile(arg1) {
+  return window['go']['main']['App']['ImportSharedProfile'](arg1);
 }
 
 export function InstallTrainSimWorldMod() {

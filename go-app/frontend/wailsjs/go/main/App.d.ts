@@ -16,6 +16,8 @@ export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
 export function GetSelectedProfiles():Promise<Record<string, string>>;
 
+export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
+
 export function GetSyncControlState():Promise<Array<main.Interop_SyncController_ControlState>>;
 
 export function GetVersion():Promise<string>;
@@ -23,6 +25,8 @@ export function GetVersion():Promise<string>;
 export function HasNewerVersion():Promise<boolean>;
 
 export function ImportProfile():Promise<void>;
+
+export function ImportSharedProfile(arg1:main.Interop_SharedProfile):Promise<void>;
 
 export function InstallTrainSimWorldMod():Promise<void>;
 
