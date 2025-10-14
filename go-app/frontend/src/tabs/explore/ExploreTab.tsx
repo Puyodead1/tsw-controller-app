@@ -42,6 +42,19 @@ export const ExploreTab = () => {
         </div>
       )}
       <div className="flex flex-col gap-4">
+        <div role="alert" className="alert alert-info alert-soft">
+          <span>
+            Want to share a profile with the world? Submit an "issue" request
+            with your profile on Github
+            <a
+              className="link ml-2"
+              target="_blank"
+              href="https://github.com/LiamMartens/tsw-controller-app/issues/new?title=NEW+PROFILE"
+            >
+              Submit now
+            </a>
+          </span>
+        </div>
         <div>
           <p className="text-md">Supported Controller Profiles</p>
           <p className="text-sm mb-4 text-gray-400">
@@ -56,7 +69,9 @@ export const ExploreTab = () => {
             </ul>
           )}
           {!supportedSharedProfiles.length && (
-            <p className="text-center py-16 text-gray-400">No shared profiles for your controller(s)</p>
+            <p className="text-center py-16 text-gray-400">
+              No shared profiles for your controller(s)
+            </p>
           )}
         </div>
 
