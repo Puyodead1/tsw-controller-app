@@ -5,20 +5,29 @@ This UE4SS mod and program allow you to use any joystick to directly control the
 ## Feature Highlights
 ### Controller Specific Profile Selection
 You can select a profile for each controller allowing for a complex multi controller set-up with different active profiles.  
+  
 ![Controller Specific Profiles](./highlights/controller-specific-profiles.png)  
 
 ### Cab Debugger
 The cab debugger gives a real time status of the current in-game locomotive as the in game controls are changing. This is useful for configuring new train profiles and checking the relevant values.  
+  
 ![Cab Debugger](./highlights/cab-debugger.png)  
 
 ### Visual Calibration
 The new 1.0.0 version also brings a completely overhauled visual calibration mode making it easier than ever to calibrate and configure existing or new controllers  
+  
 ![Visual Calibration](./highlights/ui-calibration.png)  
 
 ### Profile Builder
 A graphical profile builder is now available online to help with configuring new profiles if you are not comfortable creating the JSON profiles  
+  
 ![Open Profile Builder](./highlights/open-profile-builder.png)  
 ![Profile Builder](./highlights/profile-builder.png)  
+
+## Shared Profiles
+You can submit profiles for other users to use and download right from the app  
+  
+![Shared Profiles](./highlights/shared-profiles.png)  
 
 You can find some demos below:
 
