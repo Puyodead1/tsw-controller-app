@@ -549,10 +549,21 @@ func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name
 	}
 }
 
+func (a *App) OpenNewProfileBuilder(usbid string) {
+	empty_profile := config.Config_Controller_Profile{
+		Name: "My new profile",
+		Controller: &config.Config_Controller_Profile_Controller{
+			UsbID: &usbid,
+		},
+		Controls: []config.Config_Controller_Profile_Control{},
+	}
+	profile_json, _ := json.Marshal(empty_profile)
+	encoded := base64.StdEncoding.EncodeToString(profile_json)
+	runtime.BrowserOpenURL(a.ctx, fmt.Sprintf("https://tsw-controller-app.vercel.app/profile-builder?profile=%s", encoded))
+}
+
 func (a *App) OpenProfileBuilder(name string) {
-	if len(name) == 0 {
-		runtime.BrowserOpenURL(a.ctx, "https://tsw-controller-app.vercel.app/profile-builder")
-	} else if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
 		profile_json, _ := json.Marshal(profile)
 		encoded := base64.StdEncoding.EncodeToString(profile_json)
 		runtime.BrowserOpenURL(a.ctx, fmt.Sprintf("https://tsw-controller-app.vercel.app/profile-builder?profile=%s", encoded))

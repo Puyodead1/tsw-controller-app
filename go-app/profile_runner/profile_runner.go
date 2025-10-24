@@ -379,6 +379,9 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 								/* only release if keys -> can't "release" direct control actions */
 								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Momentary.ActionActivate, true)
 								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+							} else {
+								/* clear previuous call so momentary can be re-triggered */
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, nil)
 							}
 						}
 					}
@@ -417,6 +420,9 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 									/* only release if keys -> can't "release" direct control actions */
 									action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, threshold.ActionActivate, true)
 									p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+								} else {
+									/* clear previuous call so threshold can be re-triggered */
+									p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, nil)
 								}
 							}
 						}

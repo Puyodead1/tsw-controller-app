@@ -9,7 +9,7 @@ type Props = {
   profiles: main.Interop_Profile[];
   onReloadConfiguration: () => void;
   onBrowseConfiguration: () => void;
-  onCreateProfile: () => void;
+  onCreateProfile: (controller: main.Interop_GenericController) => void;
   onSaveControllerProfileForSharing: (
     controller: main.Interop_GenericController,
   ) => void;
@@ -86,7 +86,7 @@ export function MainTabControllerProfileSelector({
             </button>
           </li>
           <li>
-            <button onClick={onCreateProfile}>Create new profile</button>
+            <button onClick={() => onCreateProfile(controller)}>Create new profile</button>
           </li>
           <li>
             <button

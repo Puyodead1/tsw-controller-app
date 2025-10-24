@@ -13,6 +13,7 @@ import {
   GetVersion,
   GetControllers,
   OpenProfileBuilder,
+  OpenNewProfileBuilder,
   SaveProfileForSharing,
   ImportProfile,
 } from "../../../wailsjs/go/main/App";
@@ -73,8 +74,8 @@ export const MainTab = () => {
     OpenConfigDirectory();
   };
 
-  const handleCreateProfile = () => {
-    OpenProfileBuilder("");
+  const handleCreateProfile = (controller: main.Interop_GenericController) => {
+    OpenNewProfileBuilder(controller.UsbID);
   };
 
   const handleOpenProfile = (controller: main.Interop_GenericController) => {

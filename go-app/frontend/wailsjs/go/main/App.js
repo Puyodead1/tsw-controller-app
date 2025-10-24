@@ -70,6 +70,10 @@ export function OpenConfigDirectory() {
   return window['go']['main']['App']['OpenConfigDirectory']();
 }
 
+export function OpenNewProfileBuilder(arg1) {
+  return window['go']['main']['App']['OpenNewProfileBuilder'](arg1);
+}
+
 export function OpenProfileBuilder(arg1) {
   return window['go']['main']['App']['OpenProfileBuilder'](arg1);
 }
