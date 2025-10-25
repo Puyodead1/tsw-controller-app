@@ -357,9 +357,10 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputV
 					Start: previous_value,
 					End:   *step,
 				})
-				is_free_range_zone = false
-				previous_value = *step
 			}
+
+			is_free_range_zone = false
+			previous_value = *step
 		}
 	}
 
@@ -412,7 +413,6 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputV
 	normal := (input_value * total_distance) + c.Min
 	normal_steps := c.GetNormalSteps()
 	free_zones := c.GetFreeRangeZones()
-	fmt.Printf("calc output value from %#v | %#v\n", total_distance, normal)
 
 	if normal_steps == nil && c.Step != nil {
 		var auto_steps []float64
