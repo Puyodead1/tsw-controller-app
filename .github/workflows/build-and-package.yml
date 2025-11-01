@@ -298,10 +298,10 @@ jobs:
           cd go-app
           wails build -ldflags="-X 'main.VERSION=$VERSION'"
           mkdir -p build/bin/tsw-controller-app.app/Contents/Frameworks
-          cp /opt/homebrew/lib/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2.dylib
-          install_name_tool -change /opt/homebrew/lib/libSDL2.dylib @executable_path/../Frameworks/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
-          install_name_tool -id @rpath/libSDL2.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2.dylib
+          cp /opt/homebrew/lib/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2-2.0.0.dylib
+          install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           install_name_tool -add_rpath @executable_path/../Frameworks build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
+          chmod +x build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           codesign --force --deep --sign - build/bin/tsw-controller-app.app
       - uses: actions/upload-artifact@v4
         with:
