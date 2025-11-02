@@ -334,7 +334,7 @@ jobs:
           cp tswcontrollerapp_linux_debian/tswcontrollerapp_debian_amd64.deb release_assets/tswcontrollerapp_debian_amd64.deb
 
           mkdir -p release_assets/tswcontrollerapp_macos
-          cp -r tswcontrollerapp_macos.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
+          cp -r tswcontrollerapp_macos/tswcontrollerapp_macos.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
 
           cp -r mod_assets release_assets/manual_ue4ss_mod_installation
 
