@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate:profile_json_schema": "node ./profile_json_schema/dereference.mjs",
+    "format": "prettier --write .",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@json-editor/json-editor": "^2.15.2",
+    "just-throttle": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.63.0",
+    "semver": "^7.7.2",
+    "swr": "^2.3.6",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/react": "^18.0.17",
+    "@types/react-dom": "^18.0.6",
+    "@types/semver": "^7.7.1",
+    "@vitejs/plugin-react": "^5.0.3",
+    "daisyui": "^5.1.13",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.6"
+  },
+  "packageManager": "npm@10.0.0"
+}

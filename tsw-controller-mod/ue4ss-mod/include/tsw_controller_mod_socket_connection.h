@@ -4,12 +4,21 @@
 #include <ostream>
 #include <new>
 
+/// C callback signature: void (*MessageCallback)(const char*)
+using MessageCallback = void(*)(const char*);
+
 extern "C" {
 
+/// Start WebSocket loop inside a Tokio runtime
 void tsw_controller_mod_start();
 
-void tsw_controller_mod_set_direct_controller_callback(void (*callback)(const char*));
+/// Stop the module
+void tsw_controller_mod_stop();
 
-void tsw_controller_mod_send_sync_controller_message(const char *message);
+/// Register callback
+void tsw_controller_mod_set_receive_message_callback(MessageCallback cb);
+
+/// Send message
+void tsw_controller_mod_send_message(const char *message);
 
 }  // extern "C"

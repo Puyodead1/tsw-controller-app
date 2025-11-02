@@ -1,0 +1,556 @@
+package profile_runner
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"sync"
+	"time"
+	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/chan_utils"
+	"tsw_controller_app/config"
+	"tsw_controller_app/controller_mgr"
+	"tsw_controller_app/logger"
+	"tsw_controller_app/map_utils"
+)
+
+type ProfileRunnerSettings struct {
+	Mutex                  sync.RWMutex
+	SelectedProfilesByGUID *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile]
+	PreferredControlMode   config.PreferredControlMode
+}
+
+type ProfileRunnerAssignmentCall struct {
+	ControlState          controller_mgr.ControllerManager_Controller_ControlState
+	ActionSequencerAction *action_sequencer.ActionSequencerAction
+	DirectControlCommand  *DirectController_Command
+}
+
+type ProfileRunner struct {
+	ActionSequencer                   *action_sequencer.ActionSequencer
+	ControllerManager                 *controller_mgr.ControllerManager
+	DirectController                  *DirectController
+	SyncController                    *SyncController
+	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
+	Settings                          ProfileRunnerSettings
+	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
+}
+
+func (s *ProfileRunnerSettings) Update(mutator func(s *ProfileRunnerSettings)) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	mutator(s)
+}
+
+func (s *ProfileRunnerSettings) GetSelectedProfiles() *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile] {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	return s.SelectedProfilesByGUID
+}
+
+func (s *ProfileRunnerSettings) GetPreferredControlMode() config.PreferredControlMode {
+	s.Mutex.RLock()
+	defer s.Mutex.RUnlock()
+	return s.PreferredControlMode
+}
+
+func New(
+	action_sequencer *action_sequencer.ActionSequencer,
+	controller_manager *controller_mgr.ControllerManager,
+	direct_controller *DirectController,
+	sync_controller *SyncController,
+) *ProfileRunner {
+	return &ProfileRunner{
+		ActionSequencer:   action_sequencer,
+		ControllerManager: controller_manager,
+		DirectController:  direct_controller,
+		SyncController:    sync_controller,
+		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
+		Settings: ProfileRunnerSettings{
+			Mutex:                  sync.RWMutex{},
+			SelectedProfilesByGUID: map_utils.NewLockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile](),
+			PreferredControlMode:   config.PreferredControlMode_DirectControl,
+		},
+		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
+	}
+}
+
+func (pc *ProfileRunnerAssignmentCall) ToString() string {
+	if pc.ActionSequencerAction != nil {
+		return pc.ActionSequencerAction.Keys
+	}
+	if pc.DirectControlCommand != nil {
+		return pc.DirectControlCommand.ToSocketMessage().ToString()
+	}
+	return ""
+}
+
+func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile) {
+	p.Profiles.Set(profile.Name, profile)
+}
+
+func (p *ProfileRunner) ClearProfile(guid controller_mgr.JoystickGUIDString) {
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		s.SelectedProfilesByGUID.Delete(guid)
+	})
+}
+
+func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, name string) error {
+	var err error = nil
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		profile, is_valid_profile := p.Profiles.Get(name)
+		if is_valid_profile {
+			s.SelectedProfilesByGUID.Set(guid, &profile)
+		} else {
+			err = fmt.Errorf("could not find profile by name %s", name)
+		}
+	})
+	return err
+}
+
+func (p *ProfileRunner) SetPreferredControlMode(mode config.PreferredControlMode) {
+	p.Settings.Update(func(s *ProfileRunnerSettings) {
+		s.PreferredControlMode = mode
+	})
+}
+
+func (p *ProfileRunner) CallAssignmentActionForControl(
+	control_name string,
+	assignment_index int,
+	control_state_at_call controller_mgr.ControllerManager_Controller_ControlState,
+	assignment config.Config_Controller_Profile_Control_Assignment,
+	action *ProfileRunnerAssignmentCall,
+) error {
+	if action != nil {
+		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand)
+	}
+	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList.Get(control_name)
+	if !has_previous_control_call {
+		previous_control_assignments_call_list = &[]*ProfileRunnerAssignmentCall{}
+		p.PreviousControlAssignmentCallList.Set(control_name, previous_control_assignments_call_list)
+	}
+	for len(*previous_control_assignments_call_list) <= assignment_index {
+		*previous_control_assignments_call_list = append(*previous_control_assignments_call_list, nil)
+	}
+
+	if action == nil && (*previous_control_assignments_call_list)[assignment_index] == nil {
+		/* no action and no previous call - don't do anything */
+		return fmt.Errorf("no action or previous call list entry")
+	}
+
+	/* add updated call entry in previous assignment call list */
+	assignment_call := &ProfileRunnerAssignmentCall{
+		ControlState:          control_state_at_call,
+		ActionSequencerAction: nil,
+		DirectControlCommand:  nil,
+	}
+	if action != nil {
+		assignment_call.ActionSequencerAction = action.ActionSequencerAction
+		assignment_call.DirectControlCommand = action.DirectControlCommand
+	} else {
+		/* should always be available - None action should only be set as none for deactivation calls */
+		assignment_call.ActionSequencerAction = (*previous_control_assignments_call_list)[assignment_index].ActionSequencerAction
+		assignment_call.DirectControlCommand = (*previous_control_assignments_call_list)[assignment_index].DirectControlCommand
+	}
+	(*previous_control_assignments_call_list)[assignment_index] = assignment_call
+
+	if action != nil {
+		if action.ActionSequencerAction != nil {
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] queueing sequencer action", "action", action.ActionSequencerAction)
+			p.ActionSequencer.Enqueue(*action.ActionSequencerAction)
+		} else if action.DirectControlCommand != nil {
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
+			chan_utils.SendTimeout(p.DirectController.ControlChannel, time.Second, *action.DirectControlCommand)
+		}
+	}
+	return nil
+}
+
+func (p *ProfileRunner) AssignmentKeysActionToSequencerAction(keys_action config.Config_Controller_Profile_Control_Assignment_Action_Keys, release bool) action_sequencer.ActionSequencerAction {
+	var press_time_value float64 = 0
+	var wait_time_value float64 = 0
+	if keys_action.PressTime != nil {
+		press_time_value = *keys_action.PressTime
+	}
+	if keys_action.WaitTime != nil {
+		wait_time_value = *keys_action.WaitTime
+	}
+
+	return action_sequencer.ActionSequencerAction{
+		Keys:      keys_action.Keys,
+		PressTime: press_time_value,
+		WaitTime:  wait_time_value,
+		Release:   release,
+	}
+}
+
+func (p *ProfileRunner) AssignmentActionToAssignmentCall(
+	control_state controller_mgr.ControllerManager_Controller_ControlState,
+	action config.Config_Controller_Profile_Control_Assignment_Action,
+	release_if_keys bool,
+) *ProfileRunnerAssignmentCall {
+	if action.Keys != nil {
+		sequencer_action := p.AssignmentKeysActionToSequencerAction(*action.Keys, release_if_keys)
+		return &ProfileRunnerAssignmentCall{
+			ControlState:          control_state,
+			ActionSequencerAction: &sequencer_action,
+			DirectControlCommand:  nil,
+		}
+	}
+	if action.DirectControl != nil {
+		flags := []string{}
+		if action.DirectControl.Relative != nil && *action.DirectControl.Relative {
+			flags = append(flags, "relative")
+		}
+		if action.DirectControl.Hold != nil && *action.DirectControl.Hold {
+			flags = append(flags, "hold")
+		}
+		if action.DirectControl.UseNormalized != nil && *action.DirectControl.UseNormalized {
+			flags = append(flags, "normalized")
+		}
+
+		return &ProfileRunnerAssignmentCall{
+			ControlState:          control_state,
+			ActionSequencerAction: nil,
+			DirectControlCommand: &DirectController_Command{
+				Controls:   action.DirectControl.Controls,
+				InputValue: action.DirectControl.Value,
+				Flags:      flags,
+			},
+		}
+	}
+	return nil
+}
+
+func (p *ProfileRunner) GetAssignments(
+	control *config.Config_Controller_Profile_Control,
+	source_event *controller_mgr.ControllerManager_Control_ChangeEvent,
+) []config.Config_Controller_Profile_Control_Assignment {
+	var assignments []config.Config_Controller_Profile_Control_Assignment
+	if control.Assignment != nil {
+		assignments = append(assignments, *control.Assignment)
+	} else if control.Assignments != nil {
+		/* copy by value clone */
+		assignments = append(assignments, *control.Assignments...)
+	}
+
+	/* filter out conditional assignments */
+	has_direct_control := false
+	has_sync_control := false
+	var assignments_without_sync_control []config.Config_Controller_Profile_Control_Assignment
+	var assignments_without_direct_control []config.Config_Controller_Profile_Control_Assignment
+	var assignments_without_any_control []config.Config_Controller_Profile_Control_Assignment
+
+check_assignments_loop:
+	for _, assignment := range assignments {
+		/* conditions can only be evaluated if there is a source event */
+		if source_event != nil && assignment.Conditions != nil && len(*assignment.Conditions) > 0 {
+			for _, condition := range *assignment.Conditions {
+				dependency_control, has_dependency_control := source_event.Controller.Controls.Get(condition.Control)
+				if !has_dependency_control {
+					logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because dependency control does not exist")
+					continue
+				}
+				switch condition.Operator {
+				case "gte":
+					if dependency_control.State.NormalizedValues.Value < condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				case "lte":
+					if dependency_control.State.NormalizedValues.Value > condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				case "gt":
+					if dependency_control.State.NormalizedValues.Value <= condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				case "lt":
+					if dependency_control.State.NormalizedValues.Value >= condition.Value {
+						/* condition doesn't match -> skip */
+						continue check_assignments_loop
+					}
+				}
+			}
+		}
+
+		if assignment.DirectControl != nil {
+			has_direct_control = true
+			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+		} else if assignment.SyncControl != nil {
+			has_sync_control = true
+			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+		} else {
+			assignments_without_any_control = append(assignments_without_any_control, assignment)
+			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+		}
+	}
+
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_DirectControl && has_direct_control {
+		return assignments_without_sync_control
+	}
+
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_sync_control {
+		return assignments_without_direct_control
+	}
+
+	return assignments_without_any_control
+}
+
+func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
+	/*
+		the runner handles a few different things:
+		1.Listen to the controller manager and send the appropriate values to the sequencer or direct controller
+		2. Listen to the sync controller and sequence the appropriate actions to reach the target value
+	*/
+	context_with_cancel, cancel := context.WithCancel(ctx)
+
+	/* normal action sequencing */
+	go func() {
+		channel, unsubscribe := p.ControllerManager.SubscribeChangeEvent()
+		defer unsubscribe()
+
+		for {
+			select {
+			case <-context_with_cancel.Done():
+				return
+			case change_event := <-channel:
+				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
+
+				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(change_event.Joystick.GUID)
+				if selected_profile == nil || !has_selected_profile {
+					/* try to find default profile by USB ID */
+					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
+						if profile.Controller != nil && profile.Controller.UsbID != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() {
+							selected_profile = &profile
+							return false
+						}
+						return true
+					})
+				}
+
+				if selected_profile == nil {
+					logger.Logger.Debug("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
+					continue
+				}
+
+				control_name := change_event.ControlName
+				if selected_profile.Controller != nil && selected_profile.Controller.Mapping != nil {
+					root_mapping := change_event.Control.SDLMapping
+					override_mapping := selected_profile.Controller.Mapping
+					override_control, find_override_control_err := override_mapping.FindByKindAndIndex(root_mapping.Kind, root_mapping.Index)
+					if find_override_control_err == nil {
+						control_name = override_control.Name
+					}
+				}
+
+				control_profile := selected_profile.FindControlByName(control_name)
+				if control_profile == nil {
+					logger.Logger.Debug("[ProfileRunner::Run] skipping event, control not found in profile", "event", change_event)
+					continue
+				}
+
+				assignments := p.GetAssignments(control_profile, &change_event)
+				previous_control_assignments_call_list, has_previous_control_assignments_call_list := p.PreviousControlAssignmentCallList.Get(control_name)
+				for assignment_index, control_assignment_item := range assignments {
+					logger.Logger.Debug("[ProfileRunner::Run] executing assignment", "assignment", control_assignment_item)
+					var previous_assignment_call *ProfileRunnerAssignmentCall = nil
+					if has_previous_control_assignments_call_list && len(*previous_control_assignments_call_list) > assignment_index {
+						previous_assignment_call = (*previous_control_assignments_call_list)[assignment_index]
+					}
+
+					if control_assignment_item.Momentary != nil {
+						if change_event.ControlState.NormalizedValues.Value >= control_assignment_item.Momentary.Threshold {
+							// call if there was no prior call or if the prior call was not this threshold
+							should_call_activation := previous_assignment_call == nil || previous_assignment_call.ControlState.NormalizedValues.Value < control_assignment_item.Momentary.Threshold
+							if should_call_activation {
+								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Momentary.ActionActivate, false)
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+							}
+						} else if previous_assignment_call != nil && previous_assignment_call.ControlState.NormalizedValues.Value >= control_assignment_item.Momentary.Threshold {
+							// when below the threshold only call action if the last call was above or equal to the threshold
+							if control_assignment_item.Momentary.ActionDeactivate != nil {
+								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, *control_assignment_item.Momentary.ActionDeactivate, false)
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+							} else if control_assignment_item.Momentary.ActionActivate.Keys != nil {
+								/* only release if keys -> can't "release" direct control actions */
+								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Momentary.ActionActivate, true)
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+							} else {
+								/* clear previuous call so momentary can be re-triggered */
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, nil)
+							}
+						}
+					}
+					if control_assignment_item.Linear != nil {
+						initial_state_value := control_assignment_item.Linear.CalculateNeutralizedValue(change_event.ControlState.NormalizedValues.InitialValue)
+						control_state_value := control_assignment_item.Linear.CalculateNeutralizedValue(change_event.ControlState.NormalizedValues.Value)
+						var thresholds_currently_exceeding []config.Config_Controller_Profile_Control_Assignment_Linear_Threshold
+						var thresholds_previously_passed []config.Config_Controller_Profile_Control_Assignment_Linear_Threshold
+						for _, threshold := range control_assignment_item.Linear.GenerateThresholds() {
+							if threshold.IsExceedingThreshold(control_state_value) {
+								thresholds_currently_exceeding = append(thresholds_currently_exceeding, threshold)
+							}
+							/* threshold was previously passed if the last assignment call was exceeding the threshold OR if there was no last call if the initial value exceeded it*/
+							if previous_assignment_call != nil && threshold.IsExceedingThreshold(
+								control_assignment_item.Linear.CalculateNeutralizedValue(previous_assignment_call.ControlState.NormalizedValues.Value),
+							) || previous_assignment_call == nil && threshold.IsExceedingThreshold(initial_state_value) {
+								thresholds_previously_passed = append(thresholds_previously_passed, threshold)
+							}
+						}
+
+						if len(thresholds_currently_exceeding) > len(thresholds_previously_passed) {
+							// activate the intermediate thresholds
+							thresholds_to_activate := thresholds_currently_exceeding[len(thresholds_previously_passed):]
+							for _, threshold := range thresholds_to_activate {
+								action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, threshold.ActionActivate, false)
+								p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+							}
+						} else if len(thresholds_currently_exceeding) < len(thresholds_previously_passed) {
+							// deactivate the intermediate thresholds by iterating from end of previously passed up until but not including the currently exceeding threshold
+							for i := len(thresholds_previously_passed) - 1; i > len(thresholds_currently_exceeding)-1; i-- {
+								threshold := thresholds_previously_passed[i]
+								if threshold.ActionDeactivate != nil {
+									action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, *threshold.ActionDeactivate, false)
+									p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+								} else if threshold.ActionActivate.Keys != nil {
+									/* only release if keys -> can't "release" direct control actions */
+									action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, threshold.ActionActivate, true)
+									p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+								} else {
+									/* clear previuous call so threshold can be re-triggered */
+									p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, nil)
+								}
+							}
+						}
+					}
+					if control_assignment_item.Toggle != nil {
+						if change_event.ControlState.NormalizedValues.Value >= control_assignment_item.Toggle.Threshold {
+							// call if there was no prior call or if the prior call was not this threshold
+							action_to_call := p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Toggle.ActionActivate, false)
+							if previous_assignment_call != nil && previous_assignment_call.ToString() == action_to_call.ToString() {
+								/* if the previous call is the same as the activation call -> toggle to deactivation action */
+								action_to_call = p.AssignmentActionToAssignmentCall(change_event.ControlState, control_assignment_item.Toggle.ActionDeactivate, false)
+							}
+							p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, action_to_call)
+						} else if previous_assignment_call != nil && previous_assignment_call.ControlState.NormalizedValues.Value >= control_assignment_item.Toggle.Threshold && previous_assignment_call.ActionSequencerAction != nil {
+							// when below the threshold only call action if the last call was above or equal to the threshold
+							// this is only used for releasing key actions
+							p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
+								ControlState: change_event.ControlState,
+								ActionSequencerAction: &action_sequencer.ActionSequencerAction{
+									Keys:      previous_assignment_call.ActionSequencerAction.Keys,
+									PressTime: previous_assignment_call.ActionSequencerAction.PressTime,
+									WaitTime:  previous_assignment_call.ActionSequencerAction.WaitTime,
+									Release:   true,
+								},
+								DirectControlCommand: nil,
+							})
+						}
+					}
+					if control_assignment_item.DirectControl != nil {
+						output_value := control_assignment_item.DirectControl.InputValue.CalculateOutputValue(change_event.Control.State.NormalizedValues.Value)
+						flags := []string{}
+						if control_assignment_item.DirectControl.Hold != nil && *control_assignment_item.DirectControl.Hold {
+							flags = append(flags, "hold")
+						}
+						p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
+							ControlState:          change_event.ControlState,
+							ActionSequencerAction: nil,
+							DirectControlCommand: &DirectController_Command{
+								Controls:   control_assignment_item.DirectControl.Controls,
+								InputValue: output_value,
+								Flags:      flags,
+							},
+						})
+					}
+					if control_assignment_item.SyncControl != nil {
+						output_value := control_assignment_item.SyncControl.InputValue.CalculateOutputValue(change_event.Control.State.NormalizedValues.Value)
+						p.SyncController.UpdateControlStateTargetValue(control_assignment_item.SyncControl.Identifier, output_value, control_assignment_item.SyncControl, &change_event)
+					}
+				}
+			}
+		}
+	}()
+
+	/* sync control action sequencing */
+	go func() {
+		channel, unsubscribe := p.SyncController.Subscribe()
+		defer unsubscribe()
+
+		for {
+			select {
+			case <-context_with_cancel.Done():
+				return
+			case sync_control_state := <-channel:
+				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
+				if sync_control_state.SourceEvent != nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+					continue
+				}
+
+				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(sync_control_state.SourceEvent.Joystick.GUID)
+				if selected_profile == nil || !has_selected_profile {
+					/* skip if no profile selected for controller */
+					continue
+				}
+
+				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
+			control_loop:
+				for _, cp := range selected_profile.Controls {
+					assignments := p.GetAssignments(&cp, sync_control_state.SourceEvent)
+					for _, assignment := range assignments {
+						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == sync_control_state.Identifier {
+							sync_control_assignment = &assignment
+							break control_loop
+						}
+					}
+				}
+				/* only act if a sync control assignment exists for this identifier and is the current preferred control mode */
+				if sync_control_assignment == nil {
+					continue
+				}
+
+				const MARGIN_OF_ERROR = 0.005
+				should_stop_moving := (
+				/* was increasing and has now exceeded value */
+				sync_control_state.CurrentValue >= sync_control_state.TargetValue && sync_control_state.Moving == 1 ||
+					/* was decreasing and has now subceeded value */
+					sync_control_state.CurrentValue <= sync_control_state.TargetValue && sync_control_state.Moving == -1 ||
+					/* otherwise is within margin of error and was moving */
+					math.Abs(sync_control_state.CurrentValue-sync_control_state.TargetValue) < MARGIN_OF_ERROR && sync_control_state.Moving != 0)
+				should_start_increasing := sync_control_state.TargetValue > sync_control_state.CurrentValue && math.Abs(sync_control_state.TargetValue-sync_control_state.CurrentValue) > MARGIN_OF_ERROR && sync_control_state.Moving == 0
+				should_start_decreasing := sync_control_state.TargetValue < sync_control_state.CurrentValue && math.Abs(sync_control_state.TargetValue-sync_control_state.CurrentValue) > MARGIN_OF_ERROR && sync_control_state.Moving == 0
+
+				release_previous_action := func() {
+					if sync_control_state.Moving == -1 {
+						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, true))
+					} else {
+						p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, true))
+					}
+				}
+
+				if should_stop_moving {
+					release_previous_action()
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, 0)
+				}
+
+				if should_start_increasing {
+					release_previous_action()
+					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionIncrease, false))
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, 1)
+				}
+
+				if should_start_decreasing {
+					release_previous_action()
+					p.ActionSequencer.Enqueue(p.AssignmentKeysActionToSequencerAction(sync_control_assignment.SyncControl.ActionDecrease, false))
+					p.SyncController.UpdateControlStateMoving(sync_control_state.Identifier, -1)
+				}
+			}
+		}
+	}()
+
+	return cancel
+}

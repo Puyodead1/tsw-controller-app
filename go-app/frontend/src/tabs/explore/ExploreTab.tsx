@@ -1,0 +1,95 @@
+import useSWR from "swr";
+import {
+  GetControllers,
+  GetSharedProfiles,
+} from "../../../wailsjs/go/main/App";
+import { ExploreTabProfile } from "./ExploreTabProfile";
+import { useMemo } from "react";
+import { main } from "../../../wailsjs/go/models";
+
+export const ExploreTab = () => {
+  const { data: controllers } = useSWR("controllers", () => GetControllers(), {
+    revalidateOnMount: true,
+  });
+
+  const { data: sharedProfiles, isLoading: isSharedProfilesLoading } = useSWR(
+    "shared-profiles",
+    () =>
+      GetSharedProfiles().then((profiles) =>
+        profiles.toSorted((a, b) => a.Name.localeCompare(b.Name)),
+      ),
+    { revalidateOnMount: true },
+  );
+
+  const [supportedSharedProfiles, unsupportedSharedProfiles] = useMemo(() => {
+    const controllerUsbIds = new Set(controllers?.map((c) => c.UsbID) ?? []);
+    const supportedSharedProfiles: main.Interop_SharedProfile[] = [];
+    const unsupportedSharedProfiles: main.Interop_SharedProfile[] = [];
+    sharedProfiles?.forEach((p) => {
+      (controllerUsbIds.has(p.UsbID)
+        ? supportedSharedProfiles
+        : unsupportedSharedProfiles
+      ).push(p);
+    });
+    return [supportedSharedProfiles, unsupportedSharedProfiles] as const;
+  }, [controllers, sharedProfiles]);
+
+  return (
+    <div>
+      {isSharedProfilesLoading && (
+        <div className="flex justify-center py-6">
+          <span className="loading loading-spinner text-primary"></span>
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
+        <div role="alert" className="alert alert-info alert-soft">
+          <span>
+            Want to share a profile with the world? Submit an "issue" request
+            with your profile on Github
+            <a
+              className="link ml-2"
+              target="_blank"
+              href="https://github.com/LiamMartens/tsw-controller-app/issues/new?title=NEW+PROFILE"
+            >
+              Submit now
+            </a>
+          </span>
+        </div>
+        <div>
+          <p className="text-md">Supported Controller Profiles</p>
+          <p className="text-sm mb-4 text-gray-400">
+            These profiles are available for your currently connected
+            controller(s)
+          </p>
+          {!!supportedSharedProfiles.length && (
+            <ul className="list bg-base-100 rounded-box shadow-md">
+              {supportedSharedProfiles?.map((profile) => (
+                <ExploreTabProfile key={profile.Name} profile={profile} />
+              ))}
+            </ul>
+          )}
+          {!supportedSharedProfiles.length && (
+            <p className="text-center py-16 text-gray-400">
+              No shared profiles for your controller(s)
+            </p>
+          )}
+        </div>
+
+        {!!unsupportedSharedProfiles.length && (
+          <div>
+            <p className="text-md">Unsupported Controller Profiles</p>
+            <p className="text-sm mb-4 text-gray-400">
+              These profiles are configured for different controllers and may
+              need manual re-configuration
+            </p>
+            <ul className="list bg-base-100 rounded-box shadow-md">
+              {unsupportedSharedProfiles?.map((profile) => (
+                <ExploreTabProfile key={profile.Name} profile={profile} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
