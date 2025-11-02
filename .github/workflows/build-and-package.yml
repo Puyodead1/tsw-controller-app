@@ -299,9 +299,10 @@ jobs:
           wails build -ldflags="-X 'main.VERSION=$VERSION'"
       - run: |
           cd go-app
+          chmod +x build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
+          otool -L build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           mkdir -p build/bin/tsw-controller-app.app/Contents/Frameworks
           cp /opt/homebrew/lib/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2-2.0.0.dylib
-          chmod +x build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           install_name_tool -add_rpath @executable_path/../Frameworks build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           codesign --force --deep --sign - build/bin/tsw-controller-app.app
