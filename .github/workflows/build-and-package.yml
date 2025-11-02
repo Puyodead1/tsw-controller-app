@@ -308,9 +308,9 @@ jobs:
           codesign --force --deep --sign - build/bin/tsw-controller-app.app
       - uses: actions/upload-artifact@v4
         with:
-          name: tswcontrollerapp_macos.app
+          name: tswcontrollerapp_macos
           path: |
-            go-app/build/bin/tsw-controller-app.app
+            go-app/build/bin
 
   prerelease:
     runs-on: ubuntu-latest
