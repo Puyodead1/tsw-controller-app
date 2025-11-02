@@ -303,9 +303,10 @@ jobs:
           otool -L build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           mkdir -p build/bin/tsw-controller-app.app/Contents/Frameworks
           cp /opt/homebrew/lib/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/Frameworks/libSDL2-2.0.0.dylib
-          install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
+          install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           install_name_tool -add_rpath @executable_path/../Frameworks build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
           codesign --force --deep --sign - build/bin/tsw-controller-app.app
+          otool -L build/bin/tsw-controller-app.app/Contents/MacOS/tsw-controller-app
       - uses: actions/upload-artifact@v4
         with:
           name: tswcontrollerapp_macos
@@ -334,7 +335,7 @@ jobs:
           cp tswcontrollerapp_linux_debian/tswcontrollerapp_debian_amd64.deb release_assets/tswcontrollerapp_debian_amd64.deb
 
           mkdir -p release_assets/tswcontrollerapp_macos
-          cp -r tswcontrollerapp_macos/tswcontrollerapp_macos.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
+          cp -r tswcontrollerapp_macos/tsw-controller-app.app release_assets/tswcontrollerapp_macos/tsw-controller-app.app
 
           cp -r mod_assets release_assets/manual_ue4ss_mod_installation
 
