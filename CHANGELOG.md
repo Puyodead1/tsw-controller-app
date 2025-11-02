@@ -13,6 +13,8 @@ If you are already using the previous software you can do one of either:
 - Manually download the program and replace the mod and program as normal.
 - Remove the current UE4SS + mod installation. Download the new release and install the mod using the graphical mod installer.
 
+In either case - the locations of the profiles and configuration has changed. You will need to move the profiles to the new directory by opening the App and using the "Browse configuration" option from the "More" menu next to your controller.
+
 #### NORMAL INSTALLATION GUIDE CAN BE FOUND ON THE [HOME README PAGE](./README.md)
 
 ## 0.2.5
