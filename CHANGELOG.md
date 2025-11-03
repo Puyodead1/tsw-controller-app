@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.0.2
+- Fixed calibration mode if directories are non-existant
+
 ## 1.0.1
 - Fixed "Browse Configuration" not opening the correct folder on Windows
 

@@ -35,7 +35,8 @@ export const SelfUpdateBanner = () => {
           <div className="status status-info"></div>
         </div>{" "}
         <p className="text-xs">
-          A new version is available{" "}
+          A new version is available
+          {` ${versionInfo.version} → ${versionInfo.latestReleaseVersion} `}
           <button className="link" onClick={handleUpdate}>
             Update now
           </button>

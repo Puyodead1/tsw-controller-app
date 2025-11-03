@@ -34,8 +34,14 @@ func main() {
 
 	global_config_dir := path.Join(config_dir, "tswcontrollerapp/config")
 	local_config_dir := path.Join(path.Dir(exec_file), "config")
+	required_subpaths := []string{"sdl_mappings", "calibration", "profiles"}
+
 	os.MkdirAll(global_config_dir, 0o755)
 	os.MkdirAll(local_config_dir, 0o755)
+	for _, subpath := range required_subpaths {
+		os.MkdirAll(path.Join(global_config_dir, subpath), 0o755)
+		os.MkdirAll(path.Join(local_config_dir, subpath), 0o755)
+	}
 
 	app := NewApp(AppConfig{
 		GlobalConfigDir: global_config_dir,

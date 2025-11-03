@@ -5,6 +5,7 @@ import {
   UnsubscribeRaw,
   SubscribeRaw,
   GetControllerConfiguration,
+  LoadConfiguration,
 } from "../../../wailsjs/go/main/App";
 import {
   CalibrationStateControl,
@@ -60,10 +61,16 @@ export const CalibrationModalForm = ({ controller, onClose }: Props) => {
           Invert: control.invert,
           EasingCurve: control.easingCurve,
         }));
-        SaveCalibration(data);
-        setIsRunning(false);
-        form.reset();
-        onClose();
+        SaveCalibration(data)
+          .then(() => LoadConfiguration())
+          .catch((err) => {
+            alert(String(err));
+          })
+          .finally(() => {
+            setIsRunning(false);
+            form.reset();
+            onClose();
+          });
       })();
     });
   };

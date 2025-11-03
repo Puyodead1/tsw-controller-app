@@ -605,7 +605,7 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	sdl_mapping_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:            "Select SDL mapping file save location",
 		DefaultFilename:  fmt.Sprintf("%s.sdl.json", string_utils.Sluggify(data.Name)),
-		DefaultDirectory: "./config/sdl_mappings",
+		DefaultDirectory: path.Join(a.config.GlobalConfigDir, "sdl_mappings"),
 	})
 	if err != nil {
 		return err
@@ -614,7 +614,7 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	calibration_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:            "Select calibration file save location",
 		DefaultFilename:  fmt.Sprintf("%s.calibration.json", string_utils.Sluggify(data.Name)),
-		DefaultDirectory: "./config/calibration",
+		DefaultDirectory: path.Join(a.config.GlobalConfigDir, "calibration"),
 	})
 	if err != nil {
 		return err
