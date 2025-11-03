@@ -4,7 +4,7 @@ permissions: write-all
 
 on:
   push:
-    branches: [ feat/go-rewrite ]
+    branches: [ main ]
 
 jobs:
   build__socketconnectionlib:
