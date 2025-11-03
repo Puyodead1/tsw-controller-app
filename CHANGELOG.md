@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.0.1
+- Fixed "Browse Configuration" not opening the correct folder on Windows
+
 ## 1.0.0
 #### MAJOR RELEASE - BREAKING CHANGES
 - Complete runtime and UI overhaul
