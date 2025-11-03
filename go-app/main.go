@@ -14,7 +14,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
-var VERSION = "0.0.0-dev"
+var VERSION = "1.0.0"
 
 //go:embed all:frontend/dist
 var assets embed.FS
