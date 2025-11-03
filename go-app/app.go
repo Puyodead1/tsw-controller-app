@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	go_runtime "runtime"
 	"sort"
 	"strings"
@@ -661,11 +662,11 @@ func (a *App) OpenConfigDirectory() error {
 	var cmd *exec.Cmd
 	switch go_runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("explorer", a.config.GlobalConfigDir)
+		cmd = exec.Command("explorer", filepath.Clean(a.config.GlobalConfigDir))
 	case "darwin":
-		cmd = exec.Command("open", a.config.GlobalConfigDir)
+		cmd = exec.Command("open", filepath.Clean(a.config.GlobalConfigDir))
 	default:
-		cmd = exec.Command("xdg-open", a.config.GlobalConfigDir)
+		cmd = exec.Command("xdg-open", filepath.Clean(a.config.GlobalConfigDir))
 	}
 	fmt.Printf("%#v\n", cmd)
 	if err := cmd.Start(); err != nil {
