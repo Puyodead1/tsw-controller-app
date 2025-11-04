@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	go_runtime "runtime"
 	"sort"
@@ -97,7 +96,7 @@ func NewApp(
 
 	return &App{
 		config:             appconfig,
-		program_config:     config.LoadProgramConfigFromFile(path.Join(appconfig.GlobalConfigDir, "program.json")),
+		program_config:     config.LoadProgramConfigFromFile(filepath.Join(appconfig.GlobalConfigDir, "program.json")),
 		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
@@ -206,7 +205,7 @@ func (a *App) GetLastInstalledModVersion() string {
 
 func (a *App) SetLastInstalledModVersion(version string) {
 	a.program_config.LastInstalledModVersion = version
-	a.program_config.Save(path.Join(a.config.GlobalConfigDir, "program.json"))
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
 func (a *App) LoadConfiguration() {
@@ -609,7 +608,7 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	sdl_mapping_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:            "Select SDL mapping file save location",
 		DefaultFilename:  fmt.Sprintf("%s.sdl.json", string_utils.Sluggify(data.Name)),
-		DefaultDirectory: path.Join(a.config.GlobalConfigDir, "sdl_mappings"),
+		DefaultDirectory: filepath.Join(a.config.GlobalConfigDir, "sdl_mappings"),
 	})
 	if err != nil {
 		return err
@@ -618,7 +617,7 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	calibration_filepath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:            "Select calibration file save location",
 		DefaultFilename:  fmt.Sprintf("%s.calibration.json", string_utils.Sluggify(data.Name)),
-		DefaultDirectory: path.Join(a.config.GlobalConfigDir, "calibration"),
+		DefaultDirectory: filepath.Join(a.config.GlobalConfigDir, "calibration"),
 	})
 	if err != nil {
 		return err
@@ -711,7 +710,7 @@ func (a *App) InstallTrainSimWorldMod() error {
 		return err
 	}
 
-	if path.Base(tsw_exe_path) != "TrainSimWorld.exe" {
+	if filepath.Base(tsw_exe_path) != "TrainSimWorld.exe" {
 		return fmt.Errorf("you need to select the TrainSimWorld.exe file to install the mod")
 	}
 
@@ -726,29 +725,29 @@ func (a *App) InstallTrainSimWorldMod() error {
 		return err
 	}
 
-	install_path := path.Dir(tsw_exe_path)
+	install_path := filepath.Dir(tsw_exe_path)
 	/* go through files to copy */
 	for _, file := range manifest.Manifest {
-		file_dir := path.Dir(file)
-		if err := os.MkdirAll(path.Join(install_path, file_dir), 0755); err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", path.Join(install_path, file_dir))
+		file_dir := filepath.Dir(file)
+		if err := os.MkdirAll(filepath.Join(install_path, file_dir), 0755); err != nil {
+			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", filepath.Join(install_path, file_dir))
 			return err
 		}
 
-		fh, err := mod_assets.Open(path.Join("mod_assets", file))
+		fh, err := mod_assets.Open(filepath.Join("mod_assets", file))
 		if err != nil {
 			logger.Logger.Error("[App::InstallMod] could open file", "file", file)
 			return fmt.Errorf("could not open file %e", err)
 		}
 		defer fh.Close()
 
-		out, err := os.Create(path.Join(install_path, file))
+		out, err := os.Create(filepath.Join(install_path, file))
 		if err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create file", "file", path.Join(install_path, file))
+			logger.Logger.Error("[App::InstallMod] could not create file", "file", filepath.Join(install_path, file))
 			return fmt.Errorf("could not open create %e", err)
 		}
 		if _, err := io.Copy(out, fh); err != nil {
-			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", path.Join(install_path, file))
+			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", filepath.Join(install_path, file))
 			return fmt.Errorf("failed to copy file: %w", err)
 		}
 
@@ -756,9 +755,9 @@ func (a *App) InstallTrainSimWorldMod() error {
 	}
 
 	/* write version file */
-	os.WriteFile(path.Join(install_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
+	os.WriteFile(filepath.Join(install_path, "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/version.txt"), []byte(VERSION), 0755)
 	a.program_config.LastInstalledModVersion = VERSION
-	a.program_config.Save(path.Join(a.config.GlobalConfigDir, "program.json"))
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 
 	return nil
 }
@@ -777,7 +776,7 @@ func (a *App) ImportProfile() error {
 		return err
 	}
 
-	if path.Ext(import_profile_path) != ".tswprofile" {
+	if filepath.Ext(import_profile_path) != ".tswprofile" {
 		return fmt.Errorf("selected an invalid profile")
 	}
 
@@ -787,9 +786,9 @@ func (a *App) ImportProfile() error {
 	}
 	defer import_profile_file.Close()
 
-	original_filename, _ := strings.CutSuffix(path.Base(import_profile_path), ".tswprofile")
-	target_file_path := path.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", original_filename, time.Now().Unix()))
-	os.MkdirAll(path.Dir(target_file_path), 0o755)
+	original_filename, _ := strings.CutSuffix(filepath.Base(import_profile_path), ".tswprofile")
+	target_file_path := filepath.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", original_filename, time.Now().Unix()))
+	os.MkdirAll(filepath.Dir(target_file_path), 0o755)
 
 	target_file, err := os.OpenFile(target_file_path, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -815,8 +814,8 @@ func (a *App) ImportSharedProfile(profile Interop_SharedProfile) error {
 		return fmt.Errorf("could not download profile")
 	}
 
-	target_file_path := path.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", string_utils.Sluggify(profile.Name), time.Now().Unix()))
-	os.MkdirAll(path.Dir(target_file_path), 0o755)
+	target_file_path := filepath.Join(a.config.GlobalConfigDir, "profiles", fmt.Sprintf("%s_%d.json", string_utils.Sluggify(profile.Name), time.Now().Unix()))
+	os.MkdirAll(filepath.Dir(target_file_path), 0o755)
 
 	err = os.WriteFile(target_file_path, body, 0644)
 	if err != nil {

@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.0.4
+- Fixed filepath handling on Windows
+
 ## 1.0.3
 - Fixed build version on Windows
 - Show all logs in logs tab
