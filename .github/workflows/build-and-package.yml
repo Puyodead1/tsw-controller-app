@@ -174,7 +174,7 @@ jobs:
 
       - run: Copy-Item -Path mod_assets -Destination go-app/mod_assets -Recurse -Force
       - run: |
-          $env:VERSION=(Get-Content RELEASE_VERSION)[0]
+          $env:VERSION=(Get-Content -Path RELEASE_VERSION -First 1)
           cd go-app
            ./windows_build.ps1
 
