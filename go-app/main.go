@@ -40,7 +40,6 @@ func main() {
 	os.MkdirAll(local_config_dir, 0o755)
 	for _, subpath := range required_subpaths {
 		os.MkdirAll(path.Join(global_config_dir, subpath), 0o755)
-		os.MkdirAll(path.Join(local_config_dir, subpath), 0o755)
 	}
 
 	app := NewApp(AppConfig{
