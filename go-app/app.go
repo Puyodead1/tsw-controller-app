@@ -734,7 +734,7 @@ func (a *App) InstallTrainSimWorldMod() error {
 			return err
 		}
 
-		fh, err := mod_assets.Open(filepath.Join("mod_assets", file))
+		fh, err := mod_assets.Open(fmt.Sprintf("mod_assets/%s", file))
 		if err != nil {
 			logger.Logger.Error("[App::InstallMod] could open file", "file", file)
 			return fmt.Errorf("could not open file %e", err)
