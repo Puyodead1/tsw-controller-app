@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.0.3
+- Fixed build version on Windows
+- Show all logs in logs tab
+- Add option to save logs to file
+- Add option to reset cab debugger state
+
 ## 1.0.2
 - Fixed calibration mode if directories are non-existant
 

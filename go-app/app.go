@@ -360,6 +360,10 @@ func (a *App) GetSyncControlState() []Interop_SyncController_ControlState {
 	return control_states
 }
 
+func (a *App) ResetSyncControlState() {
+	a.sync_controller.ControlState.Clear()
+}
+
 // https://github.com/LiamMartens/tsw-controller-app/releases/download/v0.2.6/beta.package.zip
 func (a *App) GetLatestReleaseVersion() string {
 	resp, err := http.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/RELEASE_VERSION")
@@ -646,6 +650,29 @@ func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 
 	/* register config */
 	a.controller_manager.RegisterConfig(sdl_mapping, calibration)
+
+	return nil
+}
+
+func (a *App) SaveLogs(logs []string) error {
+	location, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Select save location for logs",
+		DefaultFilename: "output.log",
+	})
+	if err != nil {
+		return err
+	}
+
+	output_log_file, err := os.OpenFile(location, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer output_log_file.Close()
+
+	_, err = output_log_file.WriteString(strings.Join(logs, "\n"))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

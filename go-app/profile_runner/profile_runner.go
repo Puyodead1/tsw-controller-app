@@ -324,7 +324,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				if selected_profile == nil || !has_selected_profile {
 					/* try to find default profile by USB ID */
 					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
-						if profile.Controller != nil && profile.Controller.UsbID != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() {
+						if profile.Controller != nil && profile.Controller.AutoSelect != nil && *profile.Controller.AutoSelect && profile.Controller.UsbID != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() {
 							selected_profile = &profile
 							return false
 						}

@@ -44,6 +44,13 @@ func (g *GlobalLogger) PropertiesFromArgs(args ...any) map[string]string {
 
 func (g *GlobalLogger) Debug(msg string, args ...any) {
 	g.slogger.Debug(msg, args...)
+
+	if len(g.listeners) > 0 {
+		properties := g.PropertiesFromArgs(args...)
+		for _, c := range g.listeners {
+			c <- fmt.Sprintf("%s | %v", msg, properties)
+		}
+	}
 }
 
 func (g *GlobalLogger) Info(msg string, args ...any) {

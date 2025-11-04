@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import { EventsOn } from "../../../wailsjs/runtime/runtime";
-import { GetSyncControlState } from "../../../wailsjs/go/main/App";
+import {
+  GetSyncControlState,
+  ResetSyncControlState,
+} from "../../../wailsjs/go/main/App";
 import { events } from "../../events";
 import useSWR from "swr";
 
@@ -12,6 +15,12 @@ export const CabDebuggerTab = () => {
         r.sort((a, b) => a.Identifier.localeCompare(b.Identifier)),
       ),
   );
+
+  const handleReset = () => {
+    ResetSyncControlState().then(() => {
+      refetchSyncControlState();
+    });
+  };
 
   useEffect(() => {
     return EventsOn(events.synccontrolstate, () => {
@@ -49,6 +58,13 @@ export const CabDebuggerTab = () => {
           </li>
         ))}
       </ul>
+      {!!syncControlState?.length && (
+        <div className="sticky bottom-0 left-0 right-0 py-2 bg-[var(--root-bg,var(--color-base-100))] border-t border-t-base-100">
+          <button className="btn btn-primary btn-xs" onClick={handleReset}>
+            Reset State
+          </button>
+        </div>
+      )}
     </div>
   );
 };

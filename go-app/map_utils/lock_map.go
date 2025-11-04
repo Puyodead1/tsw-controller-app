@@ -30,6 +30,14 @@ func NewLockMap[T comparable, V any]() *LockMap[T, V] {
 	}
 }
 
+func (m *LockMap[T, V]) Clear() {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+	for k := range m.Map {
+		delete(m.Map, k)
+	}
+}
+
 func (m *LockMap[T, V]) Get(key T) (V, bool) {
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()

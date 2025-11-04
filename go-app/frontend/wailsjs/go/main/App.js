@@ -78,8 +78,16 @@ export function OpenProfileBuilder(arg1) {
   return window['go']['main']['App']['OpenProfileBuilder'](arg1);
 }
 
+export function ResetSyncControlState() {
+  return window['go']['main']['App']['ResetSyncControlState']();
+}
+
 export function SaveCalibration(arg1) {
   return window['go']['main']['App']['SaveCalibration'](arg1);
+}
+
+export function SaveLogs(arg1) {
+  return window['go']['main']['App']['SaveLogs'](arg1);
 }
 
 export function SaveProfileForSharing(arg1, arg2) {

@@ -40,7 +40,11 @@ export function OpenNewProfileBuilder(arg1:string):Promise<void>;
 
 export function OpenProfileBuilder(arg1:string):Promise<void>;
 
+export function ResetSyncControlState():Promise<void>;
+
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
+
+export function SaveLogs(arg1:Array<string>):Promise<void>;
 
 export function SaveProfileForSharing(arg1:string,arg2:string):Promise<void>;
 
