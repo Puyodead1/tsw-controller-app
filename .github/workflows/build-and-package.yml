@@ -122,8 +122,8 @@ jobs:
           mkdir mod_assets
           install -D ue4ssproxy/winmm.dll mod_assets/winmm.dll
           install -D ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
-          install -D socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
-          install -D tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
+          install -D socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/dlls/tsw_controller_mod_socket_connection.dll
+          install -D tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/dlls/main.dll
       - uses: actions/upload-artifact@v4
         with:
           name: mod_assets
@@ -172,6 +172,8 @@ jobs:
           path: mod_assets
 
       - run: Copy-Item -Path mod_assets -Destination go-app/mod_assets -Recurse -Force
+      - run:  Get-ChildItem -File -Recurse -Path "./mod_assets"
+      - run:  Get-ChildItem -File -Recurse -Path "go-app/mod_assets"
       - run: |
           $env:VERSION=(Get-Content -Path RELEASE_VERSION -First 1)
           cd go-app
