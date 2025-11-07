@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.0.4
+## 1.0.5
 - Fixed filepath handling on Windows
 
 ## 1.0.3

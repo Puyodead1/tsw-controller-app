@@ -4,7 +4,6 @@ permissions: write-all
 
 on:
   push:
-    branches: [ main ]
 
 jobs:
   build__socketconnectionlib:
@@ -95,7 +94,7 @@ jobs:
       - name: Build
         run: |
           cd ./RE-UE4SS
-          xmake f -m "Game__Shipping__Win64" -y --ue4ssProxyPath=C:/Windows/System32/dxgi.dll
+          xmake f -m "Game__Shipping__Win64" -y --ue4ssProxyPath=C:/Windows/System32/winmm.dll
           xmake build
 
       - uses: actions/upload-artifact@v4
@@ -106,7 +105,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ue4ssproxy
-          path: RE-UE4SS/Binaries/Game__Shipping__Win64/proxy/dxgi.dll
+          path: RE-UE4SS/Binaries/Game__Shipping__Win64/proxy/winmm.dll
 
       - uses: actions/upload-artifact@v4
         with:
@@ -121,7 +120,7 @@ jobs:
         name: Download previously built artifacts
       - run: |
           mkdir mod_assets
-          install -D ue4ssproxy/dxgi.dll mod_assets/dxgi.dll
+          install -D ue4ssproxy/winmm.dll mod_assets/winmm.dll
           install -D ue4ssdll/UE4SS.dll mod_assets/ue4ss_tsw_controller_mod/UE4SS.dll
           install -D socketconnectionlib/target/release/tsw_controller_mod_socket_connection.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/tsw_controller_mod_socket_connection.dll
           install -D tswcontrollermod/TSWControllerMod.dll mod_assets/ue4ss_tsw_controller_mod/Mods/TSWControllerMod/main.dll
