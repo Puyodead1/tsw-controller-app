@@ -230,7 +230,7 @@ jobs:
           name: mod_assets
           path: mod_assets
 
-      - run: cp -r mod_assets go-app/mod_assets
+      - run: cp -r mod_assets go-app
       - run: find go-app/mod_assets
       - run: |
           VERSION=$(head -n 1 RELEASE_VERSION)
@@ -292,7 +292,7 @@ jobs:
         with:
           name: mod_assets
           path: mod_assets
-      - run: cp -r mod_assets go-app/mod_assets
+      - run: cp -r mod_assets go-app
       - run: find go-app/mod_assets
       - run: |
           VERSION=$(head -n 1 RELEASE_VERSION)
