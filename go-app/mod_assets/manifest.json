@@ -1,7 +1,7 @@
 {
   "manifest": [
     { "path": "dxgi.dll", "action": "delete" },
-    { "path": "winmm.dll", "action": "copy" },
+    { "path": "dwmapi.dll", "action": "copy" },
     { "path": "ue4ss_tsw_controller_mod/UE4SS.dll", "action": "copy" },
     { "path": "ue4ss_tsw_controller_mod/UE4SS-settings.ini", "action": "copy" },
     { "path": "ue4ss_tsw_controller_mod/Mods/TSWControllerMod/enabled.txt", "action": "copy" },
