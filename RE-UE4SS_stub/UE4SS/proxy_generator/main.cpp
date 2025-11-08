@@ -399,8 +399,8 @@ int _tmain(int argc, TCHAR* argv[])
     cpp_file << "            return TRUE;" << endl;
     cpp_file << "        }" << endl;
     cpp_file << endl;
-    cpp_file << "        HMODULE hUE4SSDll = load_ue4ss_dll(hInstDll);" << endl;
-    cpp_file << "        HMODULE hUE4SSDll = load_tsw_ue4ss_dll(hInstDll);" << endl;
+    cpp_file << "        load_ue4ss_dll(hInstDll);" << endl;
+    cpp_file << "        load_tsw_ue4ss_dll(hInstDll);" << endl;
     cpp_file << "    }" << endl;
     cpp_file << "    else if (fdwReason == DLL_PROCESS_DETACH)" << endl;
     cpp_file << "    {" << endl;
