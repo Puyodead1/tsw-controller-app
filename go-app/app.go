@@ -41,8 +41,20 @@ const (
 	AppEventType_Log               AppEventType = "log"
 )
 
+type ModAssets_Manifest_Entry_ActionType = string
+
+const (
+	ModAssets_Manifest_Entry_ActionType_Copy   ModAssets_Manifest_Entry_ActionType = "copy"
+	ModAssets_Manifest_Entry_ActionType_Delete ModAssets_Manifest_Entry_ActionType = "delete"
+)
+
+type ModAssets_Manifest_Entry struct {
+	Path   string `json:"path"`
+	Action string `json:"action" validate:"required,oneof=copy,delete"`
+}
+
 type ModAssets_Manifest struct {
-	Manifest []string `json:"manifest"`
+	Manifest []ModAssets_Manifest_Entry `json:"manifest"`
 }
 
 type Remote_SharedProfilesIndex_Profile struct {
@@ -727,31 +739,36 @@ func (a *App) InstallTrainSimWorldMod() error {
 
 	install_path := filepath.Dir(tsw_exe_path)
 	/* go through files to copy */
-	for _, file := range manifest.Manifest {
-		file_dir := filepath.Dir(file)
-		if err := os.MkdirAll(filepath.Join(install_path, file_dir), 0755); err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create directory", "dir", filepath.Join(install_path, file_dir))
-			return err
-		}
+	for _, entry := range manifest.Manifest {
+		if entry.Action == ModAssets_Manifest_Entry_ActionType_Delete {
+			// no action required if remove fails
+			os.Remove(filepath.Join(install_path, entry.Path))
+		} else if entry.Action == ModAssets_Manifest_Entry_ActionType_Copy {
+			file_dir := filepath.Dir(entry.Path)
+			if err := os.MkdirAll(filepath.Join(install_path, file_dir), 0755); err != nil {
+				logger.Logger.Error("[App::InstallMod] could not create directory", "dir", filepath.Join(install_path, file_dir))
+				return err
+			}
 
-		fh, err := mod_assets.Open(fmt.Sprintf("mod_assets/%s", file))
-		if err != nil {
-			logger.Logger.Error("[App::InstallMod] could open file", "file", file)
-			return fmt.Errorf("could not open file %e", err)
-		}
-		defer fh.Close()
+			fh, err := mod_assets.Open(fmt.Sprintf("mod_assets/%s", entry.Path))
+			if err != nil {
+				logger.Logger.Error("[App::InstallMod] could open file", "file", entry.Path)
+				return fmt.Errorf("could not open file %e", err)
+			}
+			defer fh.Close()
 
-		out, err := os.Create(filepath.Join(install_path, file))
-		if err != nil {
-			logger.Logger.Error("[App::InstallMod] could not create file", "file", filepath.Join(install_path, file))
-			return fmt.Errorf("could not open create %e", err)
-		}
-		if _, err := io.Copy(out, fh); err != nil {
-			logger.Logger.Error("[App::InstallMod] failed to copy file", "file", filepath.Join(install_path, file))
-			return fmt.Errorf("failed to copy file: %w", err)
-		}
+			out, err := os.Create(filepath.Join(install_path, entry.Path))
+			if err != nil {
+				logger.Logger.Error("[App::InstallMod] could not create file", "file", filepath.Join(install_path, entry.Path))
+				return fmt.Errorf("could not open create %e", err)
+			}
+			if _, err := io.Copy(out, fh); err != nil {
+				logger.Logger.Error("[App::InstallMod] failed to copy file", "file", filepath.Join(install_path, entry.Path))
+				return fmt.Errorf("failed to copy file: %w", err)
+			}
 
-		defer out.Close()
+			defer out.Close()
+		}
 	}
 
 	/* write version file */
