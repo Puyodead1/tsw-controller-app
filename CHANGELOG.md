@@ -5,6 +5,7 @@
 - Use custom dwmapi proxy
 - Run SDL polling using `SDL.Do`
 - Add option to delete profile
+- Updated alerts and confirm dialogs
 
 ## 1.0.4
 - Fixed filepath handling on Windows
