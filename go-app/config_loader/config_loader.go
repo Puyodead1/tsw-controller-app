@@ -72,12 +72,13 @@ func (c *ConfigLoader) FromDirectory(dir string) ([]config.Config_Controller_SDL
 	} else {
 		for _, entry := range profiles_file_entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
-				file_bytes, err := os.ReadFile(filepath.Join(profiles_files_dir, entry.Name()))
+				fullpath := filepath.Join(profiles_files_dir, entry.Name())
+				file_bytes, err := os.ReadFile(fullpath)
 				if err != nil {
 					errors = append(errors, fmt.Errorf("could not read profile file %s (%e)", entry.Name(), err))
 					continue
 				}
-				profile, err := config.ControllerProfileFromJSON(string(file_bytes))
+				profile, err := config.ControllerProfileFromJSON(string(file_bytes), fullpath)
 				if err != nil {
 					errors = append(errors, fmt.Errorf("could not parse profile %s (%e)", entry.Name(), err))
 					continue

@@ -3,12 +3,13 @@ import { EventsOn } from "../../../wailsjs/runtime/runtime";
 import { events } from "../../events";
 import { logs } from "../../logs";
 import { SaveLogs } from "../../../wailsjs/go/main/App";
+import { alert } from "../../utils/alert";
 
 export const LogsTab = () => {
   const logsRef = useRef<HTMLDivElement | null>(null);
 
   const handleSave = () => {
-    SaveLogs(logs).catch((err) => alert(err));
+    SaveLogs(logs).catch((err) => alert(String(err), "error"));
   };
 
   useEffect(() => {

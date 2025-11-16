@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ClearProfile(arg1:string):Promise<void>;
 
+export function DeleteProfile(arg1:string):Promise<void>;
+
 export function GetControllerConfiguration(arg1:string):Promise<main.Interop_ControllerConfiguration>;
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;

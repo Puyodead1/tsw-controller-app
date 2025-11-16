@@ -6,6 +6,10 @@ export function ClearProfile(arg1) {
   return window['go']['main']['App']['ClearProfile'](arg1);
 }
 
+export function DeleteProfile(arg1) {
+  return window['go']['main']['App']['DeleteProfile'](arg1);
+}
+
 export function GetControllerConfiguration(arg1) {
   return window['go']['main']['App']['GetControllerConfiguration'](arg1);
 }

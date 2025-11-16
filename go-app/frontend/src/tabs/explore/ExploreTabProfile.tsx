@@ -4,6 +4,7 @@ import {
   LoadConfiguration,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
+import { alert } from "../../utils/alert";
 
 type Props = {
   profile: main.Interop_SharedProfile;
@@ -14,8 +15,8 @@ export const ExploreTabProfile = ({ profile }: Props) => {
   const handleDownload = () => {
     setIsDownloading(true);
     ImportSharedProfile(profile)
-      .then(() => LoadConfiguration().then(() => alert("Profile Downloaded")))
-      .catch((err) => alert(String(err)))
+      .then(() => LoadConfiguration().then(() => alert("Profile Downloaded", 'info')))
+      .catch((err) => alert(String(err), 'error'))
       .finally(() => setIsDownloading(false));
   };
 

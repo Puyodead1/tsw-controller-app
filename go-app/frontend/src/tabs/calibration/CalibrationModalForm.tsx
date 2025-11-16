@@ -1,4 +1,4 @@
-import { MutableRefObject, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { main } from "../../../wailsjs/go/models";
 import {
   SaveCalibration,
@@ -13,6 +13,7 @@ import {
   useCalibrationForm,
 } from "./useCalibrationForm";
 import { CalibrationModalFormControl } from "./CalibrationModalFormControl";
+import { alert } from "../../utils/alert";
 
 type Props = {
   controller: main.Interop_GenericController;
@@ -64,7 +65,7 @@ export const CalibrationModalForm = ({ controller, onClose }: Props) => {
         SaveCalibration(data)
           .then(() => LoadConfiguration())
           .catch((err) => {
-            alert(String(err));
+            alert(String(err), 'error');
           })
           .finally(() => {
             setIsRunning(false);

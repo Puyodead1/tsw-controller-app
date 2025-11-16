@@ -13,6 +13,7 @@ import {
   GetVersion,
   GetControllers,
   OpenProfileBuilder,
+  DeleteProfile,
   OpenNewProfileBuilder,
   SaveProfileForSharing,
   ImportProfile,
@@ -23,6 +24,7 @@ import { events } from "../../events";
 import { useForm } from "react-hook-form";
 import { MainTabControllerProfileSelector } from "./MainTabControllerProfileSelecor";
 import { main } from "../../../wailsjs/go/models";
+import { alert } from "../../utils/alert";
 
 type FormValues = {
   profiles: Record<`${string}`, string>;
@@ -83,6 +85,16 @@ export const MainTab = () => {
     if (profile) OpenProfileBuilder(profile);
   };
 
+  const handleDeleteProfile = (controller: main.Interop_GenericController) => {
+    const profile = getValues(`profiles.${controller.GUID}`);
+    if (profile && confirm("Are you sure you want to delete this profile?")) {
+      DeleteProfile(profile).then(() => {
+        LoadConfiguration()
+        ClearProfile(controller.GUID)
+      }).catch((reason) => alert(String(reason), 'error'));
+    }
+  };
+
   const handleSaveProfileForSharing = (
     controller: main.Interop_GenericController,
   ) => {
@@ -97,13 +109,13 @@ export const MainTab = () => {
   const handleInstall = () => {
     InstallTrainSimWorldMod()
       .then(() => refetchVersionInfo())
-      .catch((err) => alert(String(err)));
+      .catch((err) => alert(String(err), 'error'));
   };
 
   const handleImportProfile = () => {
     ImportProfile()
       .then(() => LoadConfiguration())
-      .catch((err) => alert(String(err)));
+      .catch((err) => alert(String(err), 'error'));
   };
 
   const handleIgnoreModInstallWarning = () => {
@@ -149,6 +161,7 @@ export const MainTab = () => {
             onReloadConfiguration={handleReloadConfiguration}
             onSaveControllerProfileForSharing={handleSaveProfileForSharing}
             onOpenProfileForController={handleOpenProfile}
+            onDeleteProfileForController={handleDeleteProfile}
           />
         </div>
       ))}

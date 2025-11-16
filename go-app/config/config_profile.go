@@ -138,6 +138,7 @@ type Config_Controller_Profile_Controller struct {
 }
 
 type Config_Controller_Profile struct {
+	Path       string
 	Name       string                                `json:"name" validate:"required"`
 	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
 	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
@@ -462,8 +463,10 @@ func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Contr
 	return nil
 }
 
-func ControllerProfileFromJSON(json_str string) (*Config_Controller_Profile, error) {
-	var c Config_Controller_Profile
+func ControllerProfileFromJSON(json_str string, path string) (*Config_Controller_Profile, error) {
+	var c Config_Controller_Profile = Config_Controller_Profile{
+		Path: path,
+	}
 	if err := json.Unmarshal([]byte(json_str), &c); err != nil {
 		return nil, err
 	}

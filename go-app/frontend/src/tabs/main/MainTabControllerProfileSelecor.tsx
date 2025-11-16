@@ -16,6 +16,9 @@ type Props = {
   onOpenProfileForController: (
     controller: main.Interop_GenericController,
   ) => void;
+  onDeleteProfileForController: (
+    controller: main.Interop_GenericController,
+  ) => void;
 };
 
 export function MainTabControllerProfileSelector({
@@ -27,6 +30,7 @@ export function MainTabControllerProfileSelector({
   onCreateProfile,
   onSaveControllerProfileForSharing,
   onOpenProfileForController,
+  onDeleteProfileForController,
 }: Props) {
   const { register, watch } = form;
   const selectedProfile = watch(`profiles.${controller.GUID}`);
@@ -86,7 +90,9 @@ export function MainTabControllerProfileSelector({
             </button>
           </li>
           <li>
-            <button onClick={() => onCreateProfile(controller)}>Create new profile</button>
+            <button onClick={() => onCreateProfile(controller)}>
+              Create new profile
+            </button>
           </li>
           <li>
             <button
@@ -109,7 +115,7 @@ export function MainTabControllerProfileSelector({
           <li>
             <button
               disabled={!selectedProfile}
-              onClick={() => onOpenProfileForController(controller)}
+              onClick={() => onDeleteProfileForController(controller)}
               className="disabled:opacity-50 disabled:pointer-events-none"
             >
               Delete profile

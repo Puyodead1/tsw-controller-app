@@ -586,6 +586,15 @@ func (a *App) OpenProfileBuilder(name string) {
 	}
 }
 
+func (a *App) DeleteProfile(name string) error {
+	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+		err := os.Remove(profile.Path)
+		a.profile_runner.Profiles.Delete(name)
+		return err
+	}
+	return nil
+}
+
 func (a *App) SaveCalibration(data Interop_ControllerCalibration) error {
 	sdl_mapping := config.Config_Controller_SDLMap{
 		Name:  data.Name,

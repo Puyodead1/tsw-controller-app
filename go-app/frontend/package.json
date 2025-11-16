@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@json-editor/json-editor": "^2.15.2",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
     "just-throttle": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
