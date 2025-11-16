@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.0.5
+- Use custom dwmapi proxy
+
 ## 1.0.4
 - Fixed filepath handling on Windows
 

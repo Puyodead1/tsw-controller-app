@@ -1,1 +1,113 @@
-@import "tailwindcss"
+@import "tailwindcss";
+@plugin "daisyui";
+
+#editor {
+  @apply px-6 mx-auto max-w-4xl;
+}
+
+#editor .je-indented-panel {
+  @apply border-l-base-content/20;
+}
+
+#editor .je-header {
+  @apply mb-2;
+}
+
+#editor .row {
+  @apply mb-8;
+}
+
+#editor .json-editor-btn-add,
+#editor .json-editor-btn-delete,
+#editor .json-editor-btn-subtract,
+#editor .json-editor-btn-save,
+#editor .json-editor-btn-copy,
+#editor .json-editor-btn-cancel {
+  @apply my-2 ml-2;
+}
+
+/* je-modal */
+#editor .je-modal {
+  @apply bg-base-300
+}
+
+#editor .je-modal .je-textarea {
+  @apply textarea;
+}
+
+#editor .je-modal .je-edit-json--textarea {
+  @apply font-mono;
+}
+
+#editor .je-modal .json-editor-btn-save {
+  @apply btn btn-xs btn-primary;
+}
+
+#editor .je-modal .json-editor-btn-copy {
+  @apply btn btn-xs btn-neutral;
+}
+
+#editor .je-modal .json-editor-btn-cancel {
+  @apply btn btn-xs btn-neutral;
+}
+
+/* je-header*/
+#editor .je-object__controls {
+  @apply inline-flex gap-2;
+}
+
+#editor .json-editor-btntype-toggle {
+  @apply btn btn-info btn-dash btn-xs;
+}
+
+#editor .json-editor-btntype-editjson,
+#editor .json-editor-btntype-properties,
+#editor .json-editor-btntype-add {
+  @apply btn btn-info btn-soft btn-xs;
+}
+
+#editor .json-editor-btn-subtract,
+#editor .json-editor-btn-delete {
+  @apply btn btn-error btn-soft btn-xs;
+}
+
+/* .form-control - schemapath */
+#editor :not(.property-selector) > .form-control {
+  @apply fieldset w-full;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#editor :not(.property-selector) > .form-control label {
+  @apply fieldset-legend;
+}
+
+#editor :not(.property-selector) > .form-control input {
+  @apply input w-full;
+}
+
+#editor :not(.property-selector) > .form-control select {
+  @apply select w-full;
+}
+
+#editor :not(.property-selector) > .form-control p {
+  @apply label whitespace-normal;
+}
+
+#editor :not(.property-selector) > .form-control .errmsg {
+  @apply label whitespace-normal text-error;
+}
+
+/* prop selector */
+#editor .property-selector-input {
+  @apply input input-xs m-2;
+}
+
+/* other controls */
+#editor .je-switcher {
+  @apply select select-sm;
+}
+
+#editor .je-checkbox {
+  @apply checkbox;
+  width: var(--size) !important;
+}
