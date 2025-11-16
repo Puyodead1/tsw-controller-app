@@ -12,28 +12,59 @@
     />
   </head>
   <body>
+    <nav class="navbar bg-base-100 shadow-sm">
+      <div class="flex-1">
+        <ul class="menu menu-horizontal px-1">
+          <li><a class="link link-hover" href="/">Home</a></li>
+          <li>
+            <a class="link link-hover" href="/profile-builder/index.html"
+              >Profile Builder</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+
     <div id="editor"></div>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-      crossorigin="anonymous"
-    ></script>
+    <div class="px-6 mx-auto max-w-4xl sticky bottom-4">
+      <div class="bg-base-100 border-base-content/5 border rounded-lg shadow-xl">
+        <div class="m-4">
+          <button class="btn btn-primary" onclick="onSaveClick()">Save</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
     <script type="module">
-      import schema from '../profile-builder-json-schema/profile.complete.schema.json'
+      import schema from "../profile-builder-json-schema/profile.complete.schema.json";
 
-      var profile_data_raw = new URL(window.location).searchParams.get(
+      const profile_data_raw = new URL(window.location).searchParams.get(
         "profile"
       );
-      var profile_data = profile_data_raw
+      const profile_data = profile_data_raw
         ? JSON.parse(atob(profile_data_raw))
         : {};
-      var element = document.getElementById("editor");
-      var editor = new JSONEditor(element, {
+      const element = document.getElementById("editor");
+      const editor = new JSONEditor(element, {
         schema,
         display_required_only: true,
         theme: "bootstrap4",
         startval: profile_data,
+      });
+
+      Object.assign(window, {
+        onSaveClick: function onSaveClick() {
+          const value = editor.getValue();
+          const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const downloadLink = document.createElement('a');
+          downloadLink.download = `profile.tswprofile`;
+          downloadLink.href = url;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+          URL.revokeObjectURL(url);
+        },
       });
     </script>
   </body>
