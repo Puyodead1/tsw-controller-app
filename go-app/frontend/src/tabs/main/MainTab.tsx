@@ -25,6 +25,7 @@ import { useForm } from "react-hook-form";
 import { MainTabControllerProfileSelector } from "./MainTabControllerProfileSelecor";
 import { main } from "../../../wailsjs/go/models";
 import { alert } from "../../utils/alert";
+import { confirm } from "../../utils/confirm";
 
 type FormValues = {
   profiles: Record<`${string}`, string>;
@@ -87,11 +88,21 @@ export const MainTab = () => {
 
   const handleDeleteProfile = (controller: main.Interop_GenericController) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile && confirm("Are you sure you want to delete this profile?")) {
-      DeleteProfile(profile).then(() => {
-        LoadConfiguration()
-        ClearProfile(controller.GUID)
-      }).catch((reason) => alert(String(reason), 'error'));
+    if (profile) {
+      confirm({
+        id: "confirm-delete",
+        title: "Confirm delete profile?",
+        message: "Are you sure you want to delete this profile?",
+        actions: ["Cancel", "Confirm"],
+        onConfirm: () => {
+          DeleteProfile(profile)
+            .then(() => {
+              LoadConfiguration();
+              ClearProfile(controller.GUID);
+            })
+            .catch((reason) => alert(String(reason), "error"));
+        },
+      });
     }
   };
 
@@ -109,13 +120,13 @@ export const MainTab = () => {
   const handleInstall = () => {
     InstallTrainSimWorldMod()
       .then(() => refetchVersionInfo())
-      .catch((err) => alert(String(err), 'error'));
+      .catch((err) => alert(String(err), "error"));
   };
 
   const handleImportProfile = () => {
     ImportProfile()
       .then(() => LoadConfiguration())
-      .catch((err) => alert(String(err), 'error'));
+      .catch((err) => alert(String(err), "error"));
   };
 
   const handleIgnoreModInstallWarning = () => {
