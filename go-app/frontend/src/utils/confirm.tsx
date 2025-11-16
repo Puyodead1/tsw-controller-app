@@ -15,6 +15,7 @@ export const confirm = (input: ConfirmInput) => {
   document.body.appendChild(container);
 
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
+    event.currentTarget.addEventListener("transitionend", container.remove);
     if (event.currentTarget.returnValue === input.actions[0]) {
       input.onCancel?.();
     } else if (event.currentTarget.returnValue === input.actions[1]) {
