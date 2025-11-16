@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"tsw_controller_app/logger"
 
+	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -19,7 +20,7 @@ var VERSION = "1.0.0"
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func main() {
+func run() {
 	fmt.Printf("Version %s\n", VERSION)
 
 	config_dir, err := os.UserConfigDir()
@@ -72,4 +73,8 @@ func main() {
 	if err != nil {
 		logger.Logger.Error("[main] error", "error", err)
 	}
+}
+
+func main() {
+	sdl.Main(run)
 }

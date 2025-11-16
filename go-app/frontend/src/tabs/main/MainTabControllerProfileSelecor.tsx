@@ -106,6 +106,15 @@ export function MainTabControllerProfileSelector({
               Open profile in builder
             </button>
           </li>
+          <li>
+            <button
+              disabled={!selectedProfile}
+              onClick={() => onOpenProfileForController(controller)}
+              className="disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Delete profile
+            </button>
+          </li>
         </ul>
       </div>
     </div>

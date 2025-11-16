@@ -1,7 +1,10 @@
 # CHANGELOG
 
+
 ## 1.0.5
 - Use custom dwmapi proxy
+- Run SDL polling using `SDL.Do`
+- Add option to delete profile
 
 ## 1.0.4
 - Fixed filepath handling on Windows
