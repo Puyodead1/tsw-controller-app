@@ -3,11 +3,13 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"tsw_controller_app/logger"
 )
 
 type Config_ProgramConfig struct {
 	LastInstalledModVersion string `json:"last_instalaled_mod_version"`
+	TSWAPIKeyLocation       string `json:"tsw_api_key_location"`
 }
 
 func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
@@ -16,6 +18,7 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 		logger.Logger.Error("[Config_ProgramConfig] could not read config file", "filepath", filepath)
 		return &Config_ProgramConfig{
 			LastInstalledModVersion: "",
+			TSWAPIKeyLocation:       "",
 		}
 	}
 
@@ -24,10 +27,28 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 		logger.Logger.Error("[Config_ProgramConfig] failed to parse json", "filepath", filepath)
 		return &Config_ProgramConfig{
 			LastInstalledModVersion: "",
+			TSWAPIKeyLocation:       "",
 		}
 	}
 
 	return &pc
+}
+
+func (c *Config_ProgramConfig) AutoDetectTSWAPIKeyLocation() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	tsw6_path := filepath.Join(home, "Documents/My Games/TrainSimWorld6/Saved/Config/CommAPIKey.txt")
+	tsw5_path := filepath.Join(home, "Documents/My Games/TrainSimWorld6/Saved/Config/CommAPIKey.txt")
+	if _, err := os.Stat(tsw6_path); err == nil {
+		return tsw6_path
+	}
+	if _, err := os.Stat(tsw5_path); err == nil {
+		return tsw5_path
+	}
+	return ""
 }
 
 func (c *Config_ProgramConfig) Save(filepath string) error {

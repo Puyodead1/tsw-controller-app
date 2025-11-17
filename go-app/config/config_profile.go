@@ -39,9 +39,15 @@ type Config_Controller_Profile_Control_Assignment_Action_DirectControl struct {
 	UseNormalized *bool `json:"use_normalized,omitempty"`
 }
 
+type Config_Controller_Profile_Control_Assignment_Action_ApiControl struct {
+	Controls string  `json:"controls" validate:"required"`
+	ApiValue float64 `json:"api_value"`
+}
+
 type Config_Controller_Profile_Control_Assignment_Action struct {
 	Keys          *Config_Controller_Profile_Control_Assignment_Action_Keys          `json:"-"`
 	DirectControl *Config_Controller_Profile_Control_Assignment_Action_DirectControl `json:"-"`
+	ApiControl    *Config_Controller_Profile_Control_Assignment_Action_ApiControl    `json"-"`
 }
 
 type Config_Controller_Profile_Control_Assignment_Condition struct {
@@ -154,13 +160,27 @@ type Config_Controller_Profile struct {
 
 func (c *Config_Controller_Profile_Control_Assignment_Action) UnmarshalJSON(data []byte) error {
 	var peek struct {
-		Controls *string `controls:"keys,omitempty"`
+		Controls *string  `json:"controls,omitempty"`
+		ApiValue *float64 `json:"api_value,omitempty"`
 	}
 	if err := json.Unmarshal(data, &peek); err != nil {
 		return err
 	}
 
 	v := validator.New()
+
+	/* if api value is defined; try to unmarshall as API control action */
+	if peek.ApiValue != nil {
+		var ac_action Config_Controller_Profile_Control_Assignment_Action_ApiControl
+		if err := json.Unmarshal(data, &ac_action); err != nil {
+			return err
+		}
+		if err := v.Struct(ac_action); err != nil {
+			return err
+		}
+		c.ApiControl = &ac_action
+		return nil
+	}
 
 	/* if controls is defined; try to unmarshal it as a direct control action */
 	if peek.Controls != nil {

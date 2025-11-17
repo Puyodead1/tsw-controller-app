@@ -22,6 +22,8 @@ export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
 
 export function GetSyncControlState():Promise<Array<main.Interop_SyncController_ControlState>>;
 
+export function GetTSWAPIKeyLocation():Promise<string>;
+
 export function GetVersion():Promise<string>;
 
 export function HasNewerVersion():Promise<boolean>;
@@ -53,6 +55,8 @@ export function SaveProfileForSharing(arg1:string,arg2:string):Promise<void>;
 export function SelectProfile(arg1:string,arg2:string):Promise<void>;
 
 export function SetLastInstalledModVersion(arg1:string):Promise<void>;
+
+export function SetTSWAPIKeyLocation(arg1:string):Promise<void>;
 
 export function SubscribeRaw(arg1:string):Promise<void>;
 

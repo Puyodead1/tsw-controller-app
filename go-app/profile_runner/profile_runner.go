@@ -24,6 +24,7 @@ type ProfileRunnerAssignmentCall struct {
 	ControlState          controller_mgr.ControllerManager_Controller_ControlState
 	ActionSequencerAction *action_sequencer.ActionSequencerAction
 	DirectControlCommand  *DirectController_Command
+	ApiControlCommand     *ApiController_Command
 }
 
 type ProfileRunner struct {
@@ -31,6 +32,7 @@ type ProfileRunner struct {
 	ControllerManager                 *controller_mgr.ControllerManager
 	DirectController                  *DirectController
 	SyncController                    *SyncController
+	ApiController                     *ApiController
 	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
 	Settings                          ProfileRunnerSettings
 	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
@@ -59,12 +61,14 @@ func New(
 	controller_manager *controller_mgr.ControllerManager,
 	direct_controller *DirectController,
 	sync_controller *SyncController,
+	api_controller *ApiController,
 ) *ProfileRunner {
 	return &ProfileRunner{
 		ActionSequencer:   action_sequencer,
 		ControllerManager: controller_manager,
 		DirectController:  direct_controller,
 		SyncController:    sync_controller,
+		ApiController:     api_controller,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			Mutex:                  sync.RWMutex{},
@@ -81,6 +85,9 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 	}
 	if pc.DirectControlCommand != nil {
 		return pc.DirectControlCommand.ToSocketMessage().ToString()
+	}
+	if pc.ApiControlCommand != nil {
+		return pc.ApiControlCommand.ToString()
 	}
 	return ""
 }
@@ -122,7 +129,7 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 	action *ProfileRunnerAssignmentCall,
 ) error {
 	if action != nil {
-		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand)
+		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand, "api_control_action", action.ApiControlCommand)
 	}
 	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList.Get(control_name)
 	if !has_previous_control_call {
@@ -143,14 +150,17 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 		ControlState:          control_state_at_call,
 		ActionSequencerAction: nil,
 		DirectControlCommand:  nil,
+		ApiControlCommand:     nil,
 	}
 	if action != nil {
 		assignment_call.ActionSequencerAction = action.ActionSequencerAction
 		assignment_call.DirectControlCommand = action.DirectControlCommand
+		assignment_call.ApiControlCommand = action.ApiControlCommand
 	} else {
 		/* should always be available - None action should only be set as none for deactivation calls */
 		assignment_call.ActionSequencerAction = (*previous_control_assignments_call_list)[assignment_index].ActionSequencerAction
 		assignment_call.DirectControlCommand = (*previous_control_assignments_call_list)[assignment_index].DirectControlCommand
+		assignment_call.ApiControlCommand = (*previous_control_assignments_call_list)[assignment_index].ApiControlCommand
 	}
 	(*previous_control_assignments_call_list)[assignment_index] = assignment_call
 
@@ -161,6 +171,9 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 		} else if action.DirectControlCommand != nil {
 			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
 			chan_utils.SendTimeout(p.DirectController.ControlChannel, time.Second, *action.DirectControlCommand)
+		} else if action.ApiControlCommand != nil {
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending api control command", "command", action.ApiControlCommand)
+			chan_utils.SendTimeout(p.ApiController.ControlChannel, time.Second, *action.ApiControlCommand)
 		}
 	}
 	return nil
@@ -195,6 +208,7 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 			ControlState:          control_state,
 			ActionSequencerAction: &sequencer_action,
 			DirectControlCommand:  nil,
+			ApiControlCommand:     nil,
 		}
 	}
 	if action.DirectControl != nil {
@@ -212,10 +226,22 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 		return &ProfileRunnerAssignmentCall{
 			ControlState:          control_state,
 			ActionSequencerAction: nil,
+			ApiControlCommand:     nil,
 			DirectControlCommand: &DirectController_Command{
 				Controls:   action.DirectControl.Controls,
 				InputValue: action.DirectControl.Value,
 				Flags:      flags,
+			},
+		}
+	}
+	if action.ApiControl != nil {
+		return &ProfileRunnerAssignmentCall{
+			ControlState:          control_state,
+			ActionSequencerAction: nil,
+			DirectControlCommand:  nil,
+			ApiControlCommand: &ApiController_Command{
+				Controls:   action.ApiControl.Controls,
+				InputValue: action.ApiControl.ApiValue,
 			},
 		}
 	}
@@ -447,6 +473,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 									WaitTime:  previous_assignment_call.ActionSequencerAction.WaitTime,
 									Release:   true,
 								},
+								ApiControlCommand:    nil,
 								DirectControlCommand: nil,
 							})
 						}
@@ -460,10 +487,23 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
 							ControlState:          change_event.ControlState,
 							ActionSequencerAction: nil,
+							ApiControlCommand:     nil,
 							DirectControlCommand: &DirectController_Command{
 								Controls:   control_assignment_item.DirectControl.Controls,
 								InputValue: output_value,
 								Flags:      flags,
+							},
+						})
+					}
+					if control_assignment_item.ApiControl != nil {
+						output_value := control_assignment_item.ApiControl.InputValue.CalculateOutputValue(change_event.Control.State.NormalizedValues.Value)
+						p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
+							ControlState:          change_event.ControlState,
+							ActionSequencerAction: nil,
+							DirectControlCommand:  nil,
+							ApiControlCommand: &ApiController_Command{
+								Controls:   control_assignment_item.ApiControl.Controls,
+								InputValue: output_value,
 							},
 						})
 					}

@@ -23,6 +23,7 @@ import (
 	"tsw_controller_app/profile_runner"
 	"tsw_controller_app/sdl_mgr"
 	"tsw_controller_app/string_utils"
+	"tsw_controller_app/tswapi"
 
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -89,6 +90,7 @@ type App struct {
 	socket_connection  *profile_runner.SocketConnection
 	direct_controller  *profile_runner.DirectController
 	sync_controller    *profile_runner.SyncController
+	api_controller     *profile_runner.ApiController
 	profile_runner     *profile_runner.ProfileRunner
 
 	raw_subscriber *AppRawSubscriber
@@ -103,12 +105,24 @@ func NewApp(
 	controller_manager := controller_mgr.New(sdl_manager)
 	action_sequencer := action_sequencer.New()
 	socket_connection := profile_runner.NewSocketConnection()
+	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+		BaseURL: "http://localhost:31270",
+	})
+	api_controller := profile_runner.NewAPIController(tswapi)
 	direct_controller := profile_runner.NewDirectController(socket_connection)
 	sync_controller := profile_runner.NewSyncController(socket_connection)
 
+	program_config := config.LoadProgramConfigFromFile(filepath.Join(appconfig.GlobalConfigDir, "program.json"))
+	if program_config.TSWAPIKeyLocation == "" {
+		program_config.TSWAPIKeyLocation = program_config.AutoDetectTSWAPIKeyLocation()
+	}
+	if program_config.TSWAPIKeyLocation != "" {
+		tswapi.LoadAPIKey(program_config.TSWAPIKeyLocation)
+	}
+
 	return &App{
 		config:             appconfig,
-		program_config:     config.LoadProgramConfigFromFile(filepath.Join(appconfig.GlobalConfigDir, "program.json")),
+		program_config:     program_config,
 		config_loader:      config_loader.New(),
 		sdl_manager:        sdl_manager,
 		controller_manager: controller_manager,
@@ -116,11 +130,13 @@ func NewApp(
 		socket_connection:  socket_connection,
 		direct_controller:  direct_controller,
 		sync_controller:    sync_controller,
+		api_controller:     api_controller,
 		profile_runner: profile_runner.New(
 			action_sequencer,
 			controller_manager,
 			direct_controller,
 			sync_controller,
+			api_controller,
 		),
 	}
 }
@@ -166,6 +182,12 @@ func (a *App) startup(ctx context.Context) {
 
 	go func() {
 		cancel := a.direct_controller.Run(ctx)
+		defer cancel()
+		<-ctx.Done()
+	}()
+
+	go func() {
+		cancel := a.api_controller.Run(ctx)
 		defer cancel()
 		<-ctx.Done()
 	}()
@@ -217,6 +239,16 @@ func (a *App) GetLastInstalledModVersion() string {
 
 func (a *App) SetLastInstalledModVersion(version string) {
 	a.program_config.LastInstalledModVersion = version
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
+}
+
+func (a *App) GetTSWAPIKeyLocation() string {
+	return a.program_config.TSWAPIKeyLocation
+}
+
+func (a *App) SetTSWAPIKeyLocation(location string) {
+	a.program_config.TSWAPIKeyLocation = location
+	a.api_controller.API.LoadAPIKey(location)
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 

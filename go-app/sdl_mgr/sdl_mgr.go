@@ -99,6 +99,11 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 	go func() {
 		/* check for done */
 		for {
+			/* stop if context has been cancelled */
+			if ctx_with_cancel.Err() != nil {
+				return
+			}
+
 			sdl.Do(func() {
 				/* stop if context has been cancelled */
 				if ctx_with_cancel.Err() != nil {

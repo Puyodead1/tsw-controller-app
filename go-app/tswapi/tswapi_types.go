@@ -1,4 +1,4 @@
-package tswconnector
+package tswapi
 
 type TSWAPI_ErrorResponse struct {
 	ErrorCode    string `json:"errorCode"`

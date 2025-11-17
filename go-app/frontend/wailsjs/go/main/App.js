@@ -42,6 +42,10 @@ export function GetSyncControlState() {
   return window['go']['main']['App']['GetSyncControlState']();
 }
 
+export function GetTSWAPIKeyLocation() {
+  return window['go']['main']['App']['GetTSWAPIKeyLocation']();
+}
+
 export function GetVersion() {
   return window['go']['main']['App']['GetVersion']();
 }
@@ -104,6 +108,10 @@ export function SelectProfile(arg1, arg2) {
 
 export function SetLastInstalledModVersion(arg1) {
   return window['go']['main']['App']['SetLastInstalledModVersion'](arg1);
+}
+
+export function SetTSWAPIKeyLocation(arg1) {
+  return window['go']['main']['App']['SetTSWAPIKeyLocation'](arg1);
 }
 
 export function SubscribeRaw(arg1) {

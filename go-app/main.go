@@ -51,7 +51,7 @@ func run() {
 	err = wails.Run(&options.App{
 		Title:  "TSW Controller Utility",
 		Width:  600,
-		Height: 400,
+		Height: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

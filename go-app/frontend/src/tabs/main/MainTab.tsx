@@ -221,6 +221,19 @@ export const MainTab = () => {
         )}
       <div role="alert" className="alert">
         <span>
+          <strong>Mod Installation Notice</strong>
+          <br />
+          The mod is not required to install but recommended for full
+          compatibility. Without the mod you will only be able not be able to
+          use the "direct_control" or "sync_control" control modes. You will
+          have access to the "api_control" control mode however as long as the
+          TSW API key is configured properly (see Settings).
+        </span>
+      </div>
+      <div role="alert" className="alert">
+        <span>
+          <strong>Controller Setup Notice</strong>
+          <br />
           For this app to correctly work you will need to make sure Train Sim
           World is not able to process the controller input. You can achieve
           this by configuring your controller in using{" "}
