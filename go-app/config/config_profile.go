@@ -84,7 +84,7 @@ type Config_Controller_Profile_Control_Assignment_Toggle struct {
 	ActionDeactivate Config_Controller_Profile_Control_Assignment_Action `json:"action_deactivate" validate:"required"`
 }
 
-type Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue struct {
+type Config_Controller_Profile_Control_Assignment_DirectLike_InputValue struct {
 	Min  float64  `json:"min"`
 	Max  float64  `json:"max"`
 	Step *float64 `json:"step,omitempty"`
@@ -100,17 +100,24 @@ type Config_Controller_Profile_Control_Assignment_DirectControl struct {
 	/* will hold the control in changing */
 	Hold *bool `json:"hold"`
 	/* whether to apply raw or normalized values */
-	UseNormalized *bool                                                                       `json:"use_normalized,omitempty"`
-	InputValue    Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue `json:"input_value" validate:"required"`
+	UseNormalized *bool                                                              `json:"use_normalized,omitempty"`
+	InputValue    Config_Controller_Profile_Control_Assignment_DirectLike_InputValue `json:"input_value" validate:"required"`
+}
+
+type Config_Controller_Profile_Control_Assignment_ApiControl struct {
+	Type string `json:"type" validate:"required,eq=api_control"`
+	/* the HID control component as per the UE4SS API / HTTP API - they are the same */
+	Controls   string                                                             `json:"controls" validate:"required"`
+	InputValue Config_Controller_Profile_Control_Assignment_DirectLike_InputValue `json:"input_value" validate:"required"`
 }
 
 type Config_Controller_Profile_Control_Assignment_SyncControl struct {
 	Type string `json:"type" validate:"required,eq=sync_control"`
 	/** this is the VHID Identifier Name - differs from the direct control name */
-	Identifier     string                                                                      `json:"identifier" validate:"required"`
-	InputValue     Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue `json:"input_value" validate:"required"`
-	ActionIncrease Config_Controller_Profile_Control_Assignment_Action_Keys                    `json:"action_increase" validate:"required"`
-	ActionDecrease Config_Controller_Profile_Control_Assignment_Action_Keys                    `json:"action_decrease" validate:"required"`
+	Identifier     string                                                             `json:"identifier" validate:"required"`
+	InputValue     Config_Controller_Profile_Control_Assignment_DirectLike_InputValue `json:"input_value" validate:"required"`
+	ActionIncrease Config_Controller_Profile_Control_Assignment_Action_Keys           `json:"action_increase" validate:"required"`
+	ActionDecrease Config_Controller_Profile_Control_Assignment_Action_Keys           `json:"action_decrease" validate:"required"`
 }
 
 type Config_Controller_Profile_Control_Assignment struct {
@@ -119,6 +126,7 @@ type Config_Controller_Profile_Control_Assignment struct {
 	Toggle        *Config_Controller_Profile_Control_Assignment_Toggle        `json:"-"`
 	DirectControl *Config_Controller_Profile_Control_Assignment_DirectControl `json:"-"`
 	SyncControl   *Config_Controller_Profile_Control_Assignment_SyncControl   `json:"-"`
+	ApiControl    *Config_Controller_Profile_Control_Assignment_ApiControl    `json:"-"`
 	Conditions    *[]Config_Controller_Profile_Control_Assignment_Condition   `json:"conditions,omitempty"`
 }
 
@@ -235,6 +243,16 @@ func (c *Config_Controller_Profile_Control_Assignment) UnmarshalJSON(data []byte
 		}
 		c.Toggle = &toggle
 		return nil
+	case "api_control":
+		var ac Config_Controller_Profile_Control_Assignment_ApiControl
+		if err := json.Unmarshal(data, &ac); err != nil {
+			return err
+		}
+		if err := v.Struct(ac); err != nil {
+			return err
+		}
+		c.ApiControl = &ac
+		return nil
 	case "direct_control":
 		var dc Config_Controller_Profile_Control_Assignment_DirectControl
 		if err := json.Unmarshal(data, &dc); err != nil {
@@ -343,7 +361,7 @@ func (c *Config_Controller_Profile_Control_Assignment_Linear) CalculateNeutraliz
 	return value
 }
 
-func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue) GetFreeRangeZones() []FreeRangeZone {
+func (c *Config_Controller_Profile_Control_Assignment_DirectLike_InputValue) GetFreeRangeZones() []FreeRangeZone {
 	var zones []FreeRangeZone
 	if c.Steps == nil {
 		return zones
@@ -382,7 +400,7 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputV
 Returns the actual defined steps - excluding free range zones.
 Free range zones should be handled separately
 */
-func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue) GetNormalSteps() *[]float64 {
+func (c *Config_Controller_Profile_Control_Assignment_DirectLike_InputValue) GetNormalSteps() *[]float64 {
 	if c.Steps == nil {
 		return nil
 	}
@@ -402,7 +420,7 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputV
 The incoming value here can only be [-1, 1]
 This calculates the actual value which would be sent to the game
 */
-func (c *Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue) CalculateOutputValue(value float64) float64 {
+func (c *Config_Controller_Profile_Control_Assignment_DirectLike_InputValue) CalculateOutputValue(value float64) float64 {
 	input_value := value
 	if c.Invert != nil && *c.Invert {
 		if value < 0.0 {
