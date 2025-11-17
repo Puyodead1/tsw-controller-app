@@ -73,7 +73,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 				return
 			case msg := <-incoming_channel:
 				/* skip message if not sync_control message */
-				if msg.EventName == "sync_control" {
+				if msg.EventName != "sync_control" {
 					continue
 				}
 
