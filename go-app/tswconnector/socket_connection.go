@@ -1,0 +1,113 @@
+package tswconnector
+
+import (
+	"context"
+	"net/http"
+	"time"
+	"tsw_controller_app/chan_utils"
+	"tsw_controller_app/logger"
+	"tsw_controller_app/map_utils"
+	"tsw_controller_app/pubsub_utils"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+)
+
+type SocketConnection struct {
+	WsUpgrader       *websocket.Upgrader
+	Server           *http.Server
+	OutgoingChannels *map_utils.LockMap[uuid.UUID, chan TSWConnector_Message]
+	Subscribers      *pubsub_utils.PubSubSlice[TSWConnector_Message]
+}
+
+var _ TSWConnector = (*SocketConnection)(nil)
+
+func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := c.WsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logger.Logger.Error("[SocketConnection::WebsocketHandler] websocket upgrade error", "error", err.Error())
+		return
+	}
+	defer conn.Close()
+
+	conn_id := uuid.New()
+	outgoing_channel := make(chan TSWConnector_Message)
+	c.OutgoingChannels.Set(conn_id, outgoing_channel)
+	defer close(outgoing_channel)
+	defer c.OutgoingChannels.Delete(conn_id)
+
+	ctx_with_cancel, cancel_sender := context.WithCancel(r.Context())
+	go func() {
+		for {
+			select {
+			case <-ctx_with_cancel.Done():
+				return
+			case message := <-outgoing_channel:
+				err := conn.WriteMessage(websocket.TextMessage, []byte(message.ToString()))
+				if err != nil {
+					cancel_sender()
+					return
+				}
+			}
+		}
+	}()
+
+	for {
+		msg_type, msg, err := conn.ReadMessage()
+		if err != nil {
+			logger.Logger.Error("[ProfileRunner::WebsocketHandler] message read error", "error", err)
+			return
+		}
+
+		if msg_type == websocket.CloseMessage {
+			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received close message from client")
+			break
+		}
+
+		if msg_type == websocket.TextMessage {
+			socket_message := TSWConnector_Message_FromString(string(msg))
+			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received message from client", "message", socket_message)
+			c.Subscribers.EmitTimeout(time.Second, socket_message)
+		} else {
+			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received unsupported message %d", "message_type", msg_type)
+		}
+	}
+
+	cancel_sender()
+}
+
+func (c *SocketConnection) Subscribe() (chan TSWConnector_Message, func()) {
+	return c.Subscribers.Subscribe()
+}
+
+func (c *SocketConnection) Stop() error {
+	return c.Server.Close()
+}
+
+func (c *SocketConnection) Start() error {
+	return c.Server.ListenAndServe()
+}
+
+func (c *SocketConnection) Send(m TSWConnector_Message) error {
+	c.OutgoingChannels.ForEach(func(channel chan TSWConnector_Message, key uuid.UUID) bool {
+		chan_utils.SendTimeout(channel, time.Second, m)
+		return true
+	})
+	return nil
+}
+
+func NewSocketConnection() *SocketConnection {
+	mux := http.NewServeMux()
+	server := &http.Server{
+		Addr:    ":63241",
+		Handler: mux,
+	}
+	controller := SocketConnection{
+		WsUpgrader:       &websocket.Upgrader{},
+		Server:           server,
+		OutgoingChannels: map_utils.NewLockMap[uuid.UUID, chan TSWConnector_Message](),
+		Subscribers:      pubsub_utils.NewPubSubSlice[TSWConnector_Message](),
+	}
+	mux.HandleFunc("/", controller.WebsocketHandler)
+	return &controller
+}
