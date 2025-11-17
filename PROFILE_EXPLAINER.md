@@ -15,6 +15,7 @@ All assignments conform to a top-level enum `ControllerProfileControlAssignment`
 - `Linear`
 - `DirectControl`
 - `SyncControl`
+- `ApiControl`
 
 Each assignment type has a specific use case and behavior, described below.
 
@@ -110,6 +111,25 @@ A safer alternative to `DirectControl` for unstable locos.
 - **Reads current in-game state** and uses **keypresses** to reach desired state.
 - Ideal for **syncing with controls that don’t respond well to direct manipulation**.
 
+### 🎚️ ApiControl
+Maps an analog controller input to a continuous value in-game using the HTTP API.
+
+```json
+{
+  "type": "api_control",
+  "controls": "Throttle1",
+  "input_value": {
+    "min": 0.0,
+    "max": 1.0,
+    "invert": true
+  }
+}
+```
+
+- **Directly updates** a game control based on axis input using the HTTP API. May result in slight overheada compared to the full direct control mode, but does not require additional a the mod to be installed.
+- Used for **continuous analog mappings**.
+- Supports `step` or `steps` to quantize values.
+
 ---
 
 ## ⚙️ Action Types
@@ -139,6 +159,15 @@ Each assignment triggers an action when activated (and optionally when deactivat
 - Sends a value directly to a UE4SS control.
 - Can be held or pulsed.
 - Can be defined as a relative value (instead of sending the absolute value)
+
+### 🎛️ Api Control Action
+```json
+{
+  "controls": "Throttle1",
+  "api_value": 0.5
+}
+```
+- Sends a value directly to a control using the HTTP API.
 
 ---
 
