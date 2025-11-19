@@ -30,6 +30,10 @@ export function GetLatestReleaseVersion() {
   return window['go']['main']['App']['GetLatestReleaseVersion']();
 }
 
+export function GetPreferredControlMode() {
+  return window['go']['main']['App']['GetPreferredControlMode']();
+}
+
 export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
@@ -108,6 +112,10 @@ export function SelectProfile(arg1, arg2) {
 
 export function SetLastInstalledModVersion(arg1) {
   return window['go']['main']['App']['SetLastInstalledModVersion'](arg1);
+}
+
+export function SetPreferredControlMode(arg1) {
+  return window['go']['main']['App']['SetPreferredControlMode'](arg1);
 }
 
 export function SetTSWAPIKeyLocation(arg1) {

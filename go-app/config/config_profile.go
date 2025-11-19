@@ -14,7 +14,8 @@ type PreferredControlMode = string
 
 const (
 	PreferredControlMode_DirectControl PreferredControlMode = "direct_control"
-	PreferredControlMode_SyncControl   PreferredControlMode = "Sync_control"
+	PreferredControlMode_SyncControl   PreferredControlMode = "sync_control"
+	PreferredControlMode_ApiControl    PreferredControlMode = "api_control"
 )
 
 type FreeRangeZone struct {

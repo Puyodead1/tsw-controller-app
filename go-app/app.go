@@ -121,12 +121,25 @@ func NewApp(
 	api_controller := profile_runner.NewAPIController(tswapi)
 	direct_controller := profile_runner.NewDirectController(socket_connection)
 	sync_controller := profile_runner.NewSyncController(socket_connection)
+	profile_runner := profile_runner.New(
+		action_sequencer,
+		controller_manager,
+		direct_controller,
+		sync_controller,
+		api_controller,
+	)
 
 	if program_config.TSWAPIKeyLocation != "" {
 		tswapi.LoadAPIKey(program_config.TSWAPIKeyLocation)
 		cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
 			TSWAPISubscriptionIDStart: program_config.TSWAPISubscriptionIDStart,
 		})
+	}
+
+	if program_config.PreferredControlMode == config.PreferredControlMode_DirectControl ||
+		program_config.PreferredControlMode == config.PreferredControlMode_SyncControl ||
+		program_config.PreferredControlMode == config.PreferredControlMode_ApiControl {
+		profile_runner.Settings.SetPreferredControlMode(program_config.PreferredControlMode)
 	}
 
 	return &App{
@@ -142,13 +155,7 @@ func NewApp(
 		direct_controller:  direct_controller,
 		sync_controller:    sync_controller,
 		api_controller:     api_controller,
-		profile_runner: profile_runner.New(
-			action_sequencer,
-			controller_manager,
-			direct_controller,
-			sync_controller,
-			api_controller,
-		),
+		profile_runner:     profile_runner,
 	}
 }
 
@@ -264,6 +271,16 @@ func (a *App) GetTSWAPIKeyLocation() string {
 func (a *App) SetTSWAPIKeyLocation(location string) {
 	a.program_config.TSWAPIKeyLocation = location
 	a.tswapi.LoadAPIKey(location)
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
+}
+
+func (a *App) GetPreferredControlMode() string {
+	return a.program_config.PreferredControlMode
+}
+
+func (a *App) SetPreferredControlMode(mode config.PreferredControlMode) {
+	a.program_config.PreferredControlMode = mode
+	a.profile_runner.Settings.SetPreferredControlMode(mode)
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 

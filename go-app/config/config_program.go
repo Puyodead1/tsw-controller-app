@@ -8,11 +8,13 @@ import (
 )
 
 const DEFAULT_TSWAPI_SUBSCRIPTION_ID_START = 83211
+const DEFAULT_PREFERRED_CONTROL_MODE = PreferredControlMode_DirectControl
 
 type Config_ProgramConfig struct {
-	LastInstalledModVersion   string `json:"last_instalaled_mod_version"`
-	TSWAPIKeyLocation         string `json:"tsw_api_key_location,omitempty"`
-	TSWAPISubscriptionIDStart int    `json:"tsw_api_subscription_id_start,omitempty"`
+	LastInstalledModVersion   string               `json:"last_instalaled_mod_version,omitempty"`
+	TSWAPIKeyLocation         string               `json:"tsw_api_key_location,omitempty"`
+	TSWAPISubscriptionIDStart int                  `json:"tsw_api_subscription_id_start,omitempty"`
+	PreferredControlMode      PreferredControlMode `json:"preferred_control_mode,omitempty"`
 }
 
 func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
@@ -23,6 +25,7 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 			LastInstalledModVersion:   "",
 			TSWAPIKeyLocation:         "",
 			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
+			PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
 		}
 	}
 
@@ -30,6 +33,7 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 		LastInstalledModVersion:   "",
 		TSWAPIKeyLocation:         "",
 		TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
+		PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
 	}
 	if err := json.Unmarshal(file_bytes, &pc); err != nil {
 		logger.Logger.Error("[Config_ProgramConfig] failed to parse json", "filepath", filepath)
@@ -37,6 +41,7 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 			LastInstalledModVersion:   "",
 			TSWAPIKeyLocation:         "",
 			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
+			PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
 		}
 	}
 

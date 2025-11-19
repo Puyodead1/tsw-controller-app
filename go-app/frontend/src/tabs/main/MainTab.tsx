@@ -161,21 +161,24 @@ export const MainTab = () => {
 
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
-      {controllers?.map((c) => (
-        <div key={c.GUID}>
-          <MainTabControllerProfileSelector
-            controller={c}
-            profiles={profiles ?? []}
-            form={form}
-            onBrowseConfiguration={handleBrowseConfig}
-            onCreateProfile={handleCreateProfile}
-            onReloadConfiguration={handleReloadConfiguration}
-            onSaveControllerProfileForSharing={handleSaveProfileForSharing}
-            onOpenProfileForController={handleOpenProfile}
-            onDeleteProfileForController={handleDeleteProfile}
-          />
-        </div>
-      ))}
+      <div>
+        {controllers?.map((c) => (
+          <div key={c.GUID}>
+            <MainTabControllerProfileSelector
+              controller={c}
+              profiles={profiles ?? []}
+              form={form}
+              onBrowseConfiguration={handleBrowseConfig}
+              onCreateProfile={handleCreateProfile}
+              onReloadConfiguration={handleReloadConfiguration}
+              onSaveControllerProfileForSharing={handleSaveProfileForSharing}
+              onOpenProfileForController={handleOpenProfile}
+              onDeleteProfileForController={handleDeleteProfile}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="divider"></div>
       {/* steam://controllerconfig/2967990/3576092503 */}
       <div className="flex gap-2">
         <button className="btn btn-sm grow" onClick={handleInstall}>
@@ -237,7 +240,7 @@ export const MainTab = () => {
           <br />
           For this app to correctly work you will need to make sure Train Sim
           World is not able to process the controller input. You can achieve
-          this by configuring your controller using in Steam using {" "}
+          this by configuring your controller using in Steam using{" "}
           <button
             className="inline link"
             onClick={() =>
@@ -248,8 +251,8 @@ export const MainTab = () => {
           >
             Steam Input
           </button>{" "}
-          and applying the "Disabled Controller" layout preset for the
-          game (see "Steam Input" link). Alternatively, you can also use a software like{" "}
+          and applying the "Disabled Controller" layout preset for the game (see
+          "Steam Input" link). Alternatively, you can also use a software like{" "}
           <button
             className="inline link"
             onClick={() =>

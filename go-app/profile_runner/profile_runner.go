@@ -56,6 +56,12 @@ func (s *ProfileRunnerSettings) GetPreferredControlMode() config.PreferredContro
 	return s.PreferredControlMode
 }
 
+func (s *ProfileRunnerSettings) SetPreferredControlMode(mode config.PreferredControlMode) {
+	s.Mutex.Lock()
+	s.PreferredControlMode = mode
+	defer s.Mutex.Unlock()
+}
+
 func New(
 	action_sequencer *action_sequencer.ActionSequencer,
 	controller_manager *controller_mgr.ControllerManager,
@@ -263,9 +269,13 @@ func (p *ProfileRunner) GetAssignments(
 	/* filter out conditional assignments */
 	has_direct_control := false
 	has_sync_control := false
-	var assignments_without_sync_control []config.Config_Controller_Profile_Control_Assignment
-	var assignments_without_direct_control []config.Config_Controller_Profile_Control_Assignment
-	var assignments_without_any_control []config.Config_Controller_Profile_Control_Assignment
+	has_api_control := false
+	var non_control_asssignments []config.Config_Controller_Profile_Control_Assignment
+	assignments_by_control_mode := map[string][]config.Config_Controller_Profile_Control_Assignment{
+		"direct_control": []config.Config_Controller_Profile_Control_Assignment{},
+		"sync_control":   []config.Config_Controller_Profile_Control_Assignment{},
+		"api_control":    []config.Config_Controller_Profile_Control_Assignment{},
+	}
 
 check_assignments_loop:
 	for _, assignment := range assignments {
@@ -304,26 +314,31 @@ check_assignments_loop:
 
 		if assignment.DirectControl != nil {
 			has_direct_control = true
-			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+			assignments_by_control_mode["direct_control"] = append(assignments_by_control_mode["direct_control"], assignment)
 		} else if assignment.SyncControl != nil {
 			has_sync_control = true
-			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+			assignments_by_control_mode["sync_control"] = append(assignments_by_control_mode["sync_control"], assignment)
+		} else if assignment.ApiControl != nil {
+			has_api_control = true
+			assignments_by_control_mode["api_control"] = append(assignments_by_control_mode["api_control"], assignment)
 		} else {
-			assignments_without_any_control = append(assignments_without_any_control, assignment)
-			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
-			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+			non_control_asssignments = append(non_control_asssignments, assignment)
 		}
 	}
 
 	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_DirectControl && has_direct_control {
-		return assignments_without_sync_control
+		return append(assignments_by_control_mode["direct_control"], non_control_asssignments...)
 	}
 
 	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_sync_control {
-		return assignments_without_direct_control
+		return append(assignments_by_control_mode["sync_control"], non_control_asssignments...)
 	}
 
-	return assignments_without_any_control
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_api_control {
+		return append(assignments_by_control_mode["api_control"], non_control_asssignments...)
+	}
+
+	return non_control_asssignments
 }
 
 func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
