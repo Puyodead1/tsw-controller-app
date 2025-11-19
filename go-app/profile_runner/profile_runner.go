@@ -334,7 +334,7 @@ check_assignments_loop:
 		return append(assignments_by_control_mode["sync_control"], non_control_asssignments...)
 	}
 
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_api_control {
+	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_ApiControl && has_api_control {
 		return append(assignments_by_control_mode["api_control"], non_control_asssignments...)
 	}
 
@@ -542,7 +542,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				return
 			case sync_control_state := <-channel:
 				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
-				if sync_control_state.SourceEvent != nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+				if p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
 					continue
 				}
 
