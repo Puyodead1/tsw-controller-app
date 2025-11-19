@@ -55,6 +55,7 @@ func (cd *CabDebugger) updateControlStateFromAPI() error {
 			}
 		}
 
+		cd.State.Controls.Clear()
 		cd.State.DrivableActorName = result.ObjectClass
 		for property_name, control := range result.Controls {
 			control_state, _ := cd.State.Controls.Get(property_name)
@@ -81,7 +82,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 	childctx := context.WithoutCancel(ctx)
 	go func() {
 		socket_channel, unsubscribe_socket_channel := cd.SocketConnection.Subscribe()
-		ticker := time.NewTicker(200 * time.Millisecond)
+		ticker := time.NewTicker(333 * time.Millisecond)
 		for {
 			select {
 			case msg := <-socket_channel:

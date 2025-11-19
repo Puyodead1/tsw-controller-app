@@ -73,11 +73,11 @@ export const CabDebuggerTab = () => {
               <div className="grid grid-cols-2">
                 <div>
                   <p className="text-slate-400">Current Value</p>
-                  <p>{controlState.CurrentValue}</p>
+                  <p>{controlState.CurrentValue.toFixed(4)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400">Current Normalized Value</p>
-                  <p>{controlState.CurrentNormalizedValue}</p>
+                  <p>{controlState.CurrentNormalizedValue.toFixed(4)}</p>
                 </div>
               </div>
             </div>
