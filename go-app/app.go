@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/cabdebugger"
 	"tsw_controller_app/config"
 	"tsw_controller_app/config_loader"
 	"tsw_controller_app/controller_mgr"
@@ -24,6 +25,7 @@ import (
 	"tsw_controller_app/sdl_mgr"
 	"tsw_controller_app/string_utils"
 	"tsw_controller_app/tswapi"
+	"tsw_controller_app/tswconnector"
 
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -87,7 +89,9 @@ type App struct {
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
-	socket_connection  *profile_runner.SocketConnection
+	socket_connection  *tswconnector.SocketConnection
+	tswapi             *tswapi.TSWAPI
+	cab_debugger       *cabdebugger.CabDebugger
 	direct_controller  *profile_runner.DirectController
 	sync_controller    *profile_runner.SyncController
 	api_controller     *profile_runner.ApiController
@@ -102,22 +106,27 @@ func NewApp(
 	sdl_manager := sdl_mgr.New()
 	sdl_manager.PanicInit()
 
-	controller_manager := controller_mgr.New(sdl_manager)
-	action_sequencer := action_sequencer.New()
-	socket_connection := profile_runner.NewSocketConnection()
-	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
-		BaseURL: "http://localhost:31270",
-	})
-	api_controller := profile_runner.NewAPIController(tswapi)
-	direct_controller := profile_runner.NewDirectController(socket_connection)
-	sync_controller := profile_runner.NewSyncController(socket_connection)
-
 	program_config := config.LoadProgramConfigFromFile(filepath.Join(appconfig.GlobalConfigDir, "program.json"))
 	if program_config.TSWAPIKeyLocation == "" {
 		program_config.TSWAPIKeyLocation = program_config.AutoDetectTSWAPIKeyLocation()
 	}
+
+	controller_manager := controller_mgr.New(sdl_manager)
+	action_sequencer := action_sequencer.New()
+	socket_connection := tswconnector.NewSocketConnection()
+	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+		BaseURL: "http://localhost:31270",
+	})
+	cab_debugger := cabdebugger.NewCabDebugger(tswapi, socket_connection, cabdebugger.CabDebugger_Config{})
+	api_controller := profile_runner.NewAPIController(tswapi)
+	direct_controller := profile_runner.NewDirectController(socket_connection)
+	sync_controller := profile_runner.NewSyncController(socket_connection)
+
 	if program_config.TSWAPIKeyLocation != "" {
 		tswapi.LoadAPIKey(program_config.TSWAPIKeyLocation)
+		cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
+			TSWAPISubscriptionIDStart: program_config.TSWAPISubscriptionIDStart,
+		})
 	}
 
 	return &App{
@@ -128,6 +137,8 @@ func NewApp(
 		controller_manager: controller_manager,
 		action_sequencer:   action_sequencer,
 		socket_connection:  socket_connection,
+		tswapi:             tswapi,
+		cab_debugger:       cab_debugger,
 		direct_controller:  direct_controller,
 		sync_controller:    sync_controller,
 		api_controller:     api_controller,
@@ -160,6 +171,10 @@ func (a *App) startup(ctx context.Context) {
 
 	go func() {
 		a.socket_connection.Start()
+	}()
+
+	go func() {
+		a.cab_debugger.Start(a.ctx)
 	}()
 
 	go func() {
@@ -248,7 +263,7 @@ func (a *App) GetTSWAPIKeyLocation() string {
 
 func (a *App) SetTSWAPIKeyLocation(location string) {
 	a.program_config.TSWAPIKeyLocation = location
-	a.api_controller.API.LoadAPIKey(location)
+	a.tswapi.LoadAPIKey(location)
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
@@ -387,24 +402,27 @@ func (a *App) GetControllerConfiguration(guid controller_mgr.JoystickGUIDString)
 	return nil
 }
 
-func (a *App) GetSyncControlState() []Interop_SyncController_ControlState {
-	control_states := []Interop_SyncController_ControlState{}
-	a.sync_controller.ControlState.ForEach(func(value profile_runner.SyncController_ControlState, key string) bool {
-		control_states = append(control_states, Interop_SyncController_ControlState{
-			Identifier:             value.Identifier,
-			PropertyName:           value.PropertyName,
-			CurrentValue:           value.CurrentValue,
-			CurrentNormalizedValue: value.CurrentNormalizedValue,
-			TargetValue:            value.TargetValue,
-			Moving:                 value.Moving,
+func (a *App) GetCabControlState() (Interop_Cab_ControlState, error) {
+	control_state := Interop_Cab_ControlState{
+		Name:     a.cab_debugger.State.DrivableActorName,
+		Controls: []Interop_Cab_ControlState_Control{},
+	}
+
+	a.cab_debugger.State.Controls.ForEach(func(control cabdebugger.CabDebugger_ControlState_Control, key cabdebugger.PropertyName) bool {
+		control_state.Controls = append(control_state.Controls, Interop_Cab_ControlState_Control{
+			Identifier:             control.Identifier,
+			PropertyName:           control.PropertyName,
+			CurrentValue:           control.CurrentValue,
+			CurrentNormalizedValue: control.CurrentNormalizedValue,
 		})
 		return true
 	})
-	return control_states
+
+	return control_state, nil
 }
 
-func (a *App) ResetSyncControlState() {
-	a.sync_controller.ControlState.Clear()
+func (a *App) ResetCabControlState() {
+	a.cab_debugger.Clear()
 }
 
 // https://github.com/LiamMartens/tsw-controller-app/releases/download/v0.2.6/beta.package.zip
@@ -747,7 +765,6 @@ func (a *App) OpenConfigDirectory() error {
 	default:
 		cmd = exec.Command("xdg-open", filepath.Clean(a.config.GlobalConfigDir))
 	}
-	fmt.Printf("%#v\n", cmd)
 	if err := cmd.Start(); err != nil {
 		logger.Logger.Error("[App::OpenConfigDirectory] could not open config directory", "error", err)
 		return err

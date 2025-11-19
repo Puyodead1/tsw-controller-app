@@ -8,7 +8,7 @@ import (
 
 type TSWConnector_Message struct {
 	EventName  string
-	Properties map[string]any
+	Properties map[string]string
 }
 
 type TSWConnector interface {
@@ -22,7 +22,7 @@ func TSWConnector_Message_FromString(msg string) TSWConnector_Message {
 	parts := strings.Split(msg, ",")
 	result := TSWConnector_Message{
 		EventName:  "",
-		Properties: make(map[string]any),
+		Properties: make(map[string]string),
 	}
 
 	if len(parts) == 0 {

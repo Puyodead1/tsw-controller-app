@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"tsw_controller_app/tswconnector"
 )
 
 type DirectController_Command struct {
@@ -13,12 +14,12 @@ type DirectController_Command struct {
 }
 
 type DirectController struct {
-	SocketConnection *SocketConnection
+	SocketConnection *tswconnector.SocketConnection
 	ControlChannel   chan DirectController_Command
 }
 
-func (command *DirectController_Command) ToSocketMessage() SocketConnection_Message {
-	return SocketConnection_Message{
+func (command *DirectController_Command) ToSocketMessage() tswconnector.TSWConnector_Message {
+	return tswconnector.TSWConnector_Message{
 		EventName: "direct_control",
 		Properties: map[string]string{
 			"controls": command.Controls,
@@ -45,7 +46,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewDirectController(connection *SocketConnection) *DirectController {
+func NewDirectController(connection *tswconnector.SocketConnection) *DirectController {
 	controller := DirectController{
 		SocketConnection: connection,
 		ControlChannel:   make(chan DirectController_Command),

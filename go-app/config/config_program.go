@@ -7,9 +7,12 @@ import (
 	"tsw_controller_app/logger"
 )
 
+const DEFAULT_TSWAPI_SUBSCRIPTION_ID_START = 83211
+
 type Config_ProgramConfig struct {
-	LastInstalledModVersion string `json:"last_instalaled_mod_version"`
-	TSWAPIKeyLocation       string `json:"tsw_api_key_location"`
+	LastInstalledModVersion   string `json:"last_instalaled_mod_version"`
+	TSWAPIKeyLocation         string `json:"tsw_api_key_location,omitempty"`
+	TSWAPISubscriptionIDStart int    `json:"tsw_api_subscription_id_start,omitempty"`
 }
 
 func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
@@ -17,17 +20,23 @@ func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 	if err != nil {
 		logger.Logger.Error("[Config_ProgramConfig] could not read config file", "filepath", filepath)
 		return &Config_ProgramConfig{
-			LastInstalledModVersion: "",
-			TSWAPIKeyLocation:       "",
+			LastInstalledModVersion:   "",
+			TSWAPIKeyLocation:         "",
+			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
 		}
 	}
 
-	var pc Config_ProgramConfig
+	var pc Config_ProgramConfig = Config_ProgramConfig{
+		LastInstalledModVersion:   "",
+		TSWAPIKeyLocation:         "",
+		TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
+	}
 	if err := json.Unmarshal(file_bytes, &pc); err != nil {
 		logger.Logger.Error("[Config_ProgramConfig] failed to parse json", "filepath", filepath)
 		return &Config_ProgramConfig{
-			LastInstalledModVersion: "",
-			TSWAPIKeyLocation:       "",
+			LastInstalledModVersion:   "",
+			TSWAPIKeyLocation:         "",
+			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
 		}
 	}
 

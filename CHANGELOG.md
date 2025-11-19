@@ -3,6 +3,7 @@
 ## 1.1.0
 - Implements new "api_control" mode to utilize the API instead of the mod. This uses the same control name but sends the value using the HTTP API (may require the API key to be configured).  
 **Note** has higher overhead than the direct control mode.
+- Updates cab debuggger to utilize HTTP API if available.
 
 Example assignment:
 ```json

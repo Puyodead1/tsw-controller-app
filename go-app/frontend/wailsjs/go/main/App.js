@@ -10,6 +10,10 @@ export function DeleteProfile(arg1) {
   return window['go']['main']['App']['DeleteProfile'](arg1);
 }
 
+export function GetCabControlState() {
+  return window['go']['main']['App']['GetCabControlState']();
+}
+
 export function GetControllerConfiguration(arg1) {
   return window['go']['main']['App']['GetControllerConfiguration'](arg1);
 }
@@ -36,10 +40,6 @@ export function GetSelectedProfiles() {
 
 export function GetSharedProfiles() {
   return window['go']['main']['App']['GetSharedProfiles']();
-}
-
-export function GetSyncControlState() {
-  return window['go']['main']['App']['GetSyncControlState']();
 }
 
 export function GetTSWAPIKeyLocation() {
@@ -86,8 +86,8 @@ export function OpenProfileBuilder(arg1) {
   return window['go']['main']['App']['OpenProfileBuilder'](arg1);
 }
 
-export function ResetSyncControlState() {
-  return window['go']['main']['App']['ResetSyncControlState']();
+export function ResetCabControlState() {
+  return window['go']['main']['App']['ResetCabControlState']();
 }
 
 export function SaveCalibration(arg1) {

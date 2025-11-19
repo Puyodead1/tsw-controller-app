@@ -6,6 +6,8 @@ export function ClearProfile(arg1:string):Promise<void>;
 
 export function DeleteProfile(arg1:string):Promise<void>;
 
+export function GetCabControlState():Promise<main.Interop_Cab_ControlState>;
+
 export function GetControllerConfiguration(arg1:string):Promise<main.Interop_ControllerConfiguration>;
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
@@ -19,8 +21,6 @@ export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 export function GetSelectedProfiles():Promise<Record<string, string>>;
 
 export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
-
-export function GetSyncControlState():Promise<Array<main.Interop_SyncController_ControlState>>;
 
 export function GetTSWAPIKeyLocation():Promise<string>;
 
@@ -44,7 +44,7 @@ export function OpenNewProfileBuilder(arg1:string):Promise<void>;
 
 export function OpenProfileBuilder(arg1:string):Promise<void>;
 
-export function ResetSyncControlState():Promise<void>;
+export function ResetCabControlState():Promise<void>;
 
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
 

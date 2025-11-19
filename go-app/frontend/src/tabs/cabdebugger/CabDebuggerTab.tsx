@@ -1,38 +1,64 @@
-import { useEffect } from "react";
-import { EventsOn } from "../../../wailsjs/runtime/runtime";
-import {
-  GetSyncControlState,
-  ResetSyncControlState,
-} from "../../../wailsjs/go/main/App";
-import { events } from "../../events";
+import { useEffect, useMemo } from "react";
+import { GetCabControlState } from "../../../wailsjs/go/main/App";
 import useSWR from "swr";
+import { useForm } from "react-hook-form";
 
 export const CabDebuggerTab = () => {
-  const { data: syncControlState, mutate: refetchSyncControlState } = useSWR(
-    "sync-control-state",
-    () =>
-      GetSyncControlState().then((r) =>
-        r.sort((a, b) => a.Identifier.localeCompare(b.Identifier)),
-      ),
+  const { register, watch } = useForm<{ query: string }>({
+    defaultValues: { query: "" },
+  });
+  const { data: cabControlState, mutate: refetchCabControlState } = useSWR(
+    "cab-control-state",
+    () => GetCabControlState(),
+    { revalidateOnMount: true },
   );
 
-  const handleReset = () => {
-    ResetSyncControlState().then(() => {
-      refetchSyncControlState();
-    });
-  };
+  const query = watch("query");
+  const sortedControls = useMemo(
+    () =>
+      cabControlState?.Controls.filter((c) =>
+        [c.Identifier, c.PropertyName].some((t) =>
+          t.toLowerCase().includes(query.toLowerCase()),
+        ),
+      ).sort((a, b) =>
+        `${a.PropertyName}_${a.Identifier}`.localeCompare(
+          `${b.PropertyName}_${b.Identifier}`,
+        ),
+      ),
+    [cabControlState?.Controls, query],
+  );
 
   useEffect(() => {
-    return EventsOn(events.synccontrolstate, () => {
-      refetchSyncControlState();
-    });
-  }, []);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    interval = setInterval(() => {
+      refetchCabControlState();
+    }, 100);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [refetchCabControlState]);
 
   return (
     <div>
+      {!cabControlState?.Controls?.length && (
+        <div className="py-12 text-center">
+          <p className="text-base-content/50 text-sm">
+            Waiting for cab state...
+          </p>
+        </div>
+      )}
+      {!!cabControlState?.Controls?.length && (
+        <div className="p-4">
+          <input
+            className="input w-full"
+            placeholder="Search for control(s)"
+            {...register("query")}
+          />
+        </div>
+      )}
       <ul className="list bg-base-100 rounded-box shadow-md">
-        {syncControlState?.map((controlState) => (
-          <li key={controlState.Identifier} className="list-row">
+        {sortedControls?.map((controlState) => (
+          <li key={controlState.PropertyName} className="list-row">
             <div className="flex flex-col gap-2">
               <div className="grid grid-cols-2">
                 <div>
@@ -58,13 +84,6 @@ export const CabDebuggerTab = () => {
           </li>
         ))}
       </ul>
-      {!!syncControlState?.length && (
-        <div className="sticky bottom-0 left-0 right-0 py-2 bg-[var(--root-bg,var(--color-base-100))] border-t border-t-base-100">
-          <button className="btn btn-primary btn-xs" onClick={handleReset}>
-            Reset State
-          </button>
-        </div>
-      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import {
 import { useEffect } from "react";
 import { alert } from "../../utils/alert";
 import debounce from "just-debounce";
+import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 
 type FormValues = {
   tswApiKeyLocation: string;
@@ -17,6 +18,10 @@ export const SettingsTab = () => {
       tswApiKeyLocation: await GetTSWAPIKeyLocation(),
     }),
   });
+
+  const handleOpenForumLink = () => {
+    BrowserOpenURL("https://forums.dovetailgames.com/threads/train-sim-world-api-support.94488/")
+  }
 
   useEffect(() => {
     const watchFunc = debounce(async (values: DeepPartial<FormValues>) => {
@@ -44,6 +49,18 @@ export const SettingsTab = () => {
           control mode.
         </p>
       </fieldset>
+      <div role="alert" className="alert mt-2">
+        <span>
+          <strong>TSW API Notice</strong>
+          <br />
+          The API connection only works if -HTTPAPI is enabled in Train Sim
+          World. You can find instructions in the linked PDF on the{" "}
+          <button className="link" onClick={handleOpenForumLink}>
+            online forum
+          </button>
+          .
+        </span>
+      </div>
     </div>
   );
 };
