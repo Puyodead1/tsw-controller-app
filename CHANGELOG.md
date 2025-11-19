@@ -5,6 +5,7 @@
 **Note** has higher overhead than the direct control mode.
 - Updates cab debuggger to utilize HTTP API if available
 - Added search box to cab debugger
+- Added preferred control mode in settings
 
 Example assignment:
 ```json
