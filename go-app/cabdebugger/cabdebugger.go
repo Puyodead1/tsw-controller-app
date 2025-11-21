@@ -98,7 +98,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 			case msg := <-socket_channel:
 				if msg.EventName == "sync_control_value" {
 					control_state, has_control_state := cd.State.Controls.Get(msg.Properties["property"])
-					if cd.TSWAPI.Enabled() && has_control_state {
+					if cd.TSWAPI.Enabled() && !has_control_state {
 						/* if the API is enabled - it should drive the existance of the controls */
 						continue
 					}
