@@ -173,7 +173,7 @@ Each assignment triggers an action when activated (and optionally when deactivat
 
 ## 🔧 Input Value Mapping
 
-Used by `DirectControl` and `SyncControl` to map axis input to control values.
+Used by `DirectControl`, `SyncControl` and `ApiControl` to map axis input to control values.
 
 ```json
 {

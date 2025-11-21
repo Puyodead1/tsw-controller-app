@@ -3,7 +3,6 @@ package cabdebugger
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -86,9 +85,13 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 		for {
 			select {
 			case msg := <-socket_channel:
-				fmt.Printf("%#v\n", msg)
 				if msg.EventName == "sync_control_value" {
-					control_state, _ := cd.State.Controls.Get(msg.Properties["property"])
+					control_state, has_control_state := cd.State.Controls.Get(msg.Properties["property"])
+					if cd.TSWAPI.Enabled() && has_control_state {
+						/* if the API is enabled - it should drive the existance of the controls */
+						continue
+					}
+
 					control_state.Identifier = msg.Properties["name"]
 					control_state.PropertyName = msg.Properties["property"]
 					current_value, _ := strconv.ParseFloat(msg.Properties["value"], 64)

@@ -147,13 +147,13 @@ type Config_Controller_Profile_Controller struct {
 	/* if defined ; specifies this profile can only be used with the below controller */
 	UsbID *string `json:"usb_id,omitempty"`
 	/* specifies if this profile can be autoselected for this controller */
-	AutoSelect *bool `json:"auto_select"`
+	AutoSelect *bool `json:"auto_select,omitempty"`
 	/* Can be defined to specify a specific SDL mapping for this controller and profile; useful for sharing */
 	Mapping *Config_Controller_SDLMap `json:"mapping,omitempty"`
 }
 
 type Config_Controller_Profile struct {
-	Path       string
+	Path       string                                `json:"-"`
 	Name       string                                `json:"name" validate:"required"`
 	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
 	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
