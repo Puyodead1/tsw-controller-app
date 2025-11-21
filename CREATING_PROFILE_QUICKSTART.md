@@ -16,6 +16,8 @@ After clicking "Start" the button will change to "Stop & Save", but no other cha
 ![Controls Examples](./images//creating-a-profile-quickstart/003-calibration-tab-with-controls.png)  
   
 Once you have finished configuring each control you can hit "Stop & Save" which will open up a dialog to save each calibration file. It is important not to change the location of where it is saved (since the app only loads from this location), but you can change the name it is saved as. In this case we will keep both names as they are defaulted. After saving the dialog should close and the listed controller should change to "Configured"  
+  
+**Note: if you are re-configuring a controller make sure to overwrite the existing calibration files or delete the old ones to prevent any inconsistencies**  
 ![Saving the calibration files](./images/creating-a-profile-quickstart/004-saving-calibration-files.png)  
   
 Now we are ready to create a new profile
@@ -47,9 +49,7 @@ Next we can add the assignment. Each control can have multiple assignments depen
 Now we can configure the momentary assignment. For the "threshold" we can simply enter any non-zero value such as `0.5`. This is because all configured controls will report a value between 0 and 1 depending on their state. For levers, this is a floating value but buttons are generally either 0 or 1 so the threshold value is less important here. For the "action_activate" field we will want to make sure the "Keys Action" type is selected and we can enter `h` in the keys input (which is the default keybinding for headlights in Train Sim World). If you want to activate multiple keys at once you can do so by entering them separated by a + sign (eg: `shift+h`).  
 ![Configuring the momentary assignment](./images/creating-a-profile-quickstart/009-configuring-the-momentary-assignment.png)  
   
-> ****
 > **Remember: for more information on all the assignment types you can refer to the [Profile Explainer](./PROFILE_EXPLAINER.md)**
-> ****
 
 ## Step 4 - Creating complex assignment
 Now we can move on to the more interesting assignment type of "Direct Control" for our throttle. (this is similar to the API and sync control methods, for more information refer to the [Profile Explainer](./PROFILE_EXPLAINER.md)). Let's start by adding another control item for our throttle and once added we will enter the previously configured "Throttle" name into the "name" input.  
@@ -60,9 +60,17 @@ Next we can press "Add item" in the assignments section of our throttle control 
   
 In order to configure any of the three "control" assignment types we will need to launch the game since we need to use the cab debugger to figure out the actual input values of the in-game controls as well as the internal name of the control. So, launch the game, and load up the training center. From there we will spawn in the ALP-45 DP light loco and take control of the locomotive. (for the cab debugger to work you need to have taken control of the locomotive). Now you can switch the controller app to the "Cab Debugger" tab. If you have the HTTP API enabled all the available controls should show up right away. If you are not using the API, the controls will only be displayed once you interact with them. In the example below, the API is enabled and so we can see all the available locomotive controls and their current state.  
   
-**Note: make sure to enable the -HTTPAPI flag in Steam before launching the game to enable the HTTP API and check that you have the API key correctly configured in the Settings tab for full functionality**
+**Note: make sure to enable the -HTTPAPI flag in Steam before launching the game to enable the HTTP API and check that you have the API key correctly configured in the Settings tab for full functionality**  
+![Cab Debugger View](./images/creating-a-profile-quickstart/012-cabdebugger.png)  
 
 To start, lets figure out what the name of the control in-game control is. You can use the search box in the cab debugger and look for anything resembling "Master Controller", "Power", "Combined Power" or "Throttle". It can help to move the in game control so you can see the current value changing in the cab debugger. In our case, the throttle lever is called "MasterController". Let's enter that in the "controls" field of the direct control assignment. (**tip: in direct control mode if the control name looks like "Throttle_F" or "Throttle_B", you can enter "Throttle_{SIDE}" instead. This will internally select the right cab side control depending on the driver direction**)  
-![MasterController](./images/creating-a-profile-quickstart/012-mastercontroller.png)  
+![MasterController](./images/creating-a-profile-quickstart/013-mastercontroller.png)  
   
-Now find out the values of the master controller in the game. Start by moving the handle to the maximum dynamic brake position, we will assume this is the minimum possible value. Once the value is updated in the cab debugger we can enter it in the "Min" field for the assignment. Next, you can do the same for the maximum power position and copy the value into the "Max" field. In the case of the ALP-45 DP this ends up being X and Y respectively.
+Now find out the values of the master controller in the game. Start by moving the handle to the full brake position, we will assume this is the minimum possible value. Once the value is updated in the cab debugger we can enter it in the "Min" field for the assignment. Next, you can do the same for the maximum power position and copy the value into the "Max" field. In the case of the ALP-45 DP this ends up being -1 and 1 respectively.  
+![Direct Control Min Max Values](./images/creating-a-profile-quickstart/014-direct-control-minmax.png)  
+
+**Remember: for more information on all the assignment types you can refer to the [Profile Explainer](./PROFILE_EXPLAINER.md) later**
+
+## Step 5 - Save and import the profile
+Now we are ready to save this basic profile - so you can press "Save" in the profile builder. This will allow you to save the `.tswprofile` file onto your device. Once saved you can switch back to the "Main" tab in the controller app and click "Import profile" and select the previously saved profile file. After importing you will be able to select the new profile from the dropdown for your controller.  
+![Selected profile](./images/creating-a-profile-quickstart/015-select-new-profile.png)  
