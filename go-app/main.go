@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"tsw_controller_app/logger"
 
-	"github.com/veandco/go-sdl2/sdl"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -20,7 +19,7 @@ var VERSION = "1.0.0"
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func run() {
+func run_gui_app() {
 	fmt.Printf("Version %s\n", VERSION)
 
 	config_dir, err := os.UserConfigDir()
@@ -75,6 +74,12 @@ func run() {
 	}
 }
 
+func run_sdl_subproc() {}
+
 func main() {
-	sdl.Main(run)
+	if len(os.Args) > 1 && os.Args[1] == "sdl_subproc" {
+		run_sdl_subproc()
+	} else {
+		run_gui_app()
+	}
 }

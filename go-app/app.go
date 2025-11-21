@@ -40,7 +40,6 @@ const (
 	AppEventType_JoyDevicesUpdated AppEventType = "joydevices_updated"
 	AppEventType_ProfilesUpdated   AppEventType = "profiles_updated"
 	AppEventType_RawEvent          AppEventType = "rawevent"
-	AppEventType_SyncControlState  AppEventType = "synccontrolstate"
 	AppEventType_Log               AppEventType = "log"
 )
 
@@ -219,19 +218,6 @@ func (a *App) startup(ctx context.Context) {
 		defer cancel()
 
 		<-ctx.Done()
-	}()
-
-	go func() {
-		channel, unsubscribe := a.sync_controller.Subscribe()
-		defer unsubscribe()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-channel:
-				runtime.EventsEmit(ctx, AppEventType_SyncControlState)
-			}
-		}
 	}()
 
 	go func() {

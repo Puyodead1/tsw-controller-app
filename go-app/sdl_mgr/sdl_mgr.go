@@ -54,7 +54,6 @@ func (mgr *SDLMgr) PanicInit() bool {
 		if err := sdl.Init(sdl.INIT_GAMECONTROLLER | sdl.INIT_JOYSTICK | sdl.INIT_EVENTS); err != nil {
 			panic(err)
 		}
-		sdl.JoystickEventState(sdl.ENABLE)
 
 		mgr.Initialized = true
 		mgr.Timestamp = init_ts
@@ -104,59 +103,57 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 				return
 			}
 
-			sdl.Do(func() {
-				/* stop if context has been cancelled */
+			/* stop if context has been cancelled */
+			if ctx_with_cancel.Err() != nil {
+				return
+			}
+
+			if event := sdl.WaitEventTimeout(60); event != nil {
+				/* cancelled while waiting; stop */
 				if ctx_with_cancel.Err() != nil {
 					return
 				}
 
-				if event := sdl.WaitEventTimeout(60); event != nil {
-					/* cancelled while waiting; stop */
-					if ctx_with_cancel.Err() != nil {
-						return
-					}
-
-					/* pass event to channel */
-					switch e := event.(type) {
-					case *sdl.JoyDeviceAddedEvent:
-						chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceAddedEvent{
-							Type:      e.Type,
-							Timestamp: e.Timestamp,
-							Which:     e.Which,
-						})
-					case *sdl.JoyDeviceRemovedEvent:
-						chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceRemovedEvent{
-							Type:      e.Type,
-							Timestamp: e.Timestamp,
-							Which:     e.Which,
-						})
-					case *sdl.JoyAxisEvent:
-						chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyAxisEvent{
-							Type:      e.Type,
-							Timestamp: e.Timestamp,
-							Which:     e.Which,
-							Axis:      e.Axis,
-							Value:     e.Value,
-						})
-					case *sdl.JoyButtonEvent:
-						chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyButtonEvent{
-							Type:      e.Type,
-							Timestamp: e.Timestamp,
-							Which:     e.Which,
-							Button:    e.Button,
-							State:     e.State,
-						})
-					case *sdl.JoyHatEvent:
-						chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyHatEvent{
-							Type:      e.Type,
-							Timestamp: e.Timestamp,
-							Which:     e.Which,
-							Hat:       e.Hat,
-							Value:     e.Value,
-						})
-					}
+				/* pass event to channel */
+				switch e := event.(type) {
+				case *sdl.JoyDeviceAddedEvent:
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceAddedEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+					})
+				case *sdl.JoyDeviceRemovedEvent:
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceRemovedEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+					})
+				case *sdl.JoyAxisEvent:
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyAxisEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Axis:      e.Axis,
+						Value:     e.Value,
+					})
+				case *sdl.JoyButtonEvent:
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyButtonEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Button:    e.Button,
+						State:     e.State,
+					})
+				case *sdl.JoyHatEvent:
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyHatEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Hat:       e.Hat,
+						Value:     e.Value,
+					})
 				}
-			})
+			}
 		}
 	}()
 	return event_channel, cancel
