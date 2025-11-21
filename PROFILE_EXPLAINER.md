@@ -90,6 +90,7 @@ Maps an analog controller input to a continuous value in-game.
 - **Directly updates** a UE4SS control based on axis input.
 - Used for **continuous analog mappings**.
 - Supports `step` or `steps` to quantize values.
+- Can be used with the `{SIDE}` placeholder to automatically select the correct side of the cab. This is specifically for controls named `Throttle_F` or `Throttle_B` where the `F` and `B` mark the side of the cab.
 
 ### 🧭 SyncControl
 A safer alternative to `DirectControl` for unstable locos.

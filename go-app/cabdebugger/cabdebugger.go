@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 	"tsw_controller_app/map_utils"
 	"tsw_controller_app/tswapi"
@@ -30,14 +31,24 @@ type CabDebugger_Config struct {
 }
 
 type CabDebugger struct {
-	SocketConnection *tswconnector.SocketConnection
-	TSWAPI           *tswapi.TSWAPI
-	Config           CabDebugger_Config
-	State            CabDebugger_ControlState
+	updateControlStateFromAPIMutex sync.Mutex
+	SocketConnection               *tswconnector.SocketConnection
+	TSWAPI                         *tswapi.TSWAPI
+	Config                         CabDebugger_Config
+	State                          CabDebugger_ControlState
 }
+
+var ErrAlreadyLocked = errors.New("already locked error")
 
 func (cd *CabDebugger) updateControlStateFromAPI() error {
 	if cd.TSWAPI.Enabled() {
+		/* try to acquire lock ; if already locked we skip */
+		did_lock := cd.updateControlStateFromAPIMutex.TryLock()
+		if !did_lock {
+			return ErrAlreadyLocked
+		}
+		defer cd.updateControlStateFromAPIMutex.Unlock()
+
 		result, err := cd.TSWAPI.GetCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart)
 		if (err != nil &&
 			/* don't do anything further if the comm api key is missing */
@@ -101,7 +112,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 					cd.State.Controls.Set(msg.Properties["property"], control_state)
 				}
 			case <-ticker.C:
-				cd.updateControlStateFromAPI()
+				go cd.updateControlStateFromAPI()
 			case <-childctx.Done():
 				ticker.Stop()
 				unsubscribe_socket_channel()
@@ -114,9 +125,10 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 
 func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn *tswconnector.SocketConnection, config CabDebugger_Config) *CabDebugger {
 	return &CabDebugger{
-		SocketConnection: socket_conn,
-		TSWAPI:           tswapi,
-		Config:           config,
+		updateControlStateFromAPIMutex: sync.Mutex{},
+		SocketConnection:               socket_conn,
+		TSWAPI:                         tswapi,
+		Config:                         config,
 		State: CabDebugger_ControlState{
 			DrivableActorName: "",
 			Controls:          map_utils.NewLockMap[PropertyName, CabDebugger_ControlState_Control](),
