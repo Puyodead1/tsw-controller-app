@@ -96,62 +96,62 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
 	event_channel := make(chan sdl.Event)
 	go func() {
-		/* check for done */
+		last_emit_time := sdl.GetTicks64()
+		var pending_event sdl.Event = nil
+
 		for {
 			/* stop if context has been cancelled */
 			if ctx_with_cancel.Err() != nil {
 				return
 			}
 
-			/* stop if context has been cancelled */
-			if ctx_with_cancel.Err() != nil {
-				return
-			}
-
-			if event := sdl.WaitEventTimeout(60); event != nil {
-				/* cancelled while waiting; stop */
-				if ctx_with_cancel.Err() != nil {
-					return
-				}
-
-				/* pass event to channel */
+			if event := sdl.PollEvent(); event != nil {
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
-					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceAddedEvent{
+					pending_event = &sdl.JoyDeviceAddedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					})
+					}
 				case *sdl.JoyDeviceRemovedEvent:
-					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceRemovedEvent{
+					pending_event = &sdl.JoyDeviceRemovedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					})
+					}
 				case *sdl.JoyAxisEvent:
-					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyAxisEvent{
+					pending_event = &sdl.JoyAxisEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Axis:      e.Axis,
 						Value:     e.Value,
-					})
+					}
 				case *sdl.JoyButtonEvent:
-					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyButtonEvent{
+					pending_event = &sdl.JoyButtonEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Button:    e.Button,
 						State:     e.State,
-					})
+					}
 				case *sdl.JoyHatEvent:
-					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyHatEvent{
+					pending_event = &sdl.JoyHatEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Hat:       e.Hat,
 						Value:     e.Value,
-					})
+					}
+				}
+			}
+
+			now := sdl.GetTicks64()
+			if pending_event != nil && (now-last_emit_time) > 16 {
+				err := chan_utils.SendTimeout(event_channel, time.Second, pending_event)
+				if err == nil {
+					last_emit_time = now
+					pending_event = nil
 				}
 			}
 		}
