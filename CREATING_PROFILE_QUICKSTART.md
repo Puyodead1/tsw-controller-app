@@ -74,3 +74,5 @@ Now find out the values of the master controller in the game. Start by moving th
 ## Step 5 - Save and import the profile
 Now we are ready to save this basic profile - so you can press "Save" in the profile builder. This will allow you to save the `.tswprofile` file onto your device. Once saved you can switch back to the "Main" tab in the controller app and click "Import profile" and select the previously saved profile file. After importing you will be able to select the new profile from the dropdown for your controller.  
 ![Selected profile](./images/creating-a-profile-quickstart/015-select-new-profile.png)  
+  
+That is all, you can now use the controller with your new profile!  
