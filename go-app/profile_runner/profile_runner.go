@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"sync"
 	"time"
 	"tsw_controller_app/action_sequencer"
@@ -13,6 +14,18 @@ import (
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
 )
+
+type ProfileRunner_AssignmentScore = int
+
+const ASSIGNMENT_SCORE_IS_PREFERRED_CONTROL_MODE ProfileRunner_AssignmentScore = 10
+const ASSIGNMENT_SCORE_DIRECT_CONTROL_MODE ProfileRunner_AssignmentScore = 3
+const ASSIGNMENT_SCORE_API_CONTROL_MODE ProfileRunner_AssignmentScore = 2
+const ASSIGNMENT_SCORE_SYNC_CONTROL_MODE ProfileRunner_AssignmentScore = 1
+
+type ProfileRunner_ScoredAssignmentsListEntry struct {
+	Score       int
+	Assignments []config.Config_Controller_Profile_Control_Assignment
+}
 
 type ProfileRunnerSettings struct {
 	Mutex                  sync.RWMutex
@@ -267,15 +280,13 @@ func (p *ProfileRunner) GetAssignments(
 	}
 
 	/* filter out conditional assignments */
-	has_direct_control := false
-	has_sync_control := false
-	has_api_control := false
-	var non_control_asssignments []config.Config_Controller_Profile_Control_Assignment
-	assignments_by_control_mode := map[string][]config.Config_Controller_Profile_Control_Assignment{
-		"direct_control": []config.Config_Controller_Profile_Control_Assignment{},
-		"sync_control":   []config.Config_Controller_Profile_Control_Assignment{},
-		"api_control":    []config.Config_Controller_Profile_Control_Assignment{},
-	}
+	preferred_control_mode := p.Settings.GetPreferredControlMode()
+	non_control_asssignments := []config.Config_Controller_Profile_Control_Assignment{}
+	scored_control_assignments := map[config.PreferredControlMode]*ProfileRunner_ScoredAssignmentsListEntry{}
+	scored_control_assignments[config.PreferredControlMode_DirectControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 3, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[config.PreferredControlMode_ApiControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 2, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[config.PreferredControlMode_SyncControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 1, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[preferred_control_mode].Score = scored_control_assignments[preferred_control_mode].Score + 10
 
 check_assignments_loop:
 	for _, assignment := range assignments {
@@ -313,29 +324,27 @@ check_assignments_loop:
 		}
 
 		if assignment.DirectControl != nil {
-			has_direct_control = true
-			assignments_by_control_mode["direct_control"] = append(assignments_by_control_mode["direct_control"], assignment)
+			scored_control_assignments[config.PreferredControlMode_DirectControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_DirectControl].Assignments, assignment)
 		} else if assignment.SyncControl != nil {
-			has_sync_control = true
-			assignments_by_control_mode["sync_control"] = append(assignments_by_control_mode["sync_control"], assignment)
+			scored_control_assignments[config.PreferredControlMode_SyncControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_SyncControl].Assignments, assignment)
 		} else if assignment.ApiControl != nil {
-			has_api_control = true
-			assignments_by_control_mode["api_control"] = append(assignments_by_control_mode["api_control"], assignment)
+			scored_control_assignments[config.PreferredControlMode_ApiControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_ApiControl].Assignments, assignment)
 		} else {
 			non_control_asssignments = append(non_control_asssignments, assignment)
 		}
 	}
 
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_DirectControl && has_direct_control {
-		return append(assignments_by_control_mode["direct_control"], non_control_asssignments...)
+	scored_control_assignments_values_list := []*ProfileRunner_ScoredAssignmentsListEntry{}
+	for _, entry := range scored_control_assignments {
+		if len(entry.Assignments) > 0 {
+			scored_control_assignments_values_list = append(scored_control_assignments_values_list, entry)
+		}
 	}
-
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_sync_control {
-		return append(assignments_by_control_mode["sync_control"], non_control_asssignments...)
-	}
-
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_ApiControl && has_api_control {
-		return append(assignments_by_control_mode["api_control"], non_control_asssignments...)
+	sort.Slice(scored_control_assignments_values_list, func(i, j int) bool {
+		return scored_control_assignments_values_list[i].Score > scored_control_assignments_values_list[j].Score
+	})
+	if len(scored_control_assignments_values_list) > 0 {
+		return append(scored_control_assignments_values_list[0].Assignments, non_control_asssignments...)
 	}
 
 	return non_control_asssignments

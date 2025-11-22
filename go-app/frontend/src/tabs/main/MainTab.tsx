@@ -161,9 +161,15 @@ export const MainTab = () => {
 
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
-      <div role="alert" className="alert">
+      <div role="alert" className="alert alert-info alert-soft">
         <span>
-          Want a quick start guide on how to create a profile from scratch? <button className="link"></button>
+          Want a quick start guide on how to create a profile from scratch?{" "}
+          <button
+            className="link"
+            onClick={() =>
+              openInWindow("https://tsw-controller-app.vercel.app/docs")
+            }
+          >Check out the online documentation</button>
         </span>
       </div>
       <div>
