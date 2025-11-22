@@ -37,7 +37,7 @@ export const generators = {
         async: true,
         walkTokens(token) {
           if (token.type === 'image' && token.href.startsWith('./images')) {
-            token.href = `https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/tsw-api/${token.href.replace('./', '')}`
+            token.href = `https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/${token.href.replace('./', '')}`
           }
         },
       })
