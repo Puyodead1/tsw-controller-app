@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TSW Controller App - Documentation - Profile explainer</title>
+    <link href="../style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <nav class="navbar bg-base-100 shadow-sm">
+  <div class="flex-1">
+    <ul class="menu menu-horizontal px-1">
+      <li><a class="link link-hover" href="/">Home</a></li>
+      <li><a class="link link-hover" href="/profile-builder/index.html">Profile Builder</a></li>
+      <li><a class="link link-hover" href="/docs/index.html">Documentation</a></li>
+    </ul>
+  </div>
+</nav>
+    <main class="prose mx-auto max-w-4xl px-8 my-8"><h1>🎮 Train Sim World Controller Configuration Format</h1>
+<p>This document describes the structure and semantics of the configuration system used to map game controllers (e.g., joysticks, gamepads) to controls in Train Sim World using UE4SS. It is designed to be flexible, extensible, and friendly to both analog and digital input devices.</p>
+<hr>
+<h2>📦 Overview</h2>
+<p>Each control on a game controller can be assigned an <strong>action</strong>. Assignments describe <em>when</em> and <em>how</em> the actions are triggered based on the input. Actions describe <em>what</em> happens when triggered.</p>
+<p>All assignments conform to a top-level enum <code>ControllerProfileControlAssignment</code>, which contains the following variants:</p>
+<ul>
+<li><code>Momentary</code></li>
+<li><code>Toggle</code></li>
+<li><code>Linear</code></li>
+<li><code>DirectControl</code></li>
+<li><code>SyncControl</code></li>
+<li><code>ApiControl</code></li>
+</ul>
+<p>Each assignment type has a specific use case and behavior, described below.</p>
+<hr>
+<h2>🧩 Assignment Types</h2>
+<h3>🔘 Momentary</h3>
+<p>Used for buttons that act while held.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;momentary&quot;,
+  &quot;threshold&quot;: 0.5,
+  &quot;action_activate&quot;: { ... },
+  &quot;action_deactivate&quot;: { ... }
+}
+</code></pre>
+<ul>
+<li><strong>Triggers</strong> when input value crosses <code>threshold</code>.</li>
+<li><strong>Deactivates</strong> when input falls below <code>threshold</code>. (optional - by default if the <code>action_activate</code> defines a keystroke to be held; it will be released automatically when releasing the gamepad control)</li>
+<li>Ideal for <strong>press-and-hold</strong> style controls.</li>
+</ul>
+<h3>🔁 Toggle</h3>
+<p>Used for toggle switches that alternate between two states.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;toggle&quot;,
+  &quot;threshold&quot;: 0.5,
+  &quot;action_activate&quot;: { ... },
+  &quot;action_deactivate&quot;: { ... }
+}
+</code></pre>
+<ul>
+<li><strong>First activation</strong> runs <code>action_activate</code>.</li>
+<li><strong>Next activation</strong> runs <code>action_deactivate</code>.</li>
+<li>Useful for switches like headlights, engine start, etc.</li>
+</ul>
+<h3>📈 Linear</h3>
+<p>Used for analog levers or sliders with multiple threshold points.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;linear&quot;,
+  &quot;thresholds&quot;: [
+    { &quot;threshold&quot;: 0.2, &quot;action_activate&quot;: { ... }, &quot;action_deactivate&quot;: { ... } },
+    { &quot;threshold&quot;: 0.7, &quot;action_activate&quot;: { ... }, &quot;action_deactivate&quot;: { ... } }
+  ]
+}
+</code></pre>
+<ul>
+<li>Triggers <strong>different actions</strong> based on <strong>axis position thresholds</strong>.</li>
+<li>Ideal for <strong>brake levers</strong>, <strong>throttles</strong>, etc.</li>
+</ul>
+<h3>🎚️ DirectControl</h3>
+<p>Maps an analog controller input to a continuous value in-game.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;direct_control&quot;,
+  &quot;controls&quot;: &quot;Throttle1&quot;,
+  &quot;input_value&quot;: {
+    &quot;min&quot;: 0.0,
+    &quot;max&quot;: 1.0,
+    &quot;invert&quot;: true
+  },
+  &quot;hold&quot;: true
+}
+</code></pre>
+<ul>
+<li><strong>Directly updates</strong> a UE4SS control based on axis input.</li>
+<li>Used for <strong>continuous analog mappings</strong>.</li>
+<li>Supports <code>step</code> or <code>steps</code> to quantize values.</li>
+<li>Can be used with the <code>{SIDE}</code> placeholder to automatically select the correct side of the cab. This is specifically for controls named <code>Throttle_F</code> or <code>Throttle_B</code> where the <code>F</code> and <code>B</code> mark the side of the cab.</li>
+</ul>
+<h3>🧭 SyncControl</h3>
+<p>A safer alternative to <code>DirectControl</code> for unstable locos.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;sync_control&quot;,
+  &quot;identifier&quot;: &quot;Reverser1&quot;,
+  &quot;input_value&quot;: {
+    &quot;min&quot;: -1.0,
+    &quot;max&quot;: 1.0,
+    &quot;steps&quot;: [-1.0, 0.0, 1.0]
+  },
+  &quot;action_increase&quot;: { &quot;keys&quot;: &quot;PageUp&quot; },
+  &quot;action_decrease&quot;: { &quot;keys&quot;: &quot;PageDown&quot; }
+}
+</code></pre>
+<ul>
+<li><strong>Reads current in-game state</strong> and uses <strong>keypresses</strong> to reach desired state.</li>
+<li>Ideal for <strong>syncing with controls that don’t respond well to direct manipulation</strong>.</li>
+</ul>
+<h3>🎚️ ApiControl</h3>
+<p>Maps an analog controller input to a continuous value in-game using the HTTP API.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;api_control&quot;,
+  &quot;controls&quot;: &quot;Throttle1&quot;,
+  &quot;input_value&quot;: {
+    &quot;min&quot;: 0.0,
+    &quot;max&quot;: 1.0,
+    &quot;invert&quot;: true
+  }
+}
+</code></pre>
+<ul>
+<li><strong>Directly updates</strong> a game control based on axis input using the HTTP API. May result in slight overheada compared to the full direct control mode, but does not require additional a the mod to be installed.</li>
+<li>Used for <strong>continuous analog mappings</strong>.</li>
+<li>Supports <code>step</code> or <code>steps</code> to quantize values.</li>
+</ul>
+<hr>
+<h2>⚙️ Action Types</h2>
+<p>Each assignment triggers an action when activated (and optionally when deactivated). Actions can be:</p>
+<h3>🖱️ Key Presses</h3>
+<pre><code class="language-json">{
+  &quot;keys&quot;: &quot;W&quot;,
+  &quot;press_time&quot;: 0.1,
+  &quot;wait_time&quot;: 0.05
+}
+</code></pre>
+<ul>
+<li>Simulates a key press.</li>
+<li>Optional timing controls for holding and releasing.</li>
+</ul>
+<h3>🎛️ Direct Control Action</h3>
+<pre><code class="language-json">{
+  &quot;controls&quot;: &quot;Throttle1&quot;,
+  &quot;value&quot;: 0.5,
+  &quot;hold&quot;: false,
+  &quot;relative&quot;: false
+}
+</code></pre>
+<ul>
+<li>Sends a value directly to a UE4SS control.</li>
+<li>Can be held or pulsed.</li>
+<li>Can be defined as a relative value (instead of sending the absolute value)</li>
+</ul>
+<h3>🎛️ Api Control Action</h3>
+<pre><code class="language-json">{
+  &quot;controls&quot;: &quot;Throttle1&quot;,
+  &quot;api_value&quot;: 0.5
+}
+</code></pre>
+<ul>
+<li>Sends a value directly to a control using the HTTP API.</li>
+</ul>
+<hr>
+<h2>🔧 Input Value Mapping</h2>
+<p>Used by <code>DirectControl</code>, <code>SyncControl</code> and <code>ApiControl</code> to map axis input to control values.</p>
+<pre><code class="language-json">{
+  &quot;min&quot;: -1.0,
+  &quot;max&quot;: 1.0,
+  &quot;step&quot;: 0.1,
+  &quot;steps&quot;: [0.0, 0.2, null, 0.5, null, 1.0],
+  &quot;invert&quot;: true
+}
+</code></pre>
+<ul>
+<li><code>min</code> / <code>max</code>: Range of values.</li>
+<li><code>step</code>: Optional increment size.</li>
+<li><code>steps</code>: Optional list of discrete valid values. Can be used with <code>null</code> values to create zones of free motion between detents.</li>
+<li><code>invert</code>: Whether to reverse the axis.</li>
+</ul>
+<hr>
+<h2>🔁 Conditional assignments</h2>
+<p>It is also possible to only execute assignments depending on one or more conditions. This can be used to create multi-key assignments. (eg: the action of a button changes depending on the position of a lever).
+This can be added to any assignment using the <code>conditions</code> key:</p>
+<pre><code>{
+  &quot;type&quot;: &quot;momentary&quot;,
+  &quot;conditions&quot;: [
+    {
+      &quot;control&quot;: &quot;mylever&quot;,
+      &quot;operator&quot;: &quot;gte&quot;,
+      &quot;value&quot;: 0.5
+    }
+  ]
+}
+</code></pre>
+<p>In the above example, the assignment will only execute if <code>mylever</code> exceeds 0.5</p>
+<hr>
+<h2>✅ Best Practices</h2>
+<ul>
+<li>Use <code>DirectControl</code> for stable, high-resolution mappings.</li>
+<li>Use <code>SyncControl</code> only when direct manipulation is buggy.</li>
+<li>Use <code>Linear</code> for fine-grained lever behavior.</li>
+<li>Use <code>Momentary</code> for temporary actions like horn or bell.</li>
+<li>Use <code>Toggle</code> for switches with two states.</li>
+</ul>
+<hr>
+<h2>📝 Example Full Assignment</h2>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;momentary&quot;,
+  &quot;threshold&quot;: 0.5,
+  &quot;action_activate&quot;: {
+    &quot;keys&quot;: &quot;H&quot;
+  },
+  &quot;action_deactivate&quot;: {
+    &quot;keys&quot;: &quot;Shift+H&quot;
+  }
+}
+</code></pre>
+<hr>
+<p>Happy simming! 🚂</p>
+</main>
+  </body>
+</html>

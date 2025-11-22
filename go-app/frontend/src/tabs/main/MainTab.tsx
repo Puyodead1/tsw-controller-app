@@ -161,6 +161,11 @@ export const MainTab = () => {
 
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
+      <div role="alert" className="alert">
+        <span>
+          Want a quick start guide on how to create a profile from scratch? <button className="link"></button>
+        </span>
+      </div>
       <div>
         {controllers?.map((c) => (
           <div key={c.GUID}>

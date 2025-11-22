@@ -2,9 +2,12 @@
   "name": "@liammartens/tsw-controller-app-website",
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^14.2.1",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^24.10.1",
     "daisyui": "^5.5.4",
+    "globby": "^16.0.0",
+    "marked": "^17.0.1",
     "solid-js": "^1.9.10",
     "tailwindcss": "^4.1.14",
     "typescript": "^5.9.3",
@@ -12,12 +15,10 @@
     "vite-plugin-solid": "^2.11.10"
   },
   "scripts": {
-    "generate:profile-builder-jsonp-schema": "node ./profile-builder-json-schema/dereference.mjs",
-    "dev": "npm run generate:profile-builder-jsonp-schema && vite dev -c ./vite.config.ts",
-    "build": "npm run generate:profile-builder-jsonp-schema && vite build -c ./vite.config.ts"
+    "dev": "vite dev -c ./vite.config.ts",
+    "build": "vite build -c ./vite.config.ts"
   },
   "dependencies": {
-    "@modular-forms/solid": "^0.25.1",
     "clsx": "^2.1.1",
     "valibot": "^1.1.0"
   }
