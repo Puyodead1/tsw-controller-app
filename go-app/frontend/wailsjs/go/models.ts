@@ -221,6 +221,7 @@ export namespace main {
 	}
 	export class Interop_Profile_Metadata {
 	    UpdatedAt: string;
+	    Warnings: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Interop_Profile_Metadata(source);
@@ -229,6 +230,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.UpdatedAt = source["UpdatedAt"];
+	        this.Warnings = source["Warnings"];
 	    }
 	}
 	export class Interop_Profile {

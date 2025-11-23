@@ -14,6 +14,7 @@ type Interop_GenericController struct {
 
 type Interop_Profile_Metadata struct {
 	UpdatedAt string
+	Warnings  []string
 }
 
 type Interop_Profile struct {

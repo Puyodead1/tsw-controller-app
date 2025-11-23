@@ -1,17 +1,6 @@
 import { Controller, UseFormReturn } from "react-hook-form";
 import { main } from "../../../wailsjs/go/models";
-import {
-  autoUpdate,
-  flip,
-  FloatingPortal,
-  offset,
-  size,
-  useClick,
-  useDismiss,
-  useFloating,
-  useInteractions,
-} from "@floating-ui/react";
-import { useState } from "react";
+import { useCallback } from "react";
 
 type Props = {
   form: UseFormReturn<{
@@ -38,6 +27,12 @@ const updatedAtFormatter = new Intl.DateTimeFormat(undefined, {
   timeStyle: "medium",
 });
 
+const unfocus = () => {
+  if (document.activeElement && document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+};
+
 export function MainTabControllerProfileSelector({
   form,
   controller,
@@ -58,35 +53,12 @@ export function MainTabControllerProfileSelector({
     (profile) => profile.UsbID && profile.UsbID !== controller.UsbID,
   );
 
-  const [selectOpen, setSelectOpen] = useState(false);
-  const { refs, floatingStyles, context } = useFloating<HTMLElement>({
-    strategy: "fixed",
-    placement: "bottom-start",
-    open: selectOpen,
-    onOpenChange: setSelectOpen,
-    whileElementsMounted: autoUpdate,
-    middleware: [
-      offset(5),
-      flip({ padding: 10 }),
-      size({
-        apply({ rects, elements, availableHeight }) {
-          Object.assign(elements.floating.style, {
-            maxHeight: `${availableHeight}px`,
-            minWidth: `${rects.reference.width}px`,
-          });
-        },
-        padding: 10,
-      }),
-    ],
-  });
-
-  const click = useClick(context);
-  const dismiss = useDismiss(context);
-
-  const { getReferenceProps, getFloatingProps } = useInteractions([
-    click,
-    dismiss,
-  ]);
+  const unfocusHandlerFactory = useCallback((func: () => void) => {
+    return () => {
+      func();
+      setTimeout(unfocus, 0);
+    };
+  }, []);
 
   return (
     <div key={controller.GUID} className="flex flex-row gap-2">
@@ -94,59 +66,53 @@ export function MainTabControllerProfileSelector({
         control={control}
         name={`profiles.${controller.GUID}`}
         render={({ field }) => (
-          <>
-            <button
-              ref={refs.setReference}
-              className="select w-full"
-              {...getReferenceProps()}
-            >
+          <div className="grow dropdown dropdown-start">
+            <div tabIndex={0} role="button" className="select w-full">
               {selectedProfile ?? "Select profile"}
-            </button>
-            {!!selectOpen && (
-              <FloatingPortal>
-                <div
-                  ref={refs.setFloating}
-                  className="z-1"
-                  style={floatingStyles}
-                  {...getFloatingProps()}
-                >
-                  <div className="shadow-sm max-h-[50dvh] overflow-auto w-full">
-                    <ul className="menu w-full bg-base-300 rounded-box p-2">
-                      {supportedProfiles.map((profile) => (
-                        <li key={profile.Name}>
-                          <button
-                            className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0 dropdown-close"
-                            onClick={() => {
-                              field.onChange(profile.Name);
-                              setSelectOpen(false);
-                            }}
+            </div>
+            <div className="dropdown-content shadow-sm max-h-[50dvh] overflow-auto w-full">
+              <ul className="menu w-full bg-base-300 rounded-box p-2">
+                {supportedProfiles.map((profile) => (
+                  <li key={profile.Name}>
+                    <button
+                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0"
+                      onClick={unfocusHandlerFactory(() => {
+                        field.onChange(profile.Name);
+                      })}
+                    >
+                      <span>{profile.Name}</span>
+                      <span className="text-base-content/30 text-xs">
+                        Last updated:{" "}
+                        {updatedAtFormatter.format(
+                          new Date(profile.Metadata.UpdatedAt),
+                        )}
+                      </span>
+                      {!!profile.Metadata.Warnings.length &&
+                        profile.Metadata.Warnings.map((warning) => (
+                          <div
+                            key={warning}
+                            role="alert"
+                            className="alert alert-soft alert-warning my-2 p-2"
                           >
-                            <span>{profile.Name}</span>
-                            <span className="text-base-content/30 text-xs">
-                              Last updated:{" "}
-                              {updatedAtFormatter.format(
-                                new Date(profile.Metadata.UpdatedAt),
-                              )}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                      {unsupportedProfiles.map((profile) => (
-                        <li key={profile.Name} className="menu-disabled">
-                          <button className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0">
-                            <span>{profile.Name}</span>
-                            <span className="text-base-content/30 text-xs">
-                              Disabled for controller
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </FloatingPortal>
-            )}
-          </>
+                            {warning}
+                          </div>
+                        ))}
+                    </button>
+                  </li>
+                ))}
+                {unsupportedProfiles.map((profile) => (
+                  <li key={profile.Name} className="menu-disabled">
+                    <button className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0">
+                      <span>{profile.Name}</span>
+                      <span className="text-base-content/30 text-xs">
+                        Disabled for controller
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         )}
       />
 
@@ -159,24 +125,28 @@ export function MainTabControllerProfileSelector({
           className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
         >
           <li>
-            <button onClick={onReloadConfiguration}>
+            <button onClick={unfocusHandlerFactory(onReloadConfiguration)}>
               Reload configuration
             </button>
           </li>
           <li>
-            <button onClick={onBrowseConfiguration}>
+            <button onClick={unfocusHandlerFactory(onBrowseConfiguration)}>
               Browse configuration
             </button>
           </li>
           <li>
-            <button onClick={() => onCreateProfile(controller)}>
+            <button
+              onClick={unfocusHandlerFactory(() => onCreateProfile(controller))}
+            >
               Create new profile
             </button>
           </li>
           <li>
             <button
               disabled={!selectedProfile}
-              onClick={() => onSaveControllerProfileForSharing(controller)}
+              onClick={unfocusHandlerFactory(() =>
+                onSaveControllerProfileForSharing(controller),
+              )}
               className="disabled:opacity-50 disabled:pointer-events-none"
             >
               Save profile for sharing
@@ -185,7 +155,9 @@ export function MainTabControllerProfileSelector({
           <li>
             <button
               disabled={!selectedProfile}
-              onClick={() => onOpenProfileForController(controller)}
+              onClick={unfocusHandlerFactory(() =>
+                onOpenProfileForController(controller),
+              )}
               className="disabled:opacity-50 disabled:pointer-events-none"
             >
               Open profile in builder
@@ -194,7 +166,9 @@ export function MainTabControllerProfileSelector({
           <li>
             <button
               disabled={!selectedProfile}
-              onClick={() => onDeleteProfileForController(controller)}
+              onClick={unfocusHandlerFactory(() =>
+                onDeleteProfileForController(controller),
+              )}
               className="disabled:opacity-50 disabled:pointer-events-none"
             >
               Delete profile

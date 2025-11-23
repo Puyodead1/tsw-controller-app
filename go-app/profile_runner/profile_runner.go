@@ -115,6 +115,44 @@ func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile
 	p.Profiles.Set(profile.Name, profile)
 }
 
+func (p *ProfileRunner) ResolveAll() {
+	/* resolves all the profiles */
+	p.Profiles.Mutex.Lock()
+	defer p.Profiles.Mutex.Unlock()
+
+	var resolve_profile func(profile config.Config_Controller_Profile) config.Config_Controller_Profile
+	resolve_profile = func(profile config.Config_Controller_Profile) config.Config_Controller_Profile {
+		if profile.Extends != nil && len(*profile.Extends) > 0 && profile.Name != *profile.Extends {
+			if extend_from_profile, has_valid_extends := p.Profiles.Map[*profile.Extends]; has_valid_extends {
+				/*
+					these are the control names which are defined in the profile we are currently resolving;
+					these should be kept as they already have a definition
+				*/
+				existing_control_definitions := map[string]bool{}
+				for _, control := range profile.Controls {
+					existing_control_definitions[control.Name] = true
+				}
+
+				resolved_extend_from_profile := resolve_profile(extend_from_profile)
+				for _, control := range resolved_extend_from_profile.Controls {
+					if _, should_not_override := existing_control_definitions[control.Name]; !should_not_override {
+						profile.Controls = append(profile.Controls, control)
+					}
+				}
+
+				if profile.Controller == nil && extend_from_profile.Controller != nil {
+					profile.Controller = extend_from_profile.Controller
+				}
+			}
+		}
+		return profile
+	}
+
+	for profile_name, profile := range p.Profiles.Map {
+		p.Profiles.Map[profile_name] = resolve_profile(profile)
+	}
+}
+
 func (p *ProfileRunner) ClearProfile(guid controller_mgr.JoystickGUIDString) {
 	p.Settings.Update(func(s *ProfileRunnerSettings) {
 		s.SelectedProfilesByGUID.Delete(guid)

@@ -321,6 +321,7 @@ func (a *App) LoadConfiguration() {
 			logger.Logger.Info("[App] registering profile", "profile", profile.Name)
 			a.profile_runner.RegisterProfile(profile)
 		}
+		a.profile_runner.ResolveAll()
 	}
 
 	runtime.EventsEmit(a.ctx, AppEventType_ProfilesUpdated)
@@ -354,10 +355,27 @@ func (a *App) GetControllers() []Interop_GenericController {
 
 func (a *App) GetProfiles() []Interop_Profile {
 	var profiles []Interop_Profile
+
+	all_profile_names := map[string]bool{}
+	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
+		all_profile_names[profile.Name] = true
+		return true
+	})
+
 	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 		UsbID := ""
 		if profile.Controller != nil && profile.Controller.UsbID != nil {
 			UsbID = *profile.Controller.UsbID
+		}
+
+		warnings := []string{}
+		if profile.Extends != nil && len(*profile.Extends) > 0 {
+			if _, has_valid_extends := all_profile_names[*profile.Extends]; !has_valid_extends {
+				warnings = append(warnings, fmt.Sprintf("Could not find profile name to extend from (%s)", *profile.Extends))
+			}
+			if *profile.Extends == profile.Name {
+				warnings = append(warnings, "This profile extends from itself, which is not a valid use-case")
+			}
 		}
 
 		profiles = append(profiles, Interop_Profile{
@@ -365,6 +383,7 @@ func (a *App) GetProfiles() []Interop_Profile {
 			UsbID: UsbID,
 			Metadata: Interop_Profile_Metadata{
 				UpdatedAt: profile.Metadata.UpdatedAt.Format(time.RFC3339),
+				Warnings:  warnings,
 			},
 		})
 		return true

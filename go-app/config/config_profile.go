@@ -156,11 +156,13 @@ type Config_Controller_Profile_Controller struct {
 type Config_Controller_Profile_Metadata struct {
 	Path      string    `json:"-"`
 	UpdatedAt time.Time `json:"-"`
+	Warnings  []string  `json:"-"`
 }
 
 type Config_Controller_Profile struct {
 	Metadata Config_Controller_Profile_Metadata
 
+	Extends    *string                               `json:"extends,omitempty"`
 	Name       string                                `json:"name" validate:"required"`
 	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
 	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
