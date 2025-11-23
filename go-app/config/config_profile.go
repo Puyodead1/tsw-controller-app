@@ -105,7 +105,7 @@ type Config_Controller_Profile_Control_Assignment_DirectControl struct {
 	/* the HID control component as per the UE4SS API */
 	Controls string `json:"controls" validate:"required"`
 	/* will hold the control in changing */
-	Hold *bool `json:"hold"`
+	Hold *bool `json:"hold,omitempty"`
 	/* whether to apply raw or normalized values */
 	UseNormalized *bool                                                              `json:"use_normalized,omitempty"`
 	InputValue    Config_Controller_Profile_Control_Assignment_DirectLike_InputValue `json:"input_value" validate:"required"`
