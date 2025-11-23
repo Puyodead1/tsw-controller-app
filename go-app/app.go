@@ -621,7 +621,14 @@ func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name
 		}
 
 		joy_usbid := controller.Joystick.ToString()
-		profile_for_sharing := profile
+		profile_for_sharing := config.Config_Controller_Profile{
+			/*
+				this copy omits extends and the internal metadata since it's not appropriate for sharing,
+			*/
+			Name:       profile.Name,
+			Controller: profile.Controller,
+			Controls:   profile.Controls,
+		}
 		if profile_for_sharing.Controller == nil {
 			profile_for_sharing.Controller = &config.Config_Controller_Profile_Controller{
 				UsbID:   &joy_usbid,
