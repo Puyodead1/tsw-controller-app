@@ -8,6 +8,7 @@ import (
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/map_utils"
 	"tsw_controller_app/pubsub_utils"
+	"tsw_controller_app/tswconnector"
 )
 
 type SyncController_ControlState struct {
@@ -23,7 +24,7 @@ type SyncController_ControlState struct {
 }
 
 type SyncController struct {
-	SocketConnection            *SocketConnection
+	SocketConnection            *tswconnector.SocketConnection
 	ControlState                *map_utils.LockMap[string, SyncController_ControlState]
 	ControlStateChangedChannels *pubsub_utils.PubSubSlice[SyncController_ControlState]
 }
@@ -73,7 +74,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 				return
 			case msg := <-incoming_channel:
 				/* skip message if not sync_control message */
-				if msg.EventName == "sync_control" {
+				if msg.EventName != "sync_control_value" {
 					continue
 				}
 
@@ -103,7 +104,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewSyncController(connection *SocketConnection) *SyncController {
+func NewSyncController(connection *tswconnector.SocketConnection) *SyncController {
 	controller := SyncController{
 		SocketConnection:            connection,
 		ControlState:                map_utils.NewLockMap[string, SyncController_ControlState](),

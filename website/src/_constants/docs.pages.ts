@@ -1,0 +1,16 @@
+import fs from 'node:fs'
+
+export const pages = {
+  "creating-profile-quickstart": {
+    title: "Creating A Profile Quickstart - TSW Controller App",
+    contents: () => fs.readFileSync("../CREATING_PROFILE_QUICKSTART.md", { encoding: 'utf8' }),
+  },
+  "profile-explainer": {
+    title: "Profile Explainer - TSW Controller App",
+    contents: () => fs.readFileSync("../PROFILE_EXPLAINER.md", { encoding: 'utf8' }),
+  },
+  "steam-input-setup": {
+    title: "Steam Input Setup - TSW Controller App",
+    contents: () => fs.readFileSync("../STEAM_INPUT_SETUP.md", { encoding: 'utf8' }),
+  },
+};

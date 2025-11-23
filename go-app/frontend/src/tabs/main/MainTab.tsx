@@ -161,21 +161,35 @@ export const MainTab = () => {
 
   return (
     <div className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2">
-      {controllers?.map((c) => (
-        <div key={c.GUID}>
-          <MainTabControllerProfileSelector
-            controller={c}
-            profiles={profiles ?? []}
-            form={form}
-            onBrowseConfiguration={handleBrowseConfig}
-            onCreateProfile={handleCreateProfile}
-            onReloadConfiguration={handleReloadConfiguration}
-            onSaveControllerProfileForSharing={handleSaveProfileForSharing}
-            onOpenProfileForController={handleOpenProfile}
-            onDeleteProfileForController={handleDeleteProfile}
-          />
-        </div>
-      ))}
+      <div role="alert" className="alert alert-info alert-soft">
+        <span>
+          Want a quick start guide on how to create a profile from scratch?{" "}
+          <button
+            className="link"
+            onClick={() =>
+              openInWindow("https://tsw-controller-app.vercel.app/docs")
+            }
+          >Check out the online documentation</button>
+        </span>
+      </div>
+      <div>
+        {controllers?.map((c) => (
+          <div key={c.GUID}>
+            <MainTabControllerProfileSelector
+              controller={c}
+              profiles={profiles ?? []}
+              form={form}
+              onBrowseConfiguration={handleBrowseConfig}
+              onCreateProfile={handleCreateProfile}
+              onReloadConfiguration={handleReloadConfiguration}
+              onSaveControllerProfileForSharing={handleSaveProfileForSharing}
+              onOpenProfileForController={handleOpenProfile}
+              onDeleteProfileForController={handleDeleteProfile}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="divider"></div>
       {/* steam://controllerconfig/2967990/3576092503 */}
       <div className="flex gap-2">
         <button className="btn btn-sm grow" onClick={handleInstall}>
@@ -221,9 +235,23 @@ export const MainTab = () => {
         )}
       <div role="alert" className="alert">
         <span>
+          <strong>Mod Installation Notice</strong>
+          <br />
+          The mod is not required to install but recommended for full
+          compatibility. Without the mod you will not be able to use the
+          "direct_control" or "sync_control" control modes. You will have access
+          to the "api_control" control mode, and any regular key bind
+          assignments as long as the TSW API key is configured properly (see
+          Settings).
+        </span>
+      </div>
+      <div role="alert" className="alert">
+        <span>
+          <strong>Controller Setup Notice</strong>
+          <br />
           For this app to correctly work you will need to make sure Train Sim
           World is not able to process the controller input. You can achieve
-          this by configuring your controller in using{" "}
+          this by configuring your controller using in Steam using{" "}
           <button
             className="inline link"
             onClick={() =>
@@ -234,8 +262,8 @@ export const MainTab = () => {
           >
             Steam Input
           </button>{" "}
-          and applying the following "Disabled Controller" layout preset for the
-          game. Alternatively, you can also a software like{" "}
+          and applying the "Disabled Controller" layout preset for the game (see
+          "Steam Input" link). Alternatively, you can also use a software like{" "}
           <button
             className="inline link"
             onClick={() =>

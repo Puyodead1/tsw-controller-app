@@ -37,7 +37,9 @@
                 { "$ref": "./profile.momentary_assignment.schema.json" },
                 { "$ref": "./profile.toggle_assignment.schema.json" },
                 { "$ref": "./profile.linear_assignment.schema.json" },
-                { "$ref": "./profile.direct_control_assignment.schema.json" }
+                { "$ref": "./profile.direct_control_assignment.schema.json" },
+                { "$ref": "./profile.api_control_assignment.schema.json" },
+                { "$ref": "./profile.sync_control_assignment.schema.json" }
               ]
                 }
               ]

@@ -492,6 +492,12 @@ class TSWControllerMod : public RC::CppUserModBase
                 control_property_name = find_control_property_name_it->second;
             }
 
+            /* if we can't find a property it's likely not relevannt so we can ignore */
+            if (control_property_name.empty())
+            {
+                return;
+            }
+
             /* get normalised input value */
             auto normalized_value = TSWControllerMod::get_current_vhid_component_normalized_input_value(context.Context);
 

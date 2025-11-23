@@ -37,7 +37,7 @@ export const CalibrationTab = () => {
             </div>
             <div>
               {c.IsConfigured && (
-                <div className="tooltip" data-tip="Re-configure">
+                <div className="tooltip tooltip-bottom" data-tip="Re-configure">
                   <button
                     className="btn btn-success btn-soft btn-xs"
                     onClick={() => handleConfigure(c)}
@@ -47,7 +47,7 @@ export const CalibrationTab = () => {
                 </div>
               )}
               {!c.IsConfigured && (
-                <div className="tooltip" data-tip="Configure now">
+                <div className="tooltip tooltip-bottom" data-tip="Configure now">
                   <button
                     className="btn btn-error btn-soft btn-xs"
                     onClick={() => handleConfigure(c)}

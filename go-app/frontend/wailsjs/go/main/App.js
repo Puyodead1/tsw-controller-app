@@ -10,6 +10,10 @@ export function DeleteProfile(arg1) {
   return window['go']['main']['App']['DeleteProfile'](arg1);
 }
 
+export function GetCabControlState() {
+  return window['go']['main']['App']['GetCabControlState']();
+}
+
 export function GetControllerConfiguration(arg1) {
   return window['go']['main']['App']['GetControllerConfiguration'](arg1);
 }
@@ -26,6 +30,10 @@ export function GetLatestReleaseVersion() {
   return window['go']['main']['App']['GetLatestReleaseVersion']();
 }
 
+export function GetPreferredControlMode() {
+  return window['go']['main']['App']['GetPreferredControlMode']();
+}
+
 export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
@@ -38,8 +46,8 @@ export function GetSharedProfiles() {
   return window['go']['main']['App']['GetSharedProfiles']();
 }
 
-export function GetSyncControlState() {
-  return window['go']['main']['App']['GetSyncControlState']();
+export function GetTSWAPIKeyLocation() {
+  return window['go']['main']['App']['GetTSWAPIKeyLocation']();
 }
 
 export function GetVersion() {
@@ -82,8 +90,8 @@ export function OpenProfileBuilder(arg1) {
   return window['go']['main']['App']['OpenProfileBuilder'](arg1);
 }
 
-export function ResetSyncControlState() {
-  return window['go']['main']['App']['ResetSyncControlState']();
+export function ResetCabControlState() {
+  return window['go']['main']['App']['ResetCabControlState']();
 }
 
 export function SaveCalibration(arg1) {
@@ -104,6 +112,14 @@ export function SelectProfile(arg1, arg2) {
 
 export function SetLastInstalledModVersion(arg1) {
   return window['go']['main']['App']['SetLastInstalledModVersion'](arg1);
+}
+
+export function SetPreferredControlMode(arg1) {
+  return window['go']['main']['App']['SetPreferredControlMode'](arg1);
+}
+
+export function SetTSWAPIKeyLocation(arg1) {
+  return window['go']['main']['App']['SetTSWAPIKeyLocation'](arg1);
 }
 
 export function SubscribeRaw(arg1) {

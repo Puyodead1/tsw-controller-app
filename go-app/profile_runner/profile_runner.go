@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"sync"
 	"time"
 	"tsw_controller_app/action_sequencer"
@@ -13,6 +14,18 @@ import (
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
 )
+
+type ProfileRunner_AssignmentScore = int
+
+const ASSIGNMENT_SCORE_IS_PREFERRED_CONTROL_MODE ProfileRunner_AssignmentScore = 10
+const ASSIGNMENT_SCORE_DIRECT_CONTROL_MODE ProfileRunner_AssignmentScore = 3
+const ASSIGNMENT_SCORE_API_CONTROL_MODE ProfileRunner_AssignmentScore = 2
+const ASSIGNMENT_SCORE_SYNC_CONTROL_MODE ProfileRunner_AssignmentScore = 1
+
+type ProfileRunner_ScoredAssignmentsListEntry struct {
+	Score       int
+	Assignments []config.Config_Controller_Profile_Control_Assignment
+}
 
 type ProfileRunnerSettings struct {
 	Mutex                  sync.RWMutex
@@ -24,6 +37,7 @@ type ProfileRunnerAssignmentCall struct {
 	ControlState          controller_mgr.ControllerManager_Controller_ControlState
 	ActionSequencerAction *action_sequencer.ActionSequencerAction
 	DirectControlCommand  *DirectController_Command
+	ApiControlCommand     *ApiController_Command
 }
 
 type ProfileRunner struct {
@@ -31,6 +45,7 @@ type ProfileRunner struct {
 	ControllerManager                 *controller_mgr.ControllerManager
 	DirectController                  *DirectController
 	SyncController                    *SyncController
+	ApiController                     *ApiController
 	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
 	Settings                          ProfileRunnerSettings
 	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
@@ -54,17 +69,25 @@ func (s *ProfileRunnerSettings) GetPreferredControlMode() config.PreferredContro
 	return s.PreferredControlMode
 }
 
+func (s *ProfileRunnerSettings) SetPreferredControlMode(mode config.PreferredControlMode) {
+	s.Mutex.Lock()
+	s.PreferredControlMode = mode
+	defer s.Mutex.Unlock()
+}
+
 func New(
 	action_sequencer *action_sequencer.ActionSequencer,
 	controller_manager *controller_mgr.ControllerManager,
 	direct_controller *DirectController,
 	sync_controller *SyncController,
+	api_controller *ApiController,
 ) *ProfileRunner {
 	return &ProfileRunner{
 		ActionSequencer:   action_sequencer,
 		ControllerManager: controller_manager,
 		DirectController:  direct_controller,
 		SyncController:    sync_controller,
+		ApiController:     api_controller,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			Mutex:                  sync.RWMutex{},
@@ -81,6 +104,9 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 	}
 	if pc.DirectControlCommand != nil {
 		return pc.DirectControlCommand.ToSocketMessage().ToString()
+	}
+	if pc.ApiControlCommand != nil {
+		return pc.ApiControlCommand.ToString()
 	}
 	return ""
 }
@@ -122,7 +148,7 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 	action *ProfileRunnerAssignmentCall,
 ) error {
 	if action != nil {
-		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand)
+		logger.Logger.Info("[ProfileRunner::CallAssignmentActionForControl] executing assignment action", "sequencer_action", action.ActionSequencerAction, "direct_control_action", action.DirectControlCommand, "api_control_action", action.ApiControlCommand)
 	}
 	previous_control_assignments_call_list, has_previous_control_call := p.PreviousControlAssignmentCallList.Get(control_name)
 	if !has_previous_control_call {
@@ -143,14 +169,17 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 		ControlState:          control_state_at_call,
 		ActionSequencerAction: nil,
 		DirectControlCommand:  nil,
+		ApiControlCommand:     nil,
 	}
 	if action != nil {
 		assignment_call.ActionSequencerAction = action.ActionSequencerAction
 		assignment_call.DirectControlCommand = action.DirectControlCommand
+		assignment_call.ApiControlCommand = action.ApiControlCommand
 	} else {
 		/* should always be available - None action should only be set as none for deactivation calls */
 		assignment_call.ActionSequencerAction = (*previous_control_assignments_call_list)[assignment_index].ActionSequencerAction
 		assignment_call.DirectControlCommand = (*previous_control_assignments_call_list)[assignment_index].DirectControlCommand
+		assignment_call.ApiControlCommand = (*previous_control_assignments_call_list)[assignment_index].ApiControlCommand
 	}
 	(*previous_control_assignments_call_list)[assignment_index] = assignment_call
 
@@ -161,6 +190,9 @@ func (p *ProfileRunner) CallAssignmentActionForControl(
 		} else if action.DirectControlCommand != nil {
 			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending direct control command", "command", action.DirectControlCommand)
 			chan_utils.SendTimeout(p.DirectController.ControlChannel, time.Second, *action.DirectControlCommand)
+		} else if action.ApiControlCommand != nil {
+			logger.Logger.Debug("[ProfileRunner::CallAssignmentActionForControl] sending api control command", "command", action.ApiControlCommand)
+			chan_utils.SendTimeout(p.ApiController.ControlChannel, time.Second, *action.ApiControlCommand)
 		}
 	}
 	return nil
@@ -195,6 +227,7 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 			ControlState:          control_state,
 			ActionSequencerAction: &sequencer_action,
 			DirectControlCommand:  nil,
+			ApiControlCommand:     nil,
 		}
 	}
 	if action.DirectControl != nil {
@@ -212,10 +245,22 @@ func (p *ProfileRunner) AssignmentActionToAssignmentCall(
 		return &ProfileRunnerAssignmentCall{
 			ControlState:          control_state,
 			ActionSequencerAction: nil,
+			ApiControlCommand:     nil,
 			DirectControlCommand: &DirectController_Command{
 				Controls:   action.DirectControl.Controls,
 				InputValue: action.DirectControl.Value,
 				Flags:      flags,
+			},
+		}
+	}
+	if action.ApiControl != nil {
+		return &ProfileRunnerAssignmentCall{
+			ControlState:          control_state,
+			ActionSequencerAction: nil,
+			DirectControlCommand:  nil,
+			ApiControlCommand: &ApiController_Command{
+				Controls:   action.ApiControl.Controls,
+				InputValue: action.ApiControl.ApiValue,
 			},
 		}
 	}
@@ -235,11 +280,13 @@ func (p *ProfileRunner) GetAssignments(
 	}
 
 	/* filter out conditional assignments */
-	has_direct_control := false
-	has_sync_control := false
-	var assignments_without_sync_control []config.Config_Controller_Profile_Control_Assignment
-	var assignments_without_direct_control []config.Config_Controller_Profile_Control_Assignment
-	var assignments_without_any_control []config.Config_Controller_Profile_Control_Assignment
+	preferred_control_mode := p.Settings.GetPreferredControlMode()
+	non_control_asssignments := []config.Config_Controller_Profile_Control_Assignment{}
+	scored_control_assignments := map[config.PreferredControlMode]*ProfileRunner_ScoredAssignmentsListEntry{}
+	scored_control_assignments[config.PreferredControlMode_DirectControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 3, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[config.PreferredControlMode_ApiControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 2, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[config.PreferredControlMode_SyncControl] = &ProfileRunner_ScoredAssignmentsListEntry{Score: 1, Assignments: []config.Config_Controller_Profile_Control_Assignment{}}
+	scored_control_assignments[preferred_control_mode].Score = scored_control_assignments[preferred_control_mode].Score + 10
 
 check_assignments_loop:
 	for _, assignment := range assignments {
@@ -277,27 +324,30 @@ check_assignments_loop:
 		}
 
 		if assignment.DirectControl != nil {
-			has_direct_control = true
-			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
+			scored_control_assignments[config.PreferredControlMode_DirectControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_DirectControl].Assignments, assignment)
 		} else if assignment.SyncControl != nil {
-			has_sync_control = true
-			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+			scored_control_assignments[config.PreferredControlMode_SyncControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_SyncControl].Assignments, assignment)
+		} else if assignment.ApiControl != nil {
+			scored_control_assignments[config.PreferredControlMode_ApiControl].Assignments = append(scored_control_assignments[config.PreferredControlMode_ApiControl].Assignments, assignment)
 		} else {
-			assignments_without_any_control = append(assignments_without_any_control, assignment)
-			assignments_without_sync_control = append(assignments_without_sync_control, assignment)
-			assignments_without_direct_control = append(assignments_without_direct_control, assignment)
+			non_control_asssignments = append(non_control_asssignments, assignment)
 		}
 	}
 
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_DirectControl && has_direct_control {
-		return assignments_without_sync_control
+	scored_control_assignments_values_list := []*ProfileRunner_ScoredAssignmentsListEntry{}
+	for _, entry := range scored_control_assignments {
+		if len(entry.Assignments) > 0 {
+			scored_control_assignments_values_list = append(scored_control_assignments_values_list, entry)
+		}
+	}
+	sort.Slice(scored_control_assignments_values_list, func(i, j int) bool {
+		return scored_control_assignments_values_list[i].Score > scored_control_assignments_values_list[j].Score
+	})
+	if len(scored_control_assignments_values_list) > 0 {
+		return append(scored_control_assignments_values_list[0].Assignments, non_control_asssignments...)
 	}
 
-	if p.Settings.GetPreferredControlMode() == config.PreferredControlMode_SyncControl && has_sync_control {
-		return assignments_without_direct_control
-	}
-
-	return assignments_without_any_control
+	return non_control_asssignments
 }
 
 func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
@@ -447,6 +497,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 									WaitTime:  previous_assignment_call.ActionSequencerAction.WaitTime,
 									Release:   true,
 								},
+								ApiControlCommand:    nil,
 								DirectControlCommand: nil,
 							})
 						}
@@ -460,10 +511,23 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
 							ControlState:          change_event.ControlState,
 							ActionSequencerAction: nil,
+							ApiControlCommand:     nil,
 							DirectControlCommand: &DirectController_Command{
 								Controls:   control_assignment_item.DirectControl.Controls,
 								InputValue: output_value,
 								Flags:      flags,
+							},
+						})
+					}
+					if control_assignment_item.ApiControl != nil {
+						output_value := control_assignment_item.ApiControl.InputValue.CalculateOutputValue(change_event.Control.State.NormalizedValues.Value)
+						p.CallAssignmentActionForControl(control_name, assignment_index, change_event.ControlState, control_assignment_item, &ProfileRunnerAssignmentCall{
+							ControlState:          change_event.ControlState,
+							ActionSequencerAction: nil,
+							DirectControlCommand:  nil,
+							ApiControlCommand: &ApiController_Command{
+								Controls:   control_assignment_item.ApiControl.Controls,
+								InputValue: output_value,
 							},
 						})
 					}
@@ -487,7 +551,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				return
 			case sync_control_state := <-channel:
 				/* sync control only works when a profile is distinctly selected - also skip if not in sync control */
-				if sync_control_state.SourceEvent != nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
+				if sync_control_state.SourceEvent == nil || p.Settings.GetPreferredControlMode() != config.PreferredControlMode_SyncControl {
 					continue
 				}
 

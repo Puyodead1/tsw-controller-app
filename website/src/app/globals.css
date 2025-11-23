@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @plugin "daisyui";
 
 #editor {
@@ -19,6 +20,8 @@
 
 #editor .json-editor-btn-add,
 #editor .json-editor-btn-delete,
+#editor .json-editor-btn-moveup,
+#editor .json-editor-btn-movedown,
 #editor .json-editor-btn-subtract,
 #editor .json-editor-btn-save,
 #editor .json-editor-btn-copy,
@@ -62,6 +65,8 @@
 
 #editor .json-editor-btntype-editjson,
 #editor .json-editor-btntype-properties,
+#editor .json-editor-btn-moveup,
+#editor .json-editor-btn-movedown,
 #editor .json-editor-btntype-add {
   @apply btn btn-info btn-soft btn-xs;
 }

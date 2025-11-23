@@ -6,6 +6,8 @@ export function ClearProfile(arg1:string):Promise<void>;
 
 export function DeleteProfile(arg1:string):Promise<void>;
 
+export function GetCabControlState():Promise<main.Interop_Cab_ControlState>;
+
 export function GetControllerConfiguration(arg1:string):Promise<main.Interop_ControllerConfiguration>;
 
 export function GetControllers():Promise<Array<main.Interop_GenericController>>;
@@ -14,13 +16,15 @@ export function GetLastInstalledModVersion():Promise<string>;
 
 export function GetLatestReleaseVersion():Promise<string>;
 
+export function GetPreferredControlMode():Promise<string>;
+
 export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
 export function GetSelectedProfiles():Promise<Record<string, string>>;
 
 export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
 
-export function GetSyncControlState():Promise<Array<main.Interop_SyncController_ControlState>>;
+export function GetTSWAPIKeyLocation():Promise<string>;
 
 export function GetVersion():Promise<string>;
 
@@ -42,7 +46,7 @@ export function OpenNewProfileBuilder(arg1:string):Promise<void>;
 
 export function OpenProfileBuilder(arg1:string):Promise<void>;
 
-export function ResetSyncControlState():Promise<void>;
+export function ResetCabControlState():Promise<void>;
 
 export function SaveCalibration(arg1:main.Interop_ControllerCalibration):Promise<void>;
 
@@ -53,6 +57,10 @@ export function SaveProfileForSharing(arg1:string,arg2:string):Promise<void>;
 export function SelectProfile(arg1:string,arg2:string):Promise<void>;
 
 export function SetLastInstalledModVersion(arg1:string):Promise<void>;
+
+export function SetPreferredControlMode(arg1:string):Promise<void>;
+
+export function SetTSWAPIKeyLocation(arg1:string):Promise<void>;
 
 export function SubscribeRaw(arg1:string):Promise<void>;
 

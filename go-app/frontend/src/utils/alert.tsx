@@ -42,7 +42,7 @@ const Alerts = () => {
   }, [dismiss, dismissTimeoutRef]);
 
   return (
-    <div className="fixed bottom-4 w-full flex justify-center pointer-events-none">
+    <div className="fixed bottom-4 w-full grid justify-center pointer-events-none">
       <AnimatePresence mode="sync">
         {current && (
           <motion.div
@@ -52,7 +52,7 @@ const Alerts = () => {
             exit={{ opacity: 0, y: "-100%" }}
             onClick={dismiss}
             className={clsx(
-              "alert cursor-pointer pointer-events-auto",
+              "alert cursor-pointer pointer-events-auto col-start-1 row-start-1",
               alertVariantToClassName[current.variant],
             )}
           >
@@ -75,7 +75,7 @@ alertsRoot.render(
 export const alert = (message: string, variant: AlertVariant) => {
   document.body.dispatchEvent(
     new CustomEvent("x-alert", {
-      detail: { key: `${variant}_${message}`, message, variant },
+      detail: { key: `${variant}_${message}_${Date.now()}`, message, variant },
     }),
   );
 };

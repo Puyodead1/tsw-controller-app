@@ -9,9 +9,9 @@ This guide explains how to use set-up and configure Steam Input to ensure the in
 1. Launch **Steam**.
 2. Go to your **Library**.
 3. Right-click the Train Sim World 5/6 and select **Properties**.
-
-<a href='https://postimages.org/' target='_blank'><img src='https://i.postimg.cc/fLTNQ3CK/Screenshot-from-2025-09-27-22-11-04.png' border='0' alt='Screenshot-from-2025-09-27-22-11-04'/></a>
-
+  
+![Game Properties](https://i.postimg.cc/vHHTxzBp/001-steam-input-guide-open-game.png)  
+  
 ---
 
 ## **Step 2: Enable Steam Input**
@@ -19,9 +19,9 @@ This guide explains how to use set-up and configure Steam Input to ensure the in
 1. In the **Properties** window, select the **Controller** tab.
 2. Under **Override for [Game Name]**, select **Enable Steam Input**.
 3. Close the properties window.
-
-<a href='https://postimages.org/' target='_blank'><img src='https://i.postimg.cc/Mp2JK35h/Screenshot-from-2025-09-27-22-12-22.png' border='0' alt='Screenshot-from-2025-09-27-22-12-22'/></a>
-
+  
+![Force Enable Steam Input](https://i.postimg.cc/xTCj11pS/002-force-enable-steam-input.png)  
+  
 > **Note:** This ensures Steam Input is always active for Train Sim World.
 
 ---
@@ -42,14 +42,14 @@ If your controller is unrecognized by Steam (which is often the case for custom 
 1. With your controller connected, click the **Controller Configuration** button in your game’s Library page.
 2. Instead of browsing, use the direct link for the "Disabled Gamepad" layout:
 
-**Train Sim World 5**
-<a href="steam://controllerconfig/2967990/3576092503">steam://controllerconfig/2967990/3576092503</a>
-
-**Train Sim World 6**
-<a href="steam://controllerconfig/3656800/3576139582">steam://controllerconfig/3656800/3576139582</a>
-
-<a href='https://postimages.org/' target='_blank'><img src='https://i.postimg.cc/5NZQ9JZv/Frame-15.jpg' border='0' alt='Disabled Gamepad'/></a>
-
+**Train Sim World 5**  
+[steam://controllerconfig/2967990/3576092503](steam://controllerconfig/2967990/3576092503)  
+  
+**Train Sim World 6**  
+[steam://controllerconfig/3656800/3576139582](steam://controllerconfig/3656800/3576139582)  
+  
+![Apply Gamepad Layout](https://i.postimg.cc/d3X0YMYC/003-apply-layout.jpg)  
+  
 3. Steam will open the layout and ask to **Apply Configuration**. Click **Apply**.
 
 > **Note:** This particular template is designed to **disable all controller input for the game**, allowing another software to handle the controller.

@@ -55,6 +55,57 @@ export namespace config {
 
 export namespace main {
 	
+	export class Interop_Cab_ControlState_Control {
+	    Identifier: string;
+	    PropertyName: string;
+	    CurrentValue: number;
+	    CurrentNormalizedValue: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_Cab_ControlState_Control(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Identifier = source["Identifier"];
+	        this.PropertyName = source["PropertyName"];
+	        this.CurrentValue = source["CurrentValue"];
+	        this.CurrentNormalizedValue = source["CurrentNormalizedValue"];
+	    }
+	}
+	export class Interop_Cab_ControlState {
+	    Name: string;
+	    Controls: Interop_Cab_ControlState_Control[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_Cab_ControlState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Controls = this.convertValues(source["Controls"], Interop_Cab_ControlState_Control);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Interop_ControllerCalibration_Control {
 	    Kind: string;
 	    Index: number;
@@ -218,28 +269,6 @@ export namespace main {
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
 	        this.Url = source["Url"];
-	    }
-	}
-	export class Interop_SyncController_ControlState {
-	    Identifier: string;
-	    PropertyName: string;
-	    CurrentValue: number;
-	    CurrentNormalizedValue: number;
-	    TargetValue: number;
-	    Moving: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new Interop_SyncController_ControlState(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Identifier = source["Identifier"];
-	        this.PropertyName = source["PropertyName"];
-	        this.CurrentValue = source["CurrentValue"];
-	        this.CurrentNormalizedValue = source["CurrentNormalizedValue"];
-	        this.TargetValue = source["TargetValue"];
-	        this.Moving = source["Moving"];
 	    }
 	}
 

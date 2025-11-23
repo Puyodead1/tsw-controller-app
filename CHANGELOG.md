@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 1.1.0
+- Implements new "api_control" mode to utilize the API instead of the mod. This uses the same control name but sends the value using the HTTP API (may require the API key to be configured).  
+**Note** has higher overhead than the direct control mode.
+- Updates cab debuggger to utilize HTTP API if available
+- Added search box to cab debugger
+- Added preferred control mode in settings
+
+Example assignment:
+```json
+{
+  "type": "api_control",
+  "controls": "Throttle1",
+  "input_value": {
+    "min": 0.0,
+    "max": 1.0,
+    "invert": true
+  }
+}
+```
+
+Example action:
+```json
+{
+  "controls": "Throttle1",
+  "api_value": 0.5
+}
+```
 
 ## 1.0.5
 - Use custom dwmapi proxy

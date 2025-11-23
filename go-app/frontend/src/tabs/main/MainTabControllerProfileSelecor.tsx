@@ -67,9 +67,9 @@ export function MainTabControllerProfileSelector({
               </option>
             ))}
         </select>
-        <span className="label">
+        {/* <span className="label">
           Auto-detect only works for certain supported controllers
-        </span>
+        </span> */}
       </fieldset>
       <div className="dropdown dropdown-end mt-[34px]">
         <div tabIndex={0} role="button" className="btn">

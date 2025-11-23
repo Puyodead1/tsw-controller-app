@@ -49,14 +49,16 @@ type Interop_ControllerConfiguration struct {
 	SDLMapping  config.Config_Controller_SDLMap
 }
 
-type Interop_SyncController_ControlState struct {
+type Interop_Cab_ControlState_Control struct {
 	Identifier             string
 	PropertyName           string
 	CurrentValue           float64
 	CurrentNormalizedValue float64
-	TargetValue            float64
-	/** [-1,0,1] -> decreasing, idle, increasing */
-	Moving int
+}
+
+type Interop_Cab_ControlState struct {
+	Name     string
+	Controls []Interop_Cab_ControlState_Control
 }
 
 type Interop_SharedProfile struct {

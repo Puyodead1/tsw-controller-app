@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "title": "Keys Action",
+  "properties": {
+    "keys": {
+      "type": "string",
+      "description": "The keys to trigger (a list of key identifiers separated by +'s)",
+      "examples": ["q+pagedown"]
+    },
+    "press_time": {
+      "type": "number",
+      "minimum": 0,
+      "description": "The number of seconds to hold the button down; can be omitted to just hold it until released"
+    },
+    "wait_time": {
+      "type": "number",
+      "minimum": 0,
+      "description": "The minimum time in seconds to wait between keystrokes; can be omitted"
+    }
+  },
+  "required": ["keys"]
+}

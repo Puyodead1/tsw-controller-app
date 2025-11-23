@@ -11,7 +11,7 @@ func TestConfigProfile_SyncControlValidation(t *testing.T) {
 	value := Config_Controller_Profile_Control_Assignment_SyncControl{
 		Type:       "sync_control",
 		Identifier: "Throttle",
-		InputValue: Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue{
+		InputValue: Config_Controller_Profile_Control_Assignment_DirectLike_InputValue{
 			Min: 0.0,
 			Max: 1.0,
 		},
@@ -86,7 +86,7 @@ func TestConfigProfile_DirectOrSyncControl_InputValue_GetFreeRangeZones(t *testi
 	steps_0_0 := 0.0
 	steps_0_5 := 0.5
 	steps_1_0 := 1.0
-	input_value := Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue{
+	input_value := Config_Controller_Profile_Control_Assignment_DirectLike_InputValue{
 		Min: 0.0,
 		Max: 1.0,
 		Steps: &[]*float64{
@@ -102,7 +102,7 @@ func TestConfigProfile_DirectOrSyncControl_InputValue_GetNormalSteps(t *testing.
 	steps_0_0 := 0.0
 	steps_0_5 := 0.5
 	steps_1_0 := 1.0
-	input_value := Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue{
+	input_value := Config_Controller_Profile_Control_Assignment_DirectLike_InputValue{
 		Min: 0.0,
 		Max: 1.0,
 		Steps: &[]*float64{
@@ -118,7 +118,7 @@ func TestConfigProfile_DirectOrSyncControl_InputValue_CalculateOutputValue(t *te
 	steps_0_0 := 0.0
 	steps_0_5 := 0.5
 	steps_1_0 := 1.0
-	input_value := Config_Controller_Profile_Control_Assignment_DirectOrSyncControl_InputValue{
+	input_value := Config_Controller_Profile_Control_Assignment_DirectLike_InputValue{
 		Min: 0.0,
 		Max: 1.0,
 		Steps: &[]*float64{
