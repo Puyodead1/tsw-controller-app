@@ -43,16 +43,16 @@ For "simple" keybind assignments such as headlights we don't need to start the g
 To do so, we can add a new item in the "controls" section by pressing "Add item". This will add a new control item, of which there should only be one per physically defined control. In our case we will end up having one for "Headlights" and one for "Throttle". Let's also start by entering the control name in the "name" field.   
 ![First control](https://i.postimg.cc/kXVfxLTK/Creating-Profile-007-profile-builder-first-control.png)  
   
-Next we can add the assignment. Each control can have multiple assignments depending on how many actions we want to take when a control is activated. For this one we will just have one simple "Momentary" assignment which will act as a momentary switch (**Note: for more information on all the assignment types you can refer to the [Profile Explainer](./PROFILE_EXPLAINER.md) later**). Once you click "Add item" in the assignments section a new assignment should show up. Momentary should already be the default selected type, but if it is not make sure to select it using the select box next to "Item 1".  
+Next we can add the assignment. Each control can have multiple assignments depending on how many actions we want to take when a control is activated. For this one we will just have one simple "Momentary" assignment which will act as a momentary switch (**Note: for more information on all the assignment types you can refer to the [Profile Explainer](https://tsw-controller-app.vercel.app/docs/creating-profile-quickstart) later**). Once you click "Add item" in the assignments section a new assignment should show up. Momentary should already be the default selected type, but if it is not make sure to select it using the select box next to "Item 1".  
 ![First assignment](https://i.postimg.cc/GpRKntdT/Creating-Profile-008-first-assignment.png)  
   
 Now we can configure the momentary assignment. For the "threshold" we can simply enter any non-zero value such as `0.5`. This is because all configured controls will report a value between 0 and 1 depending on their state. For levers, this is a floating value but buttons are generally either 0 or 1 so the threshold value is less important here. For the "action_activate" field we will want to make sure the "Keys Action" type is selected and we can enter `h` in the keys input (which is the default keybinding for headlights in Train Sim World). If you want to activate multiple keys at once you can do so by entering them separated by a + sign (eg: `shift+h`).  
 ![Configuring the momentary assignment](https://i.postimg.cc/SRHLTNgZ/Creating-Profile-009-configuring-the-momentary-assignment.png)  
   
-> **Remember: for more information on all the assignment types you can refer to the [Profile Explainer](./PROFILE_EXPLAINER.md)**
+> **Remember: for more information on all the assignment types you can refer to the [Profile Explainer](https://tsw-controller-app.vercel.app/docs/creating-profile-quickstart)**
 
 ## Step 4 - Creating complex assignment
-Now we can move on to the more interesting assignment type of "Direct Control" for our throttle. (this is similar to the API and sync control methods, for more information refer to the [Profile Explainer](./PROFILE_EXPLAINER.md)). Let's start by adding another control item for our throttle and once added we will enter the previously configured "Throttle" name into the "name" input.  
+Now we can move on to the more interesting assignment type of "Direct Control" for our throttle. (this is similar to the API and sync control methods, for more information refer to the [Profile Explainer](https://tsw-controller-app.vercel.app/docs/creating-profile-quickstart)). Let's start by adding another control item for our throttle and once added we will enter the previously configured "Throttle" name into the "name" input.  
 ![Throttle Control](https://i.postimg.cc/MGz7rLYk/Creating-Profile-010-throttle-control.png)  
   
 Next we can press "Add item" in the assignments section of our throttle control section, however instead of selecting "Momentary" we will select direct control. Some optional fields from the momentary assignment type may still be shown, these can be hidden/removed by selecting the "Object Properties" button and unchecking the optional fields.  
@@ -69,7 +69,7 @@ To start, lets figure out what the name of the control in-game control is. You c
 Now find out the values of the master controller in the game. Start by moving the handle to the full brake position, we will assume this is the minimum possible value. Once the value is updated in the cab debugger we can enter it in the "Min" field for the assignment. Next, you can do the same for the maximum power position and copy the value into the "Max" field. In the case of the ALP-45 DP this ends up being -1 and 1 respectively.  
 ![Direct Control Min Max Values](https://i.postimg.cc/8cvwV6J0/Creating-Profile-014-direct-control-minmax.png)  
 
-**Remember: for more information on all the assignment types you can refer to the [Profile Explainer](./PROFILE_EXPLAINER.md) later**
+**Remember: for more information on all the assignment types you can refer to the [Profile Explainer](https://tsw-controller-app.vercel.app/docs/creating-profile-quickstart) later**
 
 ## Step 5 - Save and import the profile
 Now we are ready to save this basic profile - so you can press "Save" in the profile builder. This will allow you to save the `.tswprofile` file onto your device. Once saved you can switch back to the "Main" tab in the controller app and click "Import profile" and select the previously saved profile file. After importing you will be able to select the new profile from the dropdown for your controller.  
