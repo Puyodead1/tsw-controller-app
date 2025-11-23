@@ -15,37 +15,33 @@ type Config_ProgramConfig struct {
 	TSWAPIKeyLocation         string               `json:"tsw_api_key_location,omitempty"`
 	TSWAPISubscriptionIDStart int                  `json:"tsw_api_subscription_id_start,omitempty"`
 	PreferredControlMode      PreferredControlMode `json:"preferred_control_mode,omitempty"`
+	AlwaysOnTop               bool                 `json:"always_on_top,omitempty"`
+}
+
+func NewDefaultProgramConfig() *Config_ProgramConfig {
+	return &Config_ProgramConfig{
+		LastInstalledModVersion:   "",
+		TSWAPIKeyLocation:         "",
+		AlwaysOnTop:               false,
+		TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
+		PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
+	}
 }
 
 func LoadProgramConfigFromFile(filepath string) *Config_ProgramConfig {
 	file_bytes, err := os.ReadFile(filepath)
 	if err != nil {
 		logger.Logger.Error("[Config_ProgramConfig] could not read config file", "filepath", filepath)
-		return &Config_ProgramConfig{
-			LastInstalledModVersion:   "",
-			TSWAPIKeyLocation:         "",
-			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
-			PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
-		}
+		return NewDefaultProgramConfig()
 	}
 
-	var pc Config_ProgramConfig = Config_ProgramConfig{
-		LastInstalledModVersion:   "",
-		TSWAPIKeyLocation:         "",
-		TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
-		PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
-	}
-	if err := json.Unmarshal(file_bytes, &pc); err != nil {
+	var pc *Config_ProgramConfig = NewDefaultProgramConfig()
+	if err := json.Unmarshal(file_bytes, pc); err != nil {
 		logger.Logger.Error("[Config_ProgramConfig] failed to parse json", "filepath", filepath)
-		return &Config_ProgramConfig{
-			LastInstalledModVersion:   "",
-			TSWAPIKeyLocation:         "",
-			TSWAPISubscriptionIDStart: DEFAULT_TSWAPI_SUBSCRIPTION_ID_START,
-			PreferredControlMode:      DEFAULT_PREFERRED_CONTROL_MODE,
-		}
+		return NewDefaultProgramConfig()
 	}
 
-	return &pc
+	return pc
 }
 
 func (c *Config_ProgramConfig) AutoDetectTSWAPIKeyLocation() string {

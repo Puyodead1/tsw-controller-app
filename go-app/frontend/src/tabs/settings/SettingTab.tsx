@@ -4,24 +4,28 @@ import {
   GetTSWAPIKeyLocation,
   SetPreferredControlMode,
   SetTSWAPIKeyLocation,
+  GetAlwaysOnTop,
+  SetAlwaysOnTop,
 } from "../../../wailsjs/go/main/App";
-import { useEffect } from "react";
 import { alert } from "../../utils/alert";
-import debounce from "just-debounce";
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 
 type FormValues = {
   tswApiKeyLocation: string;
   preferredControlMode: "direct_control" | "sync_control" | "api_control";
+  alwaysOnTop: boolean;
 };
+
+const getRemoteFormValues = async () => ({
+  tswApiKeyLocation: await GetTSWAPIKeyLocation(),
+  preferredControlMode:
+    (await GetPreferredControlMode()) as FormValues["preferredControlMode"],
+  alwaysOnTop: await GetAlwaysOnTop(),
+});
 
 export const SettingsTab = () => {
   const { register, formState, reset, handleSubmit } = useForm<FormValues>({
-    defaultValues: async () => ({
-      tswApiKeyLocation: await GetTSWAPIKeyLocation(),
-      preferredControlMode:
-        (await GetPreferredControlMode()) as FormValues["preferredControlMode"],
-    }),
+    defaultValues: async () => getRemoteFormValues(),
   });
 
   const handleOpenForumLink = () => {
@@ -32,20 +36,25 @@ export const SettingsTab = () => {
 
   const handleSubmitSuccess = async (values: FormValues) => {
     const promises: Promise<void>[] = [];
+    const currentValues = await getRemoteFormValues();
 
     if (
       values.tswApiKeyLocation &&
       values.tswApiKeyLocation.endsWith("CommAPIKey.txt") &&
-      values.tswApiKeyLocation !== (await GetTSWAPIKeyLocation())
+      values.tswApiKeyLocation !== currentValues.tswApiKeyLocation
     ) {
       promises.push(SetTSWAPIKeyLocation(values.tswApiKeyLocation));
     }
 
     if (
       values.preferredControlMode &&
-      values.preferredControlMode !== (await GetPreferredControlMode())
+      values.preferredControlMode !== currentValues.preferredControlMode
     ) {
       promises.push(SetPreferredControlMode(values.preferredControlMode));
+    }
+
+    if (values.alwaysOnTop !== currentValues.alwaysOnTop) {
+      promises.push(SetAlwaysOnTop(values.alwaysOnTop));
     }
 
     if (promises.length) {
@@ -82,6 +91,17 @@ export const SettingsTab = () => {
           manually here. The API key is only requred for the "api_control"
           control mode.
         </p>
+      </fieldset>
+      <fieldset className="fieldset bg-base-100 border-base-300 rounded-box border p-4 w-full">
+        <legend className="fieldset-legend">Other options</legend>
+        <label className="label">
+          <input
+            type="checkbox"
+            className="checkbox"
+            {...register("alwaysOnTop")}
+          />
+          Always on top
+        </label>
       </fieldset>
       <div role="alert" className="alert">
         <span>

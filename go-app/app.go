@@ -128,19 +128,6 @@ func NewApp(
 		api_controller,
 	)
 
-	if program_config.TSWAPIKeyLocation != "" {
-		tswapi.LoadAPIKey(program_config.TSWAPIKeyLocation)
-		cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
-			TSWAPISubscriptionIDStart: program_config.TSWAPISubscriptionIDStart,
-		})
-	}
-
-	if program_config.PreferredControlMode == config.PreferredControlMode_DirectControl ||
-		program_config.PreferredControlMode == config.PreferredControlMode_SyncControl ||
-		program_config.PreferredControlMode == config.PreferredControlMode_ApiControl {
-		profile_runner.Settings.SetPreferredControlMode(program_config.PreferredControlMode)
-	}
-
 	return &App{
 		config:             appconfig,
 		program_config:     program_config,
@@ -161,6 +148,23 @@ func NewApp(
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.LoadConfiguration()
+
+	if a.program_config.TSWAPIKeyLocation != "" {
+		a.tswapi.LoadAPIKey(a.program_config.TSWAPIKeyLocation)
+		a.cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
+			TSWAPISubscriptionIDStart: a.program_config.TSWAPISubscriptionIDStart,
+		})
+	}
+
+	if a.program_config.PreferredControlMode == config.PreferredControlMode_DirectControl ||
+		a.program_config.PreferredControlMode == config.PreferredControlMode_SyncControl ||
+		a.program_config.PreferredControlMode == config.PreferredControlMode_ApiControl {
+		a.profile_runner.Settings.SetPreferredControlMode(a.program_config.PreferredControlMode)
+	}
+
+	if a.program_config.AlwaysOnTop {
+		runtime.WindowSetAlwaysOnTop(a.ctx, true)
+	}
 
 	go func() {
 		channel, unsubscribe := logger.Logger.Listen()
@@ -267,6 +271,16 @@ func (a *App) GetPreferredControlMode() string {
 func (a *App) SetPreferredControlMode(mode config.PreferredControlMode) {
 	a.program_config.PreferredControlMode = mode
 	a.profile_runner.Settings.SetPreferredControlMode(mode)
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
+}
+
+func (a *App) GetAlwaysOnTop() bool {
+	return a.program_config.AlwaysOnTop
+}
+
+func (a *App) SetAlwaysOnTop(enabled bool) {
+	a.program_config.AlwaysOnTop = enabled
+	runtime.WindowSetAlwaysOnTop(a.ctx, enabled)
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
