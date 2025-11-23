@@ -212,11 +212,13 @@ In the above example, the assignment will only execute if `mylever` exceeds 0.5
 
 ---
 
+
 ## ✅ Best Practices
 
-- Use `DirectControl` for stable, high-resolution mappings.
-- Use `SyncControl` only when direct manipulation is buggy.
-- Use `Linear` for fine-grained lever behavior.
+- Use `DirectControl` for stable, high-resolution mappings, especially lever controls.
+- Use `ApiControl` if you are unable to or do not want to use `DirectControl` (`ApiControl` is less flexible and is less performant, but still provides a near direct control option)
+- Use `SyncControl` if you want a direct control like experience but want to use keybindings. (this may be helpful since using keybinds trigger the in-game value notifications)
+- Use `Linear` for fine-grained, manually configured lever behavior.
 - Use `Momentary` for temporary actions like horn or bell.
 - Use `Toggle` for switches with two states.
 
