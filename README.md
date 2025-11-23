@@ -6,28 +6,28 @@ This UE4SS mod and program allow you to use any joystick to directly control the
 ### Controller Specific Profile Selection
 You can select a profile for each controller allowing for a complex multi controller set-up with different active profiles.  
   
-![Controller Specific Profiles](./images/highlights/controller-specific-profiles.png)  
-
+![Controller Specific Profiles](https://i.postimg.cc/pXT0Gwr7/controller-specific-profiles.png)  
+  
 ### Cab Debugger
 The cab debugger gives a real time status of the current in-game locomotive as the in game controls are changing. This is useful for configuring new train profiles and checking the relevant values.  
   
-![Cab Debugger](./images/highlights/cab-debugger.png)  
+![Cab Debugger](https://i.postimg.cc/N0YjY73f/Highlights_-_Cab_Debugger.png)  
 
 ### Visual Calibration
 The new 1.0.0 version also brings a completely overhauled visual calibration mode making it easier than ever to calibrate and configure existing or new controllers  
   
-![Visual Calibration](./images/highlights/ui-calibration.png)  
-
+![Visual Calibration](https://i.postimg.cc/pV9hskxB/Highlights_-_UI_Calibration.png)  
+  
 ### Profile Builder
 A graphical profile builder is now available online to help with configuring new profiles if you are not comfortable creating the JSON profiles  
   
-![Open Profile Builder](./images/highlights/open-profile-builder.png)  
-![Profile Builder](./images/highlights/profile-builder.png)  
+![Open Profile Builder](https://i.postimg.cc/SNFsDhgY/Highlights_-_Open_Profile_Builder.png)  
+![Profile Builder](https://i.postimg.cc/VNbp737x/Highlights_-_Profile_Builder.png)  
 
 ## Shared Profiles
 You can submit profiles for other users to use and download right from the app  
   
-![Shared Profiles](./images/highlights/shared-profiles.png)  
+![Shared Profiles](https://i.postimg.cc/SK77NdjG/Highlights-Shared-Profiles.png)  
 
 You can find some demos below:
 
