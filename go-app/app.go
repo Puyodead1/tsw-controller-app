@@ -59,10 +59,16 @@ type ModAssets_Manifest struct {
 	Manifest []ModAssets_Manifest_Entry `json:"manifest"`
 }
 
+type Remote_SharedProfilesIndex_Profile_Author struct {
+	Name string  `json:"name,omitempty"`
+	Url  *string `json:"url,omitempty"`
+}
+
 type Remote_SharedProfilesIndex_Profile struct {
-	File  string `json:"file"`
-	Name  string `json:"name"`
-	UsbID string `json:"usb_id"`
+	File   string                                     `json:"file"`
+	Name   string                                     `json:"name"`
+	UsbID  string                                     `json:"usb_id"`
+	Author *Remote_SharedProfilesIndex_Profile_Author `json:"author,omitempty"`
 }
 
 type Remote_SharedProfilesIndex struct {
@@ -357,6 +363,9 @@ func (a *App) GetProfiles() []Interop_Profile {
 		profiles = append(profiles, Interop_Profile{
 			Name:  profile.Name,
 			UsbID: UsbID,
+			Metadata: Interop_Profile_Metadata{
+				UpdatedAt: profile.Metadata.UpdatedAt.Format(time.RFC3339),
+			},
 		})
 		return true
 	})
@@ -475,10 +484,18 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 
 	profiles := []Interop_SharedProfile{}
 	for _, profile := range c.Profiles {
+		var author *Interop_SharedProfile_Author = nil
+		if profile.Author != nil {
+			author = &Interop_SharedProfile_Author{
+				Name: profile.Author.Name,
+				Url:  profile.Author.Url,
+			}
+		}
 		profiles = append(profiles, Interop_SharedProfile{
-			Name:  profile.Name,
-			UsbID: profile.UsbID,
-			Url:   fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Name:   profile.Name,
+			UsbID:  profile.UsbID,
+			Url:    fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Author: author,
 		})
 	}
 
@@ -655,7 +672,7 @@ func (a *App) OpenProfileBuilder(name string) {
 
 func (a *App) DeleteProfile(name string) error {
 	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
-		err := os.Remove(profile.Path)
+		err := os.Remove(profile.Metadata.Path)
 		a.profile_runner.Profiles.Delete(name)
 		return err
 	}

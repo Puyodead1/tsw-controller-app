@@ -1,5 +1,17 @@
-import { UseFormReturn } from "react-hook-form";
+import { Controller, UseFormReturn } from "react-hook-form";
 import { main } from "../../../wailsjs/go/models";
+import {
+  autoUpdate,
+  flip,
+  FloatingPortal,
+  offset,
+  size,
+  useClick,
+  useDismiss,
+  useFloating,
+  useInteractions,
+} from "@floating-ui/react";
+import { useState } from "react";
 
 type Props = {
   form: UseFormReturn<{
@@ -21,6 +33,11 @@ type Props = {
   ) => void;
 };
 
+const updatedAtFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "medium",
+});
+
 export function MainTabControllerProfileSelector({
   form,
   controller,
@@ -32,51 +49,113 @@ export function MainTabControllerProfileSelector({
   onOpenProfileForController,
   onDeleteProfileForController,
 }: Props) {
-  const { register, watch } = form;
+  const { watch, control } = form;
   const selectedProfile = watch(`profiles.${controller.GUID}`);
+  const supportedProfiles = profiles?.filter(
+    (profile) => !profile.UsbID || profile.UsbID === controller.UsbID,
+  );
+  const unsupportedProfiles = profiles?.filter(
+    (profile) => profile.UsbID && profile.UsbID !== controller.UsbID,
+  );
+
+  const [selectOpen, setSelectOpen] = useState(false);
+  const { refs, floatingStyles, context } = useFloating<HTMLElement>({
+    strategy: "fixed",
+    placement: "bottom-start",
+    open: selectOpen,
+    onOpenChange: setSelectOpen,
+    whileElementsMounted: autoUpdate,
+    middleware: [
+      offset(5),
+      flip({ padding: 10 }),
+      size({
+        apply({ rects, elements, availableHeight }) {
+          Object.assign(elements.floating.style, {
+            maxHeight: `${availableHeight}px`,
+            minWidth: `${rects.reference.width}px`,
+          });
+        },
+        padding: 10,
+      }),
+    ],
+  });
+
+  const click = useClick(context);
+  const dismiss = useDismiss(context);
+
+  const { getReferenceProps, getFloatingProps } = useInteractions([
+    click,
+    dismiss,
+  ]);
 
   return (
     <div key={controller.GUID} className="flex flex-row gap-2">
-      <fieldset className="fieldset grow">
-        <legend className="fieldset-legend">
-          Select profile for {controller.Name}
-        </legend>
-        <select
-          className="select w-full"
-          {...register(`profiles.${controller.GUID}`)}
-        >
-          <option selected value="">
-            None
-          </option>
-          {profiles
-            ?.filter(
-              (profile) => !profile.UsbID || profile.UsbID === controller.UsbID,
-            )
-            .map((profile) => (
-              <option key={profile.Name} value={profile.Name}>
-                {profile.Name}
-              </option>
-            ))}
-          {profiles
-            ?.filter(
-              (profile) => profile.UsbID && profile.UsbID !== controller.UsbID,
-            )
-            .map((profile) => (
-              <option key={profile.Name} value={profile.Name} disabled>
-                {profile.Name} (Not enabled for controller)
-              </option>
-            ))}
-        </select>
-        {/* <span className="label">
-          Auto-detect only works for certain supported controllers
-        </span> */}
-      </fieldset>
-      <div className="dropdown dropdown-end mt-[34px]">
+      <Controller
+        control={control}
+        name={`profiles.${controller.GUID}`}
+        render={({ field }) => (
+          <>
+            <button
+              ref={refs.setReference}
+              className="select w-full"
+              {...getReferenceProps()}
+            >
+              {selectedProfile ?? "Select profile"}
+            </button>
+            {!!selectOpen && (
+              <FloatingPortal>
+                <div
+                  ref={refs.setFloating}
+                  className="z-1"
+                  style={floatingStyles}
+                  {...getFloatingProps()}
+                >
+                  <div className="shadow-sm max-h-[50dvh] overflow-auto w-full">
+                    <ul className="menu w-full bg-base-300 rounded-box p-2">
+                      {supportedProfiles.map((profile) => (
+                        <li key={profile.Name}>
+                          <button
+                            className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0 dropdown-close"
+                            onClick={() => {
+                              field.onChange(profile.Name);
+                              setSelectOpen(false);
+                            }}
+                          >
+                            <span>{profile.Name}</span>
+                            <span className="text-base-content/30 text-xs">
+                              Last updated:{" "}
+                              {updatedAtFormatter.format(
+                                new Date(profile.Metadata.UpdatedAt),
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                      {unsupportedProfiles.map((profile) => (
+                        <li key={profile.Name} className="menu-disabled">
+                          <button className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0">
+                            <span>{profile.Name}</span>
+                            <span className="text-base-content/30 text-xs">
+                              Disabled for controller
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </FloatingPortal>
+            )}
+          </>
+        )}
+      />
+
+      <div className="dropdown dropdown-end">
         <div tabIndex={0} role="button" className="btn">
           More
         </div>
         <ul
-          tabIndex={0}
+          tabIndex={-1}
           className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
         >
           <li>

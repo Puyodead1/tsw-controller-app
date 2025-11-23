@@ -219,9 +219,22 @@ export namespace main {
 	        this.IsConfigured = source["IsConfigured"];
 	    }
 	}
+	export class Interop_Profile_Metadata {
+	    UpdatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_Profile_Metadata(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.UpdatedAt = source["UpdatedAt"];
+	    }
+	}
 	export class Interop_Profile {
 	    Name: string;
 	    UsbID: string;
+	    Metadata: Interop_Profile_Metadata;
 	
 	    static createFrom(source: any = {}) {
 	        return new Interop_Profile(source);
@@ -231,8 +244,28 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
+	        this.Metadata = this.convertValues(source["Metadata"], Interop_Profile_Metadata);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
+	
 	export class Interop_RawEvent {
 	    GUID: string;
 	    UsbID: string;
@@ -255,10 +288,25 @@ export namespace main {
 	        this.Timestamp = source["Timestamp"];
 	    }
 	}
+	export class Interop_SharedProfile_Author {
+	    Name: string;
+	    Url?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_SharedProfile_Author(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Url = source["Url"];
+	    }
+	}
 	export class Interop_SharedProfile {
 	    Name: string;
 	    UsbID: string;
 	    Url: string;
+	    Author?: Interop_SharedProfile_Author;
 	
 	    static createFrom(source: any = {}) {
 	        return new Interop_SharedProfile(source);
@@ -269,7 +317,26 @@ export namespace main {
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
 	        this.Url = source["Url"];
+	        this.Author = this.convertValues(source["Author"], Interop_SharedProfile_Author);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

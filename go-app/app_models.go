@@ -12,9 +12,14 @@ type Interop_GenericController struct {
 	IsConfigured bool
 }
 
+type Interop_Profile_Metadata struct {
+	UpdatedAt string
+}
+
 type Interop_Profile struct {
-	Name  string
-	UsbID string
+	Name     string
+	UsbID    string
+	Metadata Interop_Profile_Metadata
 }
 
 type Interop_RawEvent struct {
@@ -61,8 +66,14 @@ type Interop_Cab_ControlState struct {
 	Controls []Interop_Cab_ControlState_Control
 }
 
+type Interop_SharedProfile_Author struct {
+	Name string
+	Url  *string
+}
+
 type Interop_SharedProfile struct {
-	Name  string
-	UsbID string
-	Url   string
+	Name   string
+	UsbID  string
+	Url    string
+	Author *Interop_SharedProfile_Author
 }
