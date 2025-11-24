@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.1.1
+## 1.2.0
 - Added "Always on top" option in settings
 - Fixed api control action bug
 - Added more information in profile selection dropdown
