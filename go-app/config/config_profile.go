@@ -160,8 +160,7 @@ type Config_Controller_Profile_Metadata struct {
 }
 
 type Config_Controller_Profile struct {
-	Metadata Config_Controller_Profile_Metadata
-
+	Metadata   Config_Controller_Profile_Metadata    `json:"-"`
 	Extends    *string                               `json:"extends,omitempty"`
 	Name       string                                `json:"name" validate:"required"`
 	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`

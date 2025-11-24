@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.2.1
+- Omit "Metadata" key
+
 ## 1.2.0
 - Added "Always on top" option in settings
 - Fixed api control action bug
