@@ -59,10 +59,16 @@ type ModAssets_Manifest struct {
 	Manifest []ModAssets_Manifest_Entry `json:"manifest"`
 }
 
+type Remote_SharedProfilesIndex_Profile_Author struct {
+	Name string  `json:"name,omitempty"`
+	Url  *string `json:"url,omitempty"`
+}
+
 type Remote_SharedProfilesIndex_Profile struct {
-	File  string `json:"file"`
-	Name  string `json:"name"`
-	UsbID string `json:"usb_id"`
+	File   string                                     `json:"file"`
+	Name   string                                     `json:"name"`
+	UsbID  string                                     `json:"usb_id"`
+	Author *Remote_SharedProfilesIndex_Profile_Author `json:"author,omitempty"`
 }
 
 type Remote_SharedProfilesIndex struct {
@@ -128,19 +134,6 @@ func NewApp(
 		api_controller,
 	)
 
-	if program_config.TSWAPIKeyLocation != "" {
-		tswapi.LoadAPIKey(program_config.TSWAPIKeyLocation)
-		cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
-			TSWAPISubscriptionIDStart: program_config.TSWAPISubscriptionIDStart,
-		})
-	}
-
-	if program_config.PreferredControlMode == config.PreferredControlMode_DirectControl ||
-		program_config.PreferredControlMode == config.PreferredControlMode_SyncControl ||
-		program_config.PreferredControlMode == config.PreferredControlMode_ApiControl {
-		profile_runner.Settings.SetPreferredControlMode(program_config.PreferredControlMode)
-	}
-
 	return &App{
 		config:             appconfig,
 		program_config:     program_config,
@@ -161,6 +154,23 @@ func NewApp(
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.LoadConfiguration()
+
+	if a.program_config.TSWAPIKeyLocation != "" {
+		a.tswapi.LoadAPIKey(a.program_config.TSWAPIKeyLocation)
+		a.cab_debugger.UpdateConfig(cabdebugger.CabDebugger_Config{
+			TSWAPISubscriptionIDStart: a.program_config.TSWAPISubscriptionIDStart,
+		})
+	}
+
+	if a.program_config.PreferredControlMode == config.PreferredControlMode_DirectControl ||
+		a.program_config.PreferredControlMode == config.PreferredControlMode_SyncControl ||
+		a.program_config.PreferredControlMode == config.PreferredControlMode_ApiControl {
+		a.profile_runner.Settings.SetPreferredControlMode(a.program_config.PreferredControlMode)
+	}
+
+	if a.program_config.AlwaysOnTop {
+		runtime.WindowSetAlwaysOnTop(a.ctx, true)
+	}
 
 	go func() {
 		channel, unsubscribe := logger.Logger.Listen()
@@ -270,6 +280,16 @@ func (a *App) SetPreferredControlMode(mode config.PreferredControlMode) {
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
+func (a *App) GetAlwaysOnTop() bool {
+	return a.program_config.AlwaysOnTop
+}
+
+func (a *App) SetAlwaysOnTop(enabled bool) {
+	a.program_config.AlwaysOnTop = enabled
+	runtime.WindowSetAlwaysOnTop(a.ctx, enabled)
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
+}
+
 func (a *App) LoadConfiguration() {
 	/* load config from relative config directory */
 	dirs_to_load := []string{
@@ -301,6 +321,7 @@ func (a *App) LoadConfiguration() {
 			logger.Logger.Info("[App] registering profile", "profile", profile.Name)
 			a.profile_runner.RegisterProfile(profile)
 		}
+		a.profile_runner.ResolveAll()
 	}
 
 	runtime.EventsEmit(a.ctx, AppEventType_ProfilesUpdated)
@@ -334,15 +355,36 @@ func (a *App) GetControllers() []Interop_GenericController {
 
 func (a *App) GetProfiles() []Interop_Profile {
 	var profiles []Interop_Profile
+
+	all_profile_names := map[string]bool{}
+	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
+		all_profile_names[profile.Name] = true
+		return true
+	})
+
 	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 		UsbID := ""
 		if profile.Controller != nil && profile.Controller.UsbID != nil {
 			UsbID = *profile.Controller.UsbID
 		}
 
+		warnings := []string{}
+		if profile.Extends != nil && len(*profile.Extends) > 0 {
+			if _, has_valid_extends := all_profile_names[*profile.Extends]; !has_valid_extends {
+				warnings = append(warnings, fmt.Sprintf("Could not find profile name to extend from (%s)", *profile.Extends))
+			}
+			if *profile.Extends == profile.Name {
+				warnings = append(warnings, "This profile extends from itself, which is not a valid use-case")
+			}
+		}
+
 		profiles = append(profiles, Interop_Profile{
 			Name:  profile.Name,
 			UsbID: UsbID,
+			Metadata: Interop_Profile_Metadata{
+				UpdatedAt: profile.Metadata.UpdatedAt.Format(time.RFC3339),
+				Warnings:  warnings,
+			},
 		})
 		return true
 	})
@@ -461,10 +503,18 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 
 	profiles := []Interop_SharedProfile{}
 	for _, profile := range c.Profiles {
+		var author *Interop_SharedProfile_Author = nil
+		if profile.Author != nil {
+			author = &Interop_SharedProfile_Author{
+				Name: profile.Author.Name,
+				Url:  profile.Author.Url,
+			}
+		}
 		profiles = append(profiles, Interop_SharedProfile{
-			Name:  profile.Name,
-			UsbID: profile.UsbID,
-			Url:   fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Name:   profile.Name,
+			UsbID:  profile.UsbID,
+			Url:    fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Author: author,
 		})
 	}
 
@@ -571,7 +621,14 @@ func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name
 		}
 
 		joy_usbid := controller.Joystick.ToString()
-		profile_for_sharing := profile
+		profile_for_sharing := config.Config_Controller_Profile{
+			/*
+				this copy omits extends and the internal metadata since it's not appropriate for sharing,
+			*/
+			Name:       profile.Name,
+			Controller: profile.Controller,
+			Controls:   profile.Controls,
+		}
 		if profile_for_sharing.Controller == nil {
 			profile_for_sharing.Controller = &config.Config_Controller_Profile_Controller{
 				UsbID:   &joy_usbid,
@@ -641,7 +698,7 @@ func (a *App) OpenProfileBuilder(name string) {
 
 func (a *App) DeleteProfile(name string) error {
 	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
-		err := os.Remove(profile.Path)
+		err := os.Remove(profile.Metadata.Path)
 		a.profile_runner.Profiles.Delete(name)
 		return err
 	}

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.2.0
+- Added "Always on top" option in settings
+- Fixed api control action bug
+- Added more information in profile selection dropdown
+- Added support for author information in explore tab
+- Add "extends" option for profiles to compose profiles
+
 ## 1.1.0
 - Implements new "api_control" mode to utilize the API instead of the mod. This uses the same control name but sends the value using the HTTP API (may require the API key to be configured).  
 **Note** has higher overhead than the direct control mode.

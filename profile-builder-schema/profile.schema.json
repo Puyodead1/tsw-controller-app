@@ -6,6 +6,10 @@
       "minLength": 1,
       "description": "The name of this profile"
     },
+    "extends": {
+      "type": "string",
+      "description": "The name of the profile to extend from. The profile inheritance happens on a control basis; if you have the control defined here it will not be resolved from the extended profile. Note: when saving the profile for sharing the fully resolved profile is saved without the extends fields to make sure profiles are independently shareable."
+    },
     "controls": {
       "type": "array",
       "items": {
@@ -33,14 +37,16 @@
                   }
                 },
                 {
-              "oneOf": [
-                { "$ref": "./profile.momentary_assignment.schema.json" },
-                { "$ref": "./profile.toggle_assignment.schema.json" },
-                { "$ref": "./profile.linear_assignment.schema.json" },
-                { "$ref": "./profile.direct_control_assignment.schema.json" },
-                { "$ref": "./profile.api_control_assignment.schema.json" },
-                { "$ref": "./profile.sync_control_assignment.schema.json" }
-              ]
+                  "oneOf": [
+                    { "$ref": "./profile.momentary_assignment.schema.json" },
+                    { "$ref": "./profile.toggle_assignment.schema.json" },
+                    { "$ref": "./profile.linear_assignment.schema.json" },
+                    {
+                      "$ref": "./profile.direct_control_assignment.schema.json"
+                    },
+                    { "$ref": "./profile.api_control_assignment.schema.json" },
+                    { "$ref": "./profile.sync_control_assignment.schema.json" }
+                  ]
                 }
               ]
             }

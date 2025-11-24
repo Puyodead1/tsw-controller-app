@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 	"tsw_controller_app/math_utils"
 
 	"github.com/go-playground/validator/v10"
@@ -48,7 +49,7 @@ type Config_Controller_Profile_Control_Assignment_Action_ApiControl struct {
 type Config_Controller_Profile_Control_Assignment_Action struct {
 	Keys          *Config_Controller_Profile_Control_Assignment_Action_Keys          `json:"-"`
 	DirectControl *Config_Controller_Profile_Control_Assignment_Action_DirectControl `json:"-"`
-	ApiControl    *Config_Controller_Profile_Control_Assignment_Action_ApiControl    `json"-"`
+	ApiControl    *Config_Controller_Profile_Control_Assignment_Action_ApiControl    `json:"-"`
 }
 
 type Config_Controller_Profile_Control_Assignment_Condition struct {
@@ -152,8 +153,16 @@ type Config_Controller_Profile_Controller struct {
 	Mapping *Config_Controller_SDLMap `json:"mapping,omitempty"`
 }
 
+type Config_Controller_Profile_Metadata struct {
+	Path      string    `json:"-"`
+	UpdatedAt time.Time `json:"-"`
+	Warnings  []string  `json:"-"`
+}
+
 type Config_Controller_Profile struct {
-	Path       string                                `json:"-"`
+	Metadata Config_Controller_Profile_Metadata
+
+	Extends    *string                               `json:"extends,omitempty"`
 	Name       string                                `json:"name" validate:"required"`
 	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
 	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
@@ -502,9 +511,9 @@ func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Contr
 	return nil
 }
 
-func ControllerProfileFromJSON(json_str string, path string) (*Config_Controller_Profile, error) {
+func ControllerProfileFromJSON(json_str string, metadata Config_Controller_Profile_Metadata) (*Config_Controller_Profile, error) {
 	var c Config_Controller_Profile = Config_Controller_Profile{
-		Path: path,
+		Metadata: metadata,
 	}
 	if err := json.Unmarshal([]byte(json_str), &c); err != nil {
 		return nil, err

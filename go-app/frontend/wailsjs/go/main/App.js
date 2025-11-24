@@ -10,6 +10,10 @@ export function DeleteProfile(arg1) {
   return window['go']['main']['App']['DeleteProfile'](arg1);
 }
 
+export function GetAlwaysOnTop() {
+  return window['go']['main']['App']['GetAlwaysOnTop']();
+}
+
 export function GetCabControlState() {
   return window['go']['main']['App']['GetCabControlState']();
 }
@@ -108,6 +112,10 @@ export function SaveProfileForSharing(arg1, arg2) {
 
 export function SelectProfile(arg1, arg2) {
   return window['go']['main']['App']['SelectProfile'](arg1, arg2);
+}
+
+export function SetAlwaysOnTop(arg1) {
+  return window['go']['main']['App']['SetAlwaysOnTop'](arg1);
 }
 
 export function SetLastInstalledModVersion(arg1) {
