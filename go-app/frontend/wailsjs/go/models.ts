@@ -220,6 +220,7 @@ export namespace main {
 	    }
 	}
 	export class Interop_Profile_Metadata {
+	    Path: string;
 	    UpdatedAt: string;
 	    Warnings: string[];
 	
@@ -229,11 +230,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Path = source["Path"];
 	        this.UpdatedAt = source["UpdatedAt"];
 	        this.Warnings = source["Warnings"];
 	    }
 	}
 	export class Interop_Profile {
+	    Id: string;
 	    Name: string;
 	    UsbID: string;
 	    Metadata: Interop_Profile_Metadata;
@@ -244,6 +247,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Id = source["Id"];
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
 	        this.Metadata = this.convertValues(source["Metadata"], Interop_Profile_Metadata);
@@ -288,6 +292,22 @@ export namespace main {
 	        this.Index = source["Index"];
 	        this.Value = source["Value"];
 	        this.Timestamp = source["Timestamp"];
+	    }
+	}
+	export class Interop_SelectedProfileInfo {
+	    Id: string;
+	    Name: string;
+	    IsAutoSelect: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Interop_SelectedProfileInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Id = source["Id"];
+	        this.Name = source["Name"];
+	        this.IsAutoSelect = source["IsAutoSelect"];
 	    }
 	}
 	export class Interop_SharedProfile_Author {

@@ -317,13 +317,14 @@ func (a *App) LoadConfiguration() {
 				a.controller_manager.RegisterConfig(sdl_mapping, *calibration)
 			}
 		}
+
 		for _, profile := range profiles {
-			logger.Logger.Info("[App] registering profile", "profile", profile.Name)
+			logger.Logger.Info("[App] registering profile", "profile", profile.Id(), profile.Name)
 			a.profile_runner.RegisterProfile(profile)
 		}
-		a.profile_runner.ResolveAll()
 	}
 
+	a.profile_runner.Resolve()
 	runtime.EventsEmit(a.ctx, AppEventType_ProfilesUpdated)
 }
 
@@ -356,12 +357,7 @@ func (a *App) GetControllers() []Interop_GenericController {
 func (a *App) GetProfiles() []Interop_Profile {
 	var profiles []Interop_Profile
 
-	all_profile_names := map[string]bool{}
-	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
-		all_profile_names[profile.Name] = true
-		return true
-	})
-
+	profile_name_to_ids_map := a.profile_runner.GetProfileNameToIdMap()
 	a.profile_runner.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
 		UsbID := ""
 		if profile.Controller != nil && profile.Controller.UsbID != nil {
@@ -370,7 +366,10 @@ func (a *App) GetProfiles() []Interop_Profile {
 
 		warnings := []string{}
 		if profile.Extends != nil && len(*profile.Extends) > 0 {
-			if _, has_valid_extends := all_profile_names[*profile.Extends]; !has_valid_extends {
+			extend_from, has_extend_from_ids := profile_name_to_ids_map[*profile.Extends]
+			if has_extend_from_ids && len(extend_from) > 1 {
+				warnings = append(warnings, fmt.Sprintf("Ignoring extends; found multiple profiles to extend from (%s)", *profile.Extends))
+			} else {
 				warnings = append(warnings, fmt.Sprintf("Could not find profile name to extend from (%s)", *profile.Extends))
 			}
 			if *profile.Extends == profile.Name {
@@ -379,9 +378,11 @@ func (a *App) GetProfiles() []Interop_Profile {
 		}
 
 		profiles = append(profiles, Interop_Profile{
+			Id:    profile.Id(),
 			Name:  profile.Name,
 			UsbID: UsbID,
 			Metadata: Interop_Profile_Metadata{
+				Path:      profile.Metadata.Path,
 				UpdatedAt: profile.Metadata.UpdatedAt.Format(time.RFC3339),
 				Warnings:  warnings,
 			},
@@ -394,10 +395,19 @@ func (a *App) GetProfiles() []Interop_Profile {
 	return profiles
 }
 
-func (a *App) GetSelectedProfiles() map[controller_mgr.JoystickGUIDString]string {
-	selected_profiles := map[controller_mgr.JoystickGUIDString]string{}
-	a.profile_runner.Settings.GetSelectedProfiles().ForEach(func(value *config.Config_Controller_Profile, key controller_mgr.JoystickGUIDString) bool {
-		selected_profiles[key] = value.Name
+/* this is just a type stub */
+func (a *App) GetSelectedProfile() *Interop_SelectedProfileInfo {
+	return nil
+}
+
+func (a *App) GetSelectedProfiles() map[controller_mgr.JoystickGUIDString]Interop_SelectedProfileInfo {
+	selected_profiles := map[controller_mgr.JoystickGUIDString]Interop_SelectedProfileInfo{}
+	a.profile_runner.Settings.GetSelectedProfiles().ForEach(func(value profile_runner.ProfileRunnerSettings_SelectedProfile, key controller_mgr.JoystickGUIDString) bool {
+		selected_profiles[key] = Interop_SelectedProfileInfo{
+			Id:           value.Profile.Id(),
+			Name:         value.Profile.Name,
+			IsAutoSelect: value.IsAutoSelect,
+		}
 		return true
 	})
 	return selected_profiles
@@ -521,9 +531,9 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 	return profiles
 }
 
-func (a *App) SelectProfile(guid controller_mgr.JoystickGUIDString, name string) error {
-	if err := a.profile_runner.SetProfile(guid, name); err != nil {
-		logger.Logger.Error("selected profile", "profile", name)
+func (a *App) SelectProfile(guid controller_mgr.JoystickGUIDString, id string) error {
+	if err := a.profile_runner.SetProfile(guid, id, false); err != nil {
+		logger.Logger.Error("failed to select profile by ID", "id", id, "error", err)
 		return err
 	}
 	return nil
@@ -638,7 +648,7 @@ func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name
 
 		if profile_for_sharing.Controller.Mapping == nil {
 			mapping := config.Config_Controller_SDLMap{
-				Name:  fmt.Sprintf("%s - %s", controller.Joystick.Name, name),
+				Name:  fmt.Sprintf("%s - %s", controller.Joystick.Name, profile_for_sharing.Name),
 				UsbID: joy_usbid,
 				Data:  []config.Config_Controller_SDLMap_Control{},
 			}
@@ -688,18 +698,18 @@ func (a *App) OpenNewProfileBuilder(usbid string) {
 	runtime.BrowserOpenURL(a.ctx, fmt.Sprintf("https://tsw-controller-app.vercel.app/profile-builder?profile=%s", encoded))
 }
 
-func (a *App) OpenProfileBuilder(name string) {
-	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+func (a *App) OpenProfileBuilder(id string) {
+	if profile, has_profile := a.profile_runner.Profiles.Get(id); has_profile {
 		profile_json, _ := json.Marshal(profile)
 		encoded := base64.StdEncoding.EncodeToString(profile_json)
 		runtime.BrowserOpenURL(a.ctx, fmt.Sprintf("https://tsw-controller-app.vercel.app/profile-builder?profile=%s", encoded))
 	}
 }
 
-func (a *App) DeleteProfile(name string) error {
-	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+func (a *App) DeleteProfile(id string) error {
+	if profile, has_profile := a.profile_runner.Profiles.Get(id); has_profile {
 		err := os.Remove(profile.Metadata.Path)
-		a.profile_runner.Profiles.Delete(name)
+		a.profile_runner.Profiles.Delete(id)
 		return err
 	}
 	return nil

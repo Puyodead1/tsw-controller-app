@@ -22,7 +22,9 @@ export function GetPreferredControlMode():Promise<string>;
 
 export function GetProfiles():Promise<Array<main.Interop_Profile>>;
 
-export function GetSelectedProfiles():Promise<Record<string, string>>;
+export function GetSelectedProfile():Promise<main.Interop_SelectedProfileInfo>;
+
+export function GetSelectedProfiles():Promise<Record<string, main.Interop_SelectedProfileInfo>>;
 
 export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
 
