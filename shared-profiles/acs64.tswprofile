@@ -1,5 +1,9 @@
 {
   "name": "acs64",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_NYT_AMTK_ACS-64_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",
