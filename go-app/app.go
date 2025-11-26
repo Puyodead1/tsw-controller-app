@@ -65,10 +65,11 @@ type Remote_SharedProfilesIndex_Profile_Author struct {
 }
 
 type Remote_SharedProfilesIndex_Profile struct {
-	File   string                                     `json:"file"`
-	Name   string                                     `json:"name"`
-	UsbID  string                                     `json:"usb_id"`
-	Author *Remote_SharedProfilesIndex_Profile_Author `json:"author,omitempty"`
+	File       string                                     `json:"file"`
+	Name       string                                     `json:"name"`
+	UsbID      string                                     `json:"usb_id"`
+	AutoSelect *bool                                      `json:"auto_select,omitempty"`
+	Author     *Remote_SharedProfilesIndex_Profile_Author `json:"author,omitempty"`
 }
 
 type Remote_SharedProfilesIndex struct {
@@ -524,10 +525,11 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 			}
 		}
 		profiles = append(profiles, Interop_SharedProfile{
-			Name:   profile.Name,
-			UsbID:  profile.UsbID,
-			Url:    fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
-			Author: author,
+			Name:       profile.Name,
+			UsbID:      profile.UsbID,
+			Url:        fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			AutoSelect: profile.AutoSelect,
+			Author:     author,
 		})
 	}
 

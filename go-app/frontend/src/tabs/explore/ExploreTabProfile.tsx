@@ -31,18 +31,27 @@ export const ExploreTabProfile = ({ profile }: Props) => {
 
   return (
     <li className="list-row">
-      <div className="list-col-grow">
-        <div>{profile.Name}</div>
-        {!!profile.Author && (
-          <div className="text-sm text-base-content/50">
-            {"Created by "}
-            {!!profile.Author.Url ? (
-              <button className="link" onClick={handleOpenProfileAuthorUrl}>
-                {profile.Author.Name}
-              </button>
-            ) : (
-              profile.Author.Name
-            )}
+      <div className="list-col-grow flex flex-col gap-2">
+        <div>
+          <div>{profile.Name}</div>
+          {!!profile.Author && (
+            <div className="text-sm text-base-content/50">
+              {"Created by "}
+              {!!profile.Author.Url ? (
+                <button className="link" onClick={handleOpenProfileAuthorUrl}>
+                  {profile.Author.Name}
+                </button>
+              ) : (
+                profile.Author.Name
+              )}
+            </div>
+          )}
+        </div>
+        {!!profile.AutoSelect && (
+          <div>
+            <div className="badge badge-sm badge-soft badge-info">
+              Supports Auto-Select
+            </div>
           </div>
         )}
       </div>
