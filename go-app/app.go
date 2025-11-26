@@ -299,6 +299,7 @@ func (a *App) LoadConfiguration() {
 		a.config.LocalConfigDir,
 	}
 
+	a.profile_runner.Profiles.Clear()
 	for _, dir := range dirs_to_load {
 		sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory(dir)
 
