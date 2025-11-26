@@ -132,6 +132,7 @@ func NewApp(
 		direct_controller,
 		sync_controller,
 		api_controller,
+		cab_debugger,
 	)
 
 	return &App{
@@ -380,9 +381,10 @@ func (a *App) GetProfiles() []Interop_Profile {
 		}
 
 		profiles = append(profiles, Interop_Profile{
-			Id:    profile.Id(),
-			Name:  profile.Name,
-			UsbID: UsbID,
+			Id:         profile.Id(),
+			Name:       profile.Name,
+			UsbID:      UsbID,
+			AutoSelect: profile.AutoSelect,
 			Metadata: Interop_Profile_Metadata{
 				Path:      profile.Metadata.Path,
 				UpdatedAt: profile.Metadata.UpdatedAt.Format(time.RFC3339),
@@ -533,7 +535,7 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 }
 
 func (a *App) SelectProfile(guid controller_mgr.JoystickGUIDString, id string) error {
-	if err := a.profile_runner.SetProfile(guid, id, false); err != nil {
+	if err := a.profile_runner.SetProfile(guid, id); err != nil {
 		logger.Logger.Error("failed to select profile by ID", "id", id, "error", err)
 		return err
 	}

@@ -19,10 +19,11 @@ type Interop_Profile_Metadata struct {
 }
 
 type Interop_Profile struct {
-	Id       string
-	Name     string
-	UsbID    string
-	Metadata Interop_Profile_Metadata
+	Id         string
+	Name       string
+	UsbID      string
+	AutoSelect *bool
+	Metadata   Interop_Profile_Metadata
 }
 
 type Interop_RawEvent struct {

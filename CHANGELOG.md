@@ -4,6 +4,7 @@
 ## 1.2.2
 - Show all profiles regardless of duplicate names
 - Show better warnings for duplicate extends
+- Add full support for autodetection based on rail class and controller
 
 ## 1.2.1
 - Omit "Metadata" key

@@ -31,7 +31,7 @@ export const CabDebuggerTab = () => {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     interval = setInterval(() => {
-      refetchCabControlState();
+      refetchCabControlState()
     }, 100);
     return () => {
       if (interval) clearInterval(interval);
@@ -48,12 +48,17 @@ export const CabDebuggerTab = () => {
         </div>
       )}
       {!!cabControlState?.Controls?.length && (
-        <div className="p-4">
-          <input
-            className="input w-full"
-            placeholder="Search for control(s)"
-            {...register("query")}
-          />
+        <div className="p-4 grid grid-cols-1 grid-flow-row auto-rows-max gap-4">
+          <div className="alert alert-soft alert-info">
+            <div>Currently driving {cabControlState.Name}</div>
+          </div>
+          <div>
+            <input
+              className="input w-full"
+              placeholder="Search for control(s)"
+              {...register("query")}
+            />
+          </div>
         </div>
       )}
       <ul className="list bg-base-100 rounded-box shadow-md">
@@ -63,11 +68,11 @@ export const CabDebuggerTab = () => {
               <div className="grid grid-cols-2">
                 <div>
                   <p className="text-slate-400">Sync Control Name</p>
-                  <p>{controlState.Identifier}</p>
+                  <p>{decodeURIComponent(controlState.Identifier)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400">Direct Control Name</p>
-                  <p>{controlState.PropertyName}</p>
+                  <p>{decodeURIComponent(controlState.PropertyName)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2">

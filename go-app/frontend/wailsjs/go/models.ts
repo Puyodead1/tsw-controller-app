@@ -239,6 +239,7 @@ export namespace main {
 	    Id: string;
 	    Name: string;
 	    UsbID: string;
+	    AutoSelect?: boolean;
 	    Metadata: Interop_Profile_Metadata;
 	
 	    static createFrom(source: any = {}) {
@@ -250,6 +251,7 @@ export namespace main {
 	        this.Id = source["Id"];
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
+	        this.AutoSelect = source["AutoSelect"];
 	        this.Metadata = this.convertValues(source["Metadata"], Interop_Profile_Metadata);
 	    }
 	

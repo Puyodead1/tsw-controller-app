@@ -158,15 +158,19 @@ type Config_Controller_Profile_Metadata struct {
 	Warnings  []string  `json:"-"`
 }
 
+type Config_Controller_Profile_RailClassInformationEntry struct {
+	ClassName *string `json:"class_name"`
+}
+
 type Config_Controller_Profile struct {
 	Metadata Config_Controller_Profile_Metadata `json:"-"`
 	Extends  *string                            `json:"extends,omitempty"`
 	Name     string                             `json:"name" validate:"required"`
 	/* specifies if this profile can be autoselected */
-	AutoSelect  *bool                                 `json:"auto_select,omitempty"`
-	Controller  *Config_Controller_Profile_Controller `json:"controller,omitempty"`
-	RailClasses *[]string                             `json:"rail_classes,omitempty"`
-	Controls    []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
+	AutoSelect           *bool                                                  `json:"auto_select,omitempty"`
+	Controller           *Config_Controller_Profile_Controller                  `json:"controller,omitempty"`
+	RailClassInformation *[]Config_Controller_Profile_RailClassInformationEntry `json:"rail_class_information,omitempty"`
+	Controls             []Config_Controller_Profile_Control                    `json:"controls" validate:"required"`
 }
 
 func (c *Config_Controller_Profile_Control_Assignment_Action) UnmarshalJSON(data []byte) error {

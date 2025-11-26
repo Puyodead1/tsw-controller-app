@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/cabdebugger"
 	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/controller_mgr"
@@ -50,6 +51,7 @@ type ProfileRunner struct {
 	DirectController                  *DirectController
 	SyncController                    *SyncController
 	ApiController                     *ApiController
+	CabDebugger                       *cabdebugger.CabDebugger
 	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
 	Settings                          ProfileRunnerSettings
 	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
@@ -85,6 +87,7 @@ func New(
 	direct_controller *DirectController,
 	sync_controller *SyncController,
 	api_controller *ApiController,
+	cab_debugger *cabdebugger.CabDebugger,
 ) *ProfileRunner {
 	return &ProfileRunner{
 		ActionSequencer:   action_sequencer,
@@ -92,6 +95,7 @@ func New(
 		DirectController:  direct_controller,
 		SyncController:    sync_controller,
 		ApiController:     api_controller,
+		CabDebugger:       cab_debugger,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			Mutex:                  sync.RWMutex{},
@@ -183,7 +187,7 @@ func (p *ProfileRunner) ClearProfile(guid controller_mgr.JoystickGUIDString) {
 	})
 }
 
-func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, id string, is_auto_select bool) error {
+func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, id string) error {
 	var err error = nil
 	p.Settings.Update(func(s *ProfileRunnerSettings) {
 		profile, is_valid_profile := p.Profiles.Get(id)
@@ -435,6 +439,26 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
 				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(change_event.Joystick.GUID)
+
+				/* try auto-selection */
+				current_rail_class := p.CabDebugger.State.DrivableActorName
+				if !has_selected_profile && current_rail_class != "" {
+					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
+						if profile.AutoSelect != nil && *profile.AutoSelect && profile.RailClassInformation != nil {
+							for _, rc_info := range *profile.RailClassInformation {
+								if *rc_info.ClassName == current_rail_class {
+									has_selected_profile = true
+									selected_profile = ProfileRunnerSettings_SelectedProfile{
+										Profile: profile,
+									}
+									return false
+								}
+							}
+						}
+						return true
+					})
+				}
+
 				if !has_selected_profile {
 					logger.Logger.Debug("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
 					continue

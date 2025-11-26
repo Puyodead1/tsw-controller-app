@@ -68,14 +68,14 @@ export function MainTabControllerProfileSelector({
         render={({ field }) => (
           <div className="grow dropdown dropdown-start">
             <div tabIndex={0} role="button" className="select w-full">
-              {selectedProfile?.Name ?? "Select profile"}
+              {selectedProfile?.Name ?? "Auto-Detect"}
             </div>
             <div className="dropdown-content shadow-sm max-h-[50dvh] overflow-auto w-full">
               <ul className="menu w-full bg-base-300 rounded-box p-2">
                 {supportedProfiles.map((profile) => (
                   <li key={profile.Name}>
                     <button
-                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0"
+                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2"
                       onClick={unfocusHandlerFactory(() => {
                         field.onChange({
                           Id: profile.Id,
@@ -83,16 +83,18 @@ export function MainTabControllerProfileSelector({
                         });
                       })}
                     >
-                      <span>{profile.Name}</span>
-                      <span className="text-base-content/30 text-xs">
-                        Last updated:{" "}
-                        {updatedAtFormatter.format(
-                          new Date(profile.Metadata.UpdatedAt),
-                        )}
-                      </span>
-                      <span className="text-base-content/30 text-xs">
-                        {profile.Metadata.Path}
-                      </span>
+                      <div>
+                        <div>{profile.Name}</div>
+                        <div className="text-base-content/30 text-xs">
+                          Last updated:{" "}
+                          {updatedAtFormatter.format(
+                            new Date(profile.Metadata.UpdatedAt),
+                          )}
+                        </div>
+                        <div className="text-base-content/30 text-xs">
+                          {profile.Metadata.Path}
+                        </div>
+                      </div>
                       {!!profile.Metadata.Warnings.length &&
                         profile.Metadata.Warnings.map((warning) => (
                           <div
@@ -103,6 +105,13 @@ export function MainTabControllerProfileSelector({
                             {warning}
                           </div>
                         ))}
+                      {!!profile.AutoSelect && (
+                        <div>
+                          <div className="badge badge-sm badge-soft badge-info">
+                            Supports Auto-Select
+                          </div>
+                        </div>
+                      )}
                     </button>
                   </li>
                 ))}
