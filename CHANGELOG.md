@@ -1,7 +1,7 @@
 
 # CHANGELOG
 
-## 1.2.2
+## 1.3.0
 - Show all profiles regardless of duplicate names
 - Show better warnings for duplicate extends
 - Add full support for autodetection based on rail class and controller
