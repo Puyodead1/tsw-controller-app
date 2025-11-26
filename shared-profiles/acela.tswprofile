@@ -1,5 +1,9 @@
 {
   "name": "acela",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_BPE_AMTK_Acela_PowerCar_A_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",
