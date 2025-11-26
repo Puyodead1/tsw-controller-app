@@ -173,8 +173,8 @@ func (p *ProfileRunner) Resolve() {
 		return profile
 	}
 
-	for profile_name, profile := range p.Profiles.Map {
-		p.Profiles.Map[profile_name] = resolve_profile(profile)
+	for profile_id, profile := range p.Profiles.Map {
+		p.Profiles.Map[profile_id] = resolve_profile(profile)
 	}
 }
 

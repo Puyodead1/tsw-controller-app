@@ -83,7 +83,7 @@ export const MainTab = () => {
 
   const handleOpenProfile = (controller: main.Interop_GenericController) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) OpenProfileBuilder(profile.Name);
+    if (profile) OpenProfileBuilder(profile.Id);
   };
 
   const handleDeleteProfile = (controller: main.Interop_GenericController) => {
@@ -95,8 +95,9 @@ export const MainTab = () => {
         message: "Are you sure you want to delete this profile?",
         actions: ["Cancel", "Confirm"],
         onConfirm: () => {
-          DeleteProfile(profile.Name)
+          DeleteProfile(profile.Id)
             .then(() => {
+              form.setValue(`profiles.${controller.GUID}`, undefined)
               LoadConfiguration();
               ClearProfile(controller.GUID);
             })
@@ -110,7 +111,7 @@ export const MainTab = () => {
     controller: main.Interop_GenericController,
   ) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) SaveProfileForSharing(controller.GUID, profile.Name);
+    if (profile) SaveProfileForSharing(controller.GUID, profile.Id);
   };
 
   const openInWindow = (url: string) => {

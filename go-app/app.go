@@ -625,8 +625,8 @@ func (a *App) SubscribeRaw(guid string) error {
 	return nil
 }
 
-func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, name string) error {
-	if profile, has_profile := a.profile_runner.Profiles.Get(name); has_profile {
+func (a *App) SaveProfileForSharing(guid controller_mgr.JoystickGUIDString, id string) error {
+	if profile, has_profile := a.profile_runner.Profiles.Get(id); has_profile {
 		controller, has_controller := a.controller_manager.ConfiguredControllers.Get(guid)
 		if !has_controller {
 			return fmt.Errorf("could not find controller")
