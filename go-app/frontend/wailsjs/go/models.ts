@@ -328,6 +328,7 @@ export namespace main {
 	    Name: string;
 	    UsbID: string;
 	    Url: string;
+	    AutoSelect?: boolean;
 	    Author?: Interop_SharedProfile_Author;
 	
 	    static createFrom(source: any = {}) {
@@ -339,6 +340,7 @@ export namespace main {
 	        this.Name = source["Name"];
 	        this.UsbID = source["UsbID"];
 	        this.Url = source["Url"];
+	        this.AutoSelect = source["AutoSelect"];
 	        this.Author = this.convertValues(source["Author"], Interop_SharedProfile_Author);
 	    }
 	

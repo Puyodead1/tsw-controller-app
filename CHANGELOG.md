@@ -1,6 +1,10 @@
 
 # CHANGELOG
 
+## 1.3.1
+- Added controller name and USB ID to UI
+- Added auto-detection notice
+
 ## 1.3.0
 - Show all profiles regardless of duplicate names
 - Show better warnings for duplicate extends
