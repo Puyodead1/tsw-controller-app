@@ -444,7 +444,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				current_rail_class := p.CabDebugger.State.DrivableActorName
 				if !has_selected_profile && current_rail_class != "" {
 					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
-						if profile.AutoSelect != nil && *profile.AutoSelect && profile.RailClassInformation != nil {
+						if profile.AutoSelect != nil && *profile.AutoSelect && profile.Controller != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() && profile.RailClassInformation != nil {
 							for _, rc_info := range *profile.RailClassInformation {
 								if *rc_info.ClassName == current_rail_class {
 									has_selected_profile = true
