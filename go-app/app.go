@@ -406,9 +406,8 @@ func (a *App) GetSelectedProfiles() map[controller_mgr.JoystickGUIDString]Intero
 	selected_profiles := map[controller_mgr.JoystickGUIDString]Interop_SelectedProfileInfo{}
 	a.profile_runner.Settings.GetSelectedProfiles().ForEach(func(value profile_runner.ProfileRunnerSettings_SelectedProfile, key controller_mgr.JoystickGUIDString) bool {
 		selected_profiles[key] = Interop_SelectedProfileInfo{
-			Id:           value.Profile.Id(),
-			Name:         value.Profile.Name,
-			IsAutoSelect: value.IsAutoSelect,
+			Id:   value.Profile.Id(),
+			Name: value.Profile.Name,
 		}
 		return true
 	})

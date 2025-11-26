@@ -80,7 +80,6 @@ export function MainTabControllerProfileSelector({
                         field.onChange({
                           Id: profile.Id,
                           Name: profile.Name,
-                          IsAutoSelect: false,
                         });
                       })}
                     >

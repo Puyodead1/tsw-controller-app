@@ -82,7 +82,6 @@ type Interop_SharedProfile struct {
 }
 
 type Interop_SelectedProfileInfo struct {
-	Id           string
-	Name         string
-	IsAutoSelect bool
+	Id   string
+	Name string
 }

@@ -28,8 +28,7 @@ type ProfileRunner_ScoredAssignmentsListEntry struct {
 }
 
 type ProfileRunnerSettings_SelectedProfile struct {
-	IsAutoSelect bool
-	Profile      config.Config_Controller_Profile
+	Profile config.Config_Controller_Profile
 }
 
 type ProfileRunnerSettings struct {
@@ -190,8 +189,7 @@ func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, id st
 		profile, is_valid_profile := p.Profiles.Get(id)
 		if is_valid_profile {
 			s.SelectedProfilesByGUID.Set(guid, ProfileRunnerSettings_SelectedProfile{
-				IsAutoSelect: is_auto_select,
-				Profile:      profile,
+				Profile: profile,
 			})
 		} else {
 			err = fmt.Errorf("could not find profile by ID %s", id)

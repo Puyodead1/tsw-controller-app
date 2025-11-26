@@ -297,7 +297,6 @@ export namespace main {
 	export class Interop_SelectedProfileInfo {
 	    Id: string;
 	    Name: string;
-	    IsAutoSelect: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Interop_SelectedProfileInfo(source);
@@ -307,7 +306,6 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
 	        this.Name = source["Name"];
-	        this.IsAutoSelect = source["IsAutoSelect"];
 	    }
 	}
 	export class Interop_SharedProfile_Author {
