@@ -1,4 +1,9 @@
+
 # CHANGELOG
+
+## 1.2.2
+- Show all profiles regardless of duplicate names
+- Show better warnings for duplicate extends
 
 ## 1.2.1
 - Omit "Metadata" key

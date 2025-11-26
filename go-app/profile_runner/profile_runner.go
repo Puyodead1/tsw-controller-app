@@ -118,11 +118,11 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 
 func (p *ProfileRunner) GetProfileNameToIdMap() map[string][]string {
 	id_map_by_name := map[string][]string{}
-	p.Profiles.ForEach(func(value config.Config_Controller_Profile, id string) bool {
-		if existing_ids, has_key := id_map_by_name[id]; has_key {
-			id_map_by_name[id] = append(existing_ids, id)
+	p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
+		if existing_ids, has_key := id_map_by_name[profile.Name]; has_key {
+			id_map_by_name[profile.Name] = append(existing_ids, id)
 		} else {
-			id_map_by_name[id] = []string{id}
+			id_map_by_name[profile.Name] = []string{id}
 		}
 		return true
 	})

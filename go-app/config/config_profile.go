@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -503,7 +504,9 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectLike_InputValue) Cal
 }
 
 func (c *Config_Controller_Profile) Id() string {
-	return c.Name
+	id_str := fmt.Sprintf("%d-%s-%s", c.Metadata.UpdatedAt.Unix(), c.Metadata.Path, c.Name)
+	hash := sha1.Sum([]byte(id_str))
+	return fmt.Sprintf("%x", hash)
 }
 
 func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Controller_Profile_Control {

@@ -364,12 +364,14 @@ func (a *App) GetProfiles() []Interop_Profile {
 			UsbID = *profile.Controller.UsbID
 		}
 
+		fmt.Printf("%#v", profile_name_to_ids_map)
+
 		warnings := []string{}
 		if profile.Extends != nil && len(*profile.Extends) > 0 {
 			extend_from, has_extend_from_ids := profile_name_to_ids_map[*profile.Extends]
 			if has_extend_from_ids && len(extend_from) > 1 {
-				warnings = append(warnings, fmt.Sprintf("Ignoring extends; found multiple profiles to extend from (%s)", *profile.Extends))
-			} else {
+				warnings = append(warnings, fmt.Sprintf("Could not resolve profile, found multiple profiles by name (%s) to resolve from", *profile.Extends))
+			} else if !has_extend_from_ids || len(extend_from) == 0 {
 				warnings = append(warnings, fmt.Sprintf("Could not find profile name to extend from (%s)", *profile.Extends))
 			}
 			if *profile.Extends == profile.Name {
