@@ -1,4 +1,10 @@
+
 # CHANGELOG
+
+## 1.3.0
+- Show all profiles regardless of duplicate names
+- Show better warnings for duplicate extends
+- Add full support for autodetection based on rail class and controller
 
 ## 1.2.1
 - Omit "Metadata" key

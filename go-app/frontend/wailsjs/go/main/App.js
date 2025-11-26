@@ -42,6 +42,10 @@ export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
 
+export function GetSelectedProfile() {
+  return window['go']['main']['App']['GetSelectedProfile']();
+}
+
 export function GetSelectedProfiles() {
   return window['go']['main']['App']['GetSelectedProfiles']();
 }

@@ -13,14 +13,17 @@ type Interop_GenericController struct {
 }
 
 type Interop_Profile_Metadata struct {
+	Path      string
 	UpdatedAt string
 	Warnings  []string
 }
 
 type Interop_Profile struct {
-	Name     string
-	UsbID    string
-	Metadata Interop_Profile_Metadata
+	Id         string
+	Name       string
+	UsbID      string
+	AutoSelect *bool
+	Metadata   Interop_Profile_Metadata
 }
 
 type Interop_RawEvent struct {
@@ -77,4 +80,9 @@ type Interop_SharedProfile struct {
 	UsbID  string
 	Url    string
 	Author *Interop_SharedProfile_Author
+}
+
+type Interop_SelectedProfileInfo struct {
+	Id   string
+	Name string
 }

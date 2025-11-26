@@ -28,7 +28,7 @@ import { alert } from "../../utils/alert";
 import { confirm } from "../../utils/confirm";
 
 type FormValues = {
-  profiles: Record<`${string}`, string>;
+  profiles: Partial<Awaited<ReturnType<typeof GetSelectedProfiles>>>;
 };
 
 export const MainTab = () => {
@@ -59,7 +59,7 @@ export const MainTab = () => {
       profiles: await GetSelectedProfiles(),
     }),
   });
-  const { register, watch, getValues } = form;
+  const { watch, getValues } = form;
 
   const handleReloadConfiguration = () => {
     LoadConfiguration().then(() => {
@@ -67,7 +67,7 @@ export const MainTab = () => {
       const profiles = getValues("profiles");
       for (const guid in profiles) {
         if (profiles[guid]) {
-          SelectProfile(guid, profiles[guid]);
+          SelectProfile(guid, profiles[guid].Id);
         }
       }
     });
@@ -83,7 +83,7 @@ export const MainTab = () => {
 
   const handleOpenProfile = (controller: main.Interop_GenericController) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) OpenProfileBuilder(profile);
+    if (profile) OpenProfileBuilder(profile.Id);
   };
 
   const handleDeleteProfile = (controller: main.Interop_GenericController) => {
@@ -95,8 +95,9 @@ export const MainTab = () => {
         message: "Are you sure you want to delete this profile?",
         actions: ["Cancel", "Confirm"],
         onConfirm: () => {
-          DeleteProfile(profile)
+          DeleteProfile(profile.Id)
             .then(() => {
+              form.setValue(`profiles.${controller.GUID}`, undefined)
               LoadConfiguration();
               ClearProfile(controller.GUID);
             })
@@ -110,7 +111,7 @@ export const MainTab = () => {
     controller: main.Interop_GenericController,
   ) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) SaveProfileForSharing(controller.GUID, profile);
+    if (profile) SaveProfileForSharing(controller.GUID, profile.Id);
   };
 
   const openInWindow = (url: string) => {
@@ -141,7 +142,7 @@ export const MainTab = () => {
     watch(() => {
       const profiles = getValues("profiles");
       for (const guid in profiles) {
-        if (profiles[guid]) SelectProfile(guid, profiles[guid]);
+        if (profiles[guid]) SelectProfile(guid, profiles[guid].Id);
         else ClearProfile(guid);
       }
     });
@@ -169,7 +170,9 @@ export const MainTab = () => {
             onClick={() =>
               openInWindow("https://tsw-controller-app.vercel.app/docs")
             }
-          >Check out the online documentation</button>
+          >
+            Check out the online documentation
+          </button>
         </span>
       </div>
       <div>

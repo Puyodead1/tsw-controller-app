@@ -56,6 +56,7 @@ func (cd *CabDebugger) updateControlStateFromAPI() error {
 			/* don't do anything for an OpError */
 			!errors.As(err, new(*net.OpError))) ||
 			result.ObjectClass != cd.State.DrivableActorName {
+			cd.State.Controls.Clear()
 			cd.TSWAPI.DeleteSubscription(cd.Config.TSWAPISubscriptionIDStart)
 			if err := cd.TSWAPI.CreateCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart); err != nil {
 				return err

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -147,8 +148,6 @@ type Config_Controller_Profile_Control struct {
 type Config_Controller_Profile_Controller struct {
 	/* if defined ; specifies this profile can only be used with the below controller */
 	UsbID *string `json:"usb_id,omitempty"`
-	/* specifies if this profile can be autoselected for this controller */
-	AutoSelect *bool `json:"auto_select,omitempty"`
 	/* Can be defined to specify a specific SDL mapping for this controller and profile; useful for sharing */
 	Mapping *Config_Controller_SDLMap `json:"mapping,omitempty"`
 }
@@ -159,12 +158,19 @@ type Config_Controller_Profile_Metadata struct {
 	Warnings  []string  `json:"-"`
 }
 
+type Config_Controller_Profile_RailClassInformationEntry struct {
+	ClassName *string `json:"class_name"`
+}
+
 type Config_Controller_Profile struct {
-	Metadata   Config_Controller_Profile_Metadata    `json:"-"`
-	Extends    *string                               `json:"extends,omitempty"`
-	Name       string                                `json:"name" validate:"required"`
-	Controller *Config_Controller_Profile_Controller `json:"controller,omitempty"`
-	Controls   []Config_Controller_Profile_Control   `json:"controls" validate:"required"`
+	Metadata Config_Controller_Profile_Metadata `json:"-"`
+	Extends  *string                            `json:"extends,omitempty"`
+	Name     string                             `json:"name" validate:"required"`
+	/* specifies if this profile can be autoselected */
+	AutoSelect           *bool                                                  `json:"auto_select,omitempty"`
+	Controller           *Config_Controller_Profile_Controller                  `json:"controller,omitempty"`
+	RailClassInformation *[]Config_Controller_Profile_RailClassInformationEntry `json:"rail_class_information,omitempty"`
+	Controls             []Config_Controller_Profile_Control                    `json:"controls" validate:"required"`
 }
 
 func (c *Config_Controller_Profile_Control_Assignment_Action) UnmarshalJSON(data []byte) error {
@@ -499,6 +505,12 @@ func (c *Config_Controller_Profile_Control_Assignment_DirectLike_InputValue) Cal
 	}
 
 	return math_utils.Clamp(normal, c.Min, c.Max)
+}
+
+func (c *Config_Controller_Profile) Id() string {
+	id_str := fmt.Sprintf("%d-%s-%s", c.Metadata.UpdatedAt.Unix(), c.Metadata.Path, c.Name)
+	hash := sha1.Sum([]byte(id_str))
+	return fmt.Sprintf("%x", hash)
 }
 
 func (c *Config_Controller_Profile) FindControlByName(name string) *Config_Controller_Profile_Control {

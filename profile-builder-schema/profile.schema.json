@@ -10,6 +10,10 @@
       "type": "string",
       "description": "The name of the profile to extend from. The profile inheritance happens on a control basis; if you have the control defined here it will not be resolved from the extended profile. Note: when saving the profile for sharing the fully resolved profile is saved without the extends fields to make sure profiles are independently shareable."
     },
+    "auto_select": {
+      "type": "boolean",
+      "description": "Whether this profile supports auto-detection. Requires the supported controller USB ID and rail class information to be set"
+    },
     "controls": {
       "type": "array",
       "items": {
@@ -53,6 +57,32 @@
           }
         },
         "required": ["name", "assignments"]
+      }
+    },
+    "controller": {
+      "type": "object",
+      "properties": {
+        "usb_id": {
+          "type": "string",
+          "description": "The supported controller USB identifier (Vendor:Product)"
+        },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "This is a copy of the SDL mapping. This can be embedded for portability"
+        }
+      }
+    },
+    "rail_class_information": {
+      "type": "array",
+      "description": "Defines the supported rail class names (can be found at the top of the cab debugger)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "class_name": {
+            "type": "string"
+          }
+        }
       }
     }
   },

@@ -4,7 +4,7 @@ import { useCallback } from "react";
 
 type Props = {
   form: UseFormReturn<{
-    profiles: Record<`${string}`, string>;
+    profiles: Partial<Record<string, main.Interop_SelectedProfileInfo>>;
   }>;
   controller: main.Interop_GenericController;
   profiles: main.Interop_Profile[];
@@ -68,35 +68,50 @@ export function MainTabControllerProfileSelector({
         render={({ field }) => (
           <div className="grow dropdown dropdown-start">
             <div tabIndex={0} role="button" className="select w-full">
-              {selectedProfile ?? "Select profile"}
+              {selectedProfile?.Name ?? "Auto-Detect"}
             </div>
             <div className="dropdown-content shadow-sm max-h-[50dvh] overflow-auto w-full">
               <ul className="menu w-full bg-base-300 rounded-box p-2">
                 {supportedProfiles.map((profile) => (
                   <li key={profile.Name}>
                     <button
-                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-0"
+                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2"
                       onClick={unfocusHandlerFactory(() => {
-                        field.onChange(profile.Name);
+                        field.onChange({
+                          Id: profile.Id,
+                          Name: profile.Name,
+                        });
                       })}
                     >
-                      <span>{profile.Name}</span>
-                      <span className="text-base-content/30 text-xs">
-                        Last updated:{" "}
-                        {updatedAtFormatter.format(
-                          new Date(profile.Metadata.UpdatedAt),
-                        )}
-                      </span>
+                      <div>
+                        <div>{profile.Name}</div>
+                        <div className="text-base-content/30 text-xs">
+                          Last updated:{" "}
+                          {updatedAtFormatter.format(
+                            new Date(profile.Metadata.UpdatedAt),
+                          )}
+                        </div>
+                        <div className="text-base-content/30 text-xs">
+                          {profile.Metadata.Path}
+                        </div>
+                      </div>
                       {!!profile.Metadata.Warnings.length &&
                         profile.Metadata.Warnings.map((warning) => (
                           <div
                             key={warning}
                             role="alert"
-                            className="alert alert-soft alert-warning my-2 p-2"
+                            className="alert alert-soft alert-warning my-2 p-2 text-xs"
                           >
                             {warning}
                           </div>
                         ))}
+                      {!!profile.AutoSelect && (
+                        <div>
+                          <div className="badge badge-sm badge-soft badge-info">
+                            Supports Auto-Select
+                          </div>
+                        </div>
+                      )}
                     </button>
                   </li>
                 ))}

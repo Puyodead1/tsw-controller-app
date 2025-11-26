@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"tsw_controller_app/action_sequencer"
+	"tsw_controller_app/cabdebugger"
 	"tsw_controller_app/chan_utils"
 	"tsw_controller_app/config"
 	"tsw_controller_app/controller_mgr"
@@ -27,9 +28,13 @@ type ProfileRunner_ScoredAssignmentsListEntry struct {
 	Assignments []config.Config_Controller_Profile_Control_Assignment
 }
 
+type ProfileRunnerSettings_SelectedProfile struct {
+	Profile config.Config_Controller_Profile
+}
+
 type ProfileRunnerSettings struct {
 	Mutex                  sync.RWMutex
-	SelectedProfilesByGUID *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile]
+	SelectedProfilesByGUID *map_utils.LockMap[controller_mgr.JoystickGUIDString, ProfileRunnerSettings_SelectedProfile]
 	PreferredControlMode   config.PreferredControlMode
 }
 
@@ -46,6 +51,7 @@ type ProfileRunner struct {
 	DirectController                  *DirectController
 	SyncController                    *SyncController
 	ApiController                     *ApiController
+	CabDebugger                       *cabdebugger.CabDebugger
 	Profiles                          *map_utils.LockMap[string, config.Config_Controller_Profile]
 	Settings                          ProfileRunnerSettings
 	PreviousControlAssignmentCallList *map_utils.LockMap[string, *[]*ProfileRunnerAssignmentCall]
@@ -57,7 +63,7 @@ func (s *ProfileRunnerSettings) Update(mutator func(s *ProfileRunnerSettings)) {
 	mutator(s)
 }
 
-func (s *ProfileRunnerSettings) GetSelectedProfiles() *map_utils.LockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile] {
+func (s *ProfileRunnerSettings) GetSelectedProfiles() *map_utils.LockMap[controller_mgr.JoystickGUIDString, ProfileRunnerSettings_SelectedProfile] {
 	s.Mutex.RLock()
 	defer s.Mutex.RUnlock()
 	return s.SelectedProfilesByGUID
@@ -81,6 +87,7 @@ func New(
 	direct_controller *DirectController,
 	sync_controller *SyncController,
 	api_controller *ApiController,
+	cab_debugger *cabdebugger.CabDebugger,
 ) *ProfileRunner {
 	return &ProfileRunner{
 		ActionSequencer:   action_sequencer,
@@ -88,10 +95,11 @@ func New(
 		DirectController:  direct_controller,
 		SyncController:    sync_controller,
 		ApiController:     api_controller,
+		CabDebugger:       cab_debugger,
 		Profiles:          map_utils.NewLockMap[string, config.Config_Controller_Profile](),
 		Settings: ProfileRunnerSettings{
 			Mutex:                  sync.RWMutex{},
-			SelectedProfilesByGUID: map_utils.NewLockMap[controller_mgr.JoystickGUIDString, *config.Config_Controller_Profile](),
+			SelectedProfilesByGUID: map_utils.NewLockMap[controller_mgr.JoystickGUIDString, ProfileRunnerSettings_SelectedProfile](),
 			PreferredControlMode:   config.PreferredControlMode_DirectControl,
 		},
 		PreviousControlAssignmentCallList: map_utils.NewLockMap[string, *[]*ProfileRunnerAssignmentCall](),
@@ -111,19 +119,39 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 	return ""
 }
 
-func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile) {
-	p.Profiles.Set(profile.Name, profile)
+func (p *ProfileRunner) GetProfileNameToIdMap() map[string][]string {
+	id_map_by_name := map[string][]string{}
+	p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
+		if existing_ids, has_key := id_map_by_name[profile.Name]; has_key {
+			id_map_by_name[profile.Name] = append(existing_ids, id)
+		} else {
+			id_map_by_name[profile.Name] = []string{id}
+		}
+		return true
+	})
+	return id_map_by_name
 }
 
-func (p *ProfileRunner) ResolveAll() {
+func (p *ProfileRunner) RegisterProfile(profile config.Config_Controller_Profile) {
+	p.Profiles.Set(profile.Id(), profile)
+}
+
+func (p *ProfileRunner) Resolve() {
 	/* resolves all the profiles */
+	id_name_map := p.GetProfileNameToIdMap()
 	p.Profiles.Mutex.Lock()
 	defer p.Profiles.Mutex.Unlock()
 
 	var resolve_profile func(profile config.Config_Controller_Profile) config.Config_Controller_Profile
 	resolve_profile = func(profile config.Config_Controller_Profile) config.Config_Controller_Profile {
 		if profile.Extends != nil && len(*profile.Extends) > 0 && profile.Name != *profile.Extends {
-			if extend_from_profile, has_valid_extends := p.Profiles.Map[*profile.Extends]; has_valid_extends {
+			if extend_from_profile_ids, has_extendable_ids := id_name_map[*profile.Extends]; has_extendable_ids {
+				if len(extend_from_profile_ids) == 0 || len(extend_from_profile_ids) > 1 {
+					/* only extend if there is one and only one profile to extend from */
+					return profile
+				}
+				extend_from_profile := p.Profiles.Map[extend_from_profile_ids[0]]
+
 				/*
 					these are the control names which are defined in the profile we are currently resolving;
 					these should be kept as they already have a definition
@@ -148,8 +176,8 @@ func (p *ProfileRunner) ResolveAll() {
 		return profile
 	}
 
-	for profile_name, profile := range p.Profiles.Map {
-		p.Profiles.Map[profile_name] = resolve_profile(profile)
+	for profile_id, profile := range p.Profiles.Map {
+		p.Profiles.Map[profile_id] = resolve_profile(profile)
 	}
 }
 
@@ -159,14 +187,16 @@ func (p *ProfileRunner) ClearProfile(guid controller_mgr.JoystickGUIDString) {
 	})
 }
 
-func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, name string) error {
+func (p *ProfileRunner) SetProfile(guid controller_mgr.JoystickGUIDString, id string) error {
 	var err error = nil
 	p.Settings.Update(func(s *ProfileRunnerSettings) {
-		profile, is_valid_profile := p.Profiles.Get(name)
+		profile, is_valid_profile := p.Profiles.Get(id)
 		if is_valid_profile {
-			s.SelectedProfilesByGUID.Set(guid, &profile)
+			s.SelectedProfilesByGUID.Set(guid, ProfileRunnerSettings_SelectedProfile{
+				Profile: profile,
+			})
 		} else {
-			err = fmt.Errorf("could not find profile by name %s", name)
+			err = fmt.Errorf("could not find profile by ID %s", id)
 		}
 	})
 	return err
@@ -409,33 +439,42 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
 				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(change_event.Joystick.GUID)
-				if selected_profile == nil || !has_selected_profile {
-					/* try to find default profile by USB ID */
-					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, key string) bool {
-						if profile.Controller != nil && profile.Controller.AutoSelect != nil && *profile.Controller.AutoSelect && profile.Controller.UsbID != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() {
-							selected_profile = &profile
-							return false
+
+				/* try auto-selection */
+				current_rail_class := p.CabDebugger.State.DrivableActorName
+				if !has_selected_profile && current_rail_class != "" {
+					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
+						if profile.AutoSelect != nil && *profile.AutoSelect && profile.Controller != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() && profile.RailClassInformation != nil {
+							for _, rc_info := range *profile.RailClassInformation {
+								if *rc_info.ClassName == current_rail_class {
+									has_selected_profile = true
+									selected_profile = ProfileRunnerSettings_SelectedProfile{
+										Profile: profile,
+									}
+									return false
+								}
+							}
 						}
 						return true
 					})
 				}
 
-				if selected_profile == nil {
+				if !has_selected_profile {
 					logger.Logger.Debug("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
 					continue
 				}
 
 				control_name := change_event.ControlName
-				if selected_profile.Controller != nil && selected_profile.Controller.Mapping != nil {
+				if selected_profile.Profile.Controller != nil && selected_profile.Profile.Controller.Mapping != nil {
 					root_mapping := change_event.Control.SDLMapping
-					override_mapping := selected_profile.Controller.Mapping
+					override_mapping := selected_profile.Profile.Controller.Mapping
 					override_control, find_override_control_err := override_mapping.FindByKindAndIndex(root_mapping.Kind, root_mapping.Index)
 					if find_override_control_err == nil {
 						control_name = override_control.Name
 					}
 				}
 
-				control_profile := selected_profile.FindControlByName(control_name)
+				control_profile := selected_profile.Profile.FindControlByName(control_name)
 				if control_profile == nil {
 					logger.Logger.Debug("[ProfileRunner::Run] skipping event, control not found in profile", "event", change_event)
 					continue
@@ -594,14 +633,14 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 				}
 
 				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(sync_control_state.SourceEvent.Joystick.GUID)
-				if selected_profile == nil || !has_selected_profile {
+				if !has_selected_profile {
 					/* skip if no profile selected for controller */
 					continue
 				}
 
 				var sync_control_assignment *config.Config_Controller_Profile_Control_Assignment = nil
 			control_loop:
-				for _, cp := range selected_profile.Controls {
+				for _, cp := range selected_profile.Profile.Controls {
 					assignments := p.GetAssignments(&cp, sync_control_state.SourceEvent)
 					for _, assignment := range assignments {
 						if assignment.SyncControl != nil && assignment.SyncControl.Identifier == sync_control_state.Identifier {
