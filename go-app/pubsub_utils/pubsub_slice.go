@@ -6,6 +6,8 @@ import (
 	"tsw_controller_app/chan_utils"
 )
 
+const PUBSUB_SLICE_DEFAULT_BUFFER_SIZE = 32
+
 type PubSubSlice[T any] struct {
 	lock        sync.RWMutex
 	subscribers []chan T
@@ -14,7 +16,7 @@ type PubSubSlice[T any] struct {
 func (pbs *PubSubSlice[T]) Subscribe() (chan T, func()) {
 	pbs.lock.Lock()
 	defer pbs.lock.Unlock()
-	sub_channel := make(chan T)
+	sub_channel := make(chan T, PUBSUB_SLICE_DEFAULT_BUFFER_SIZE)
 	pbs.subscribers = append(pbs.subscribers, sub_channel)
 	return sub_channel, func() {
 		pbs.lock.Lock()

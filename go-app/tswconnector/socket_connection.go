@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const SOCKET_CONNECTION_OUTGOING_QUEUE_BUFFER_SIZE = 32
+
 type SocketConnection struct {
 	WsUpgrader       *websocket.Upgrader
 	Server           *http.Server
@@ -31,7 +33,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 	defer conn.Close()
 
 	conn_id := uuid.New()
-	outgoing_channel := make(chan TSWConnector_Message)
+	outgoing_channel := make(chan TSWConnector_Message, SOCKET_CONNECTION_OUTGOING_QUEUE_BUFFER_SIZE)
 	c.OutgoingChannels.Set(conn_id, outgoing_channel)
 	defer close(outgoing_channel)
 	defer c.OutgoingChannels.Delete(conn_id)

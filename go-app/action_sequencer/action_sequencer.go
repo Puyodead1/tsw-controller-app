@@ -10,6 +10,8 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
+const ACTIONS_QUEUE_BUFFER_SIZE = 32
+
 type ActionSequencerAction struct {
 	Keys      string
 	PressTime float64
@@ -23,7 +25,7 @@ type ActionSequencer struct {
 
 func New() *ActionSequencer {
 	return &ActionSequencer{
-		ActionsQueue: make(chan ActionSequencerAction),
+		ActionsQueue: make(chan ActionSequencerAction, ACTIONS_QUEUE_BUFFER_SIZE),
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 	"tsw_controller_app/tswapi"
 )
 
+const API_CONTROLLER_QUEUE_BUFFER_SIZE = 32
+
 type ApiController_Command struct {
 	Controls   string
 	InputValue float64
@@ -40,7 +42,7 @@ func (controller *ApiController) Run(ctx context.Context) func() {
 func NewAPIController(twapi *tswapi.TSWAPI) *ApiController {
 	controller := ApiController{
 		API:            twapi,
-		ControlChannel: make(chan ApiController_Command),
+		ControlChannel: make(chan ApiController_Command, API_CONTROLLER_QUEUE_BUFFER_SIZE),
 	}
 	return &controller
 }

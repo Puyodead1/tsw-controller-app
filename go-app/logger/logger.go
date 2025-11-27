@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+const LOGGER_BUFFER_SIZE = 128
+
 type GlobalLogger struct {
 	mutex     sync.RWMutex
 	slogger   *slog.Logger
@@ -17,9 +19,12 @@ func (g *GlobalLogger) Listen() (chan string, func()) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	channel := make(chan string)
+	channel := make(chan string, LOGGER_BUFFER_SIZE)
 	g.listeners = append(g.listeners, channel)
 	unsubscribe := func() {
+		g.mutex.Lock()
+		defer g.mutex.Unlock()
+
 		for index, c := range g.listeners {
 			if c == channel {
 				g.listeners = append(g.listeners[:index], g.listeners[index+1:]...)
@@ -43,6 +48,9 @@ func (g *GlobalLogger) PropertiesFromArgs(args ...any) map[string]string {
 }
 
 func (g *GlobalLogger) Debug(msg string, args ...any) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
 	g.slogger.Debug(msg, args...)
 
 	if len(g.listeners) > 0 {
