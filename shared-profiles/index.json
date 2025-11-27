@@ -359,7 +359,8 @@
     {
       "usb_id": "044F:040A",
       "file": "./njt-arrow3.tswprofile",
-      "name": "njt-arrow3 - TCA Quadrant Boeing"
+      "name": "njt-arrow3 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
