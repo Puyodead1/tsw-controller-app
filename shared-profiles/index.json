@@ -198,6 +198,12 @@
     },
     {
       "usb_id": "044F:040A",
+      "file": "./class150_gwr.tswprofile",
+      "name": "class150_gwr - TCA Quadrant Boeing",
+      "auto_select": true
+    },
+    {
+      "usb_id": "044F:040A",
       "file": "./class158.tswprofile",
       "name": "class158 - TCA Quadrant Boeing"
     },
