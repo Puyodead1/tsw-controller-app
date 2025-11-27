@@ -127,12 +127,14 @@
     {
       "usb_id": "044F:040A",
       "file": "./br182_185.tswprofile",
-      "name": "br182_185 - TCA Quadrant Boeing"
+      "name": "br182_185 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./br193.tswprofile",
-      "name": "br193 - TCA Quadrant Boeing"
+      "name": "br193 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
