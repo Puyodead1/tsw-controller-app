@@ -74,12 +74,6 @@ func run_gui_app() {
 	}
 }
 
-func run_sdl_subproc() {}
-
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "sdl_subproc" {
-		run_sdl_subproc()
-	} else {
-		run_gui_app()
-	}
+	run_gui_app()
 }

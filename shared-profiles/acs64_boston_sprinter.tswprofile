@@ -1,5 +1,9 @@
 {
   "name": "acs64_boston_sprinter",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_BPE_AMTK_ACS-64_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",

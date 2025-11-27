@@ -3,22 +3,26 @@
     {
       "usb_id": "044F:040A",
       "file": "./1972mk2tubestock.tswprofile",
-      "name": "1972mk2tubestock - TCA Quadrant Boeing"
+      "name": "1972mk2tubestock - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./acela.tswprofile",
-      "name": "acela - TCA Quadrant Boeing"
+      "name": "acela - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./acs64_boston_sprinter.tswprofile",
-      "name": "acs64_boston_sprinter - TCA Quadrant Boeing"
+      "name": "acs64_boston_sprinter - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./acs64.tswprofile",
-      "name": "acs64 - TCA Quadrant Boeing"
+      "name": "acs64 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",

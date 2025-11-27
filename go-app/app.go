@@ -299,6 +299,7 @@ func (a *App) LoadConfiguration() {
 		a.config.LocalConfigDir,
 	}
 
+	a.profile_runner.Profiles.Clear()
 	for _, dir := range dirs_to_load {
 		sdl_mappings, calibrations, profiles, errors := a.config_loader.FromDirectory(dir)
 
@@ -365,8 +366,6 @@ func (a *App) GetProfiles() []Interop_Profile {
 		if profile.Controller != nil && profile.Controller.UsbID != nil {
 			UsbID = *profile.Controller.UsbID
 		}
-
-		fmt.Printf("%#v", profile_name_to_ids_map)
 
 		warnings := []string{}
 		if profile.Extends != nil && len(*profile.Extends) > 0 {
@@ -486,7 +485,8 @@ func (a *App) ResetCabControlState() {
 
 // https://github.com/LiamMartens/tsw-controller-app/releases/download/v0.2.6/beta.package.zip
 func (a *App) GetLatestReleaseVersion() string {
-	resp, err := http.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/RELEASE_VERSION")
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/RELEASE_VERSION")
 	if err != nil {
 		return ""
 	}
@@ -501,7 +501,8 @@ func (a *App) GetLatestReleaseVersion() string {
 }
 
 func (a *App) GetSharedProfiles() []Interop_SharedProfile {
-	resp, err := http.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/index.json")
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/index.json")
 	if err != nil {
 		return []Interop_SharedProfile{}
 	}

@@ -18,7 +18,7 @@ import {
   SaveProfileForSharing,
   ImportProfile,
 } from "../../../wailsjs/go/main/App";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { BrowserOpenURL, EventsOn } from "../../../wailsjs/runtime/runtime";
 import { events } from "../../events";
 import { useForm } from "react-hook-form";
@@ -61,16 +61,26 @@ export const MainTab = () => {
   });
   const { watch, getValues } = form;
 
-  const handleReloadConfiguration = () => {
-    LoadConfiguration().then(() => {
-      /* re-select profile after reloading */
-      const profiles = getValues("profiles");
-      for (const guid in profiles) {
-        if (profiles[guid]) {
-          SelectProfile(guid, profiles[guid].Id);
-        }
+  const openInWindow = useCallback((url: string) => {
+    BrowserOpenURL(url);
+  }, []);
+
+  const trySyncSelectedProfiles = useCallback(() => {
+    const profiles = getValues("profiles");
+    for (const guid in profiles) {
+      if (profiles[guid]) {
+        SelectProfile(guid, profiles[guid].Id).catch(() => {
+          ClearProfile(guid);
+          form.setValue(`profiles.${guid}`, undefined);
+        });
+      } else {
+        ClearProfile(guid)
       }
-    });
+    }
+  }, [form]);
+
+  const handleReloadConfiguration = () => {
+    LoadConfiguration().then(trySyncSelectedProfiles);
   };
 
   const handleBrowseConfig = () => {
@@ -97,7 +107,7 @@ export const MainTab = () => {
         onConfirm: () => {
           DeleteProfile(profile.Id)
             .then(() => {
-              form.setValue(`profiles.${controller.GUID}`, undefined)
+              form.setValue(`profiles.${controller.GUID}`, undefined);
               LoadConfiguration();
               ClearProfile(controller.GUID);
             })
@@ -112,10 +122,6 @@ export const MainTab = () => {
   ) => {
     const profile = getValues(`profiles.${controller.GUID}`);
     if (profile) SaveProfileForSharing(controller.GUID, profile.Id);
-  };
-
-  const openInWindow = (url: string) => {
-    BrowserOpenURL(url);
   };
 
   const handleInstall = () => {
@@ -139,14 +145,8 @@ export const MainTab = () => {
   };
 
   useEffect(() => {
-    watch(() => {
-      const profiles = getValues("profiles");
-      for (const guid in profiles) {
-        if (profiles[guid]) SelectProfile(guid, profiles[guid].Id);
-        else ClearProfile(guid);
-      }
-    });
-  }, []);
+    return watch(trySyncSelectedProfiles).unsubscribe;
+  }, [trySyncSelectedProfiles]);
 
   useEffect(() => {
     return EventsOn(events.profiles_updated, () => {

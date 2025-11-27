@@ -85,6 +85,16 @@ export function MainTabControllerProfileSelector({
               </button>
               <div className="dropdown-content shadow-sm max-h-[50dvh] overflow-auto w-full">
                 <ul className="menu w-full bg-base-300 rounded-box p-2">
+                  <li key="auto-detect">
+                    <button
+                      className="grid grid-cols-1 grid-flow-row auto-rows-max gap-2"
+                      onClick={unfocusHandlerFactory(() => {
+                        field.onChange(undefined);
+                      })}
+                    >
+                      <div>Auto-detect</div>
+                    </button>
+                  </li>
                   {supportedProfiles.map((profile) => (
                     <li key={profile.Name}>
                       <button

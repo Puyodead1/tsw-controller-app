@@ -483,6 +483,7 @@ func (mgr *ControllerManager) Handler_JoyHatEvent(event *sdl.JoyHatEvent) error 
 
 func (mgr *ControllerManager) Attach(ctx context.Context) context.CancelFunc {
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
+
 	go func() {
 		// SDL on windows sends some initial movement events which causes issues
 		initial_events_threshold := uint32(500)

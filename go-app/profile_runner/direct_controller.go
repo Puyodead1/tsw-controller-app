@@ -7,6 +7,8 @@ import (
 	"tsw_controller_app/tswconnector"
 )
 
+const DIRECT_CONTROLLER_QUEUE_BUFFER_SIZE = 32
+
 type DirectController_Command struct {
 	Controls   string
 	InputValue float64
@@ -49,7 +51,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 func NewDirectController(connection *tswconnector.SocketConnection) *DirectController {
 	controller := DirectController{
 		SocketConnection: connection,
-		ControlChannel:   make(chan DirectController_Command),
+		ControlChannel:   make(chan DirectController_Command, DIRECT_CONTROLLER_QUEUE_BUFFER_SIZE),
 	}
 	return &controller
 }

@@ -14,6 +14,7 @@ import (
 	"tsw_controller_app/controller_mgr"
 	"tsw_controller_app/logger"
 	"tsw_controller_app/map_utils"
+	"tsw_controller_app/sdl_mgr"
 )
 
 type ProfileRunner_AssignmentScore = int
@@ -117,6 +118,31 @@ func (pc *ProfileRunnerAssignmentCall) ToString() string {
 		return pc.ApiControlCommand.ToString()
 	}
 	return ""
+}
+
+func (p *ProfileRunner) getSelectedProfileForJoystick(joystick sdl_mgr.SDLMgr_Joystick) (ProfileRunnerSettings_SelectedProfile, bool) {
+	selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(joystick.GUID)
+
+	/* try auto-selection */
+	current_rail_class := p.CabDebugger.State.DrivableActorName
+	if !has_selected_profile && current_rail_class != "" {
+		p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
+			if profile.AutoSelect != nil && *profile.AutoSelect && profile.Controller != nil && *profile.Controller.UsbID == joystick.ToString() && profile.RailClassInformation != nil {
+				for _, rc_info := range *profile.RailClassInformation {
+					if *rc_info.ClassName == current_rail_class {
+						has_selected_profile = true
+						selected_profile = ProfileRunnerSettings_SelectedProfile{
+							Profile: profile,
+						}
+						return false
+					}
+				}
+			}
+			return true
+		})
+	}
+
+	return selected_profile, has_selected_profile
 }
 
 func (p *ProfileRunner) GetProfileNameToIdMap() map[string][]string {
@@ -438,27 +464,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 			case change_event := <-channel:
 				logger.Logger.Debug("[ProfileRunner::Run] received change event", "event", change_event)
 
-				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(change_event.Joystick.GUID)
-
-				/* try auto-selection */
-				current_rail_class := p.CabDebugger.State.DrivableActorName
-				if !has_selected_profile && current_rail_class != "" {
-					p.Profiles.ForEach(func(profile config.Config_Controller_Profile, id string) bool {
-						if profile.AutoSelect != nil && *profile.AutoSelect && profile.Controller != nil && *profile.Controller.UsbID == change_event.Joystick.ToString() && profile.RailClassInformation != nil {
-							for _, rc_info := range *profile.RailClassInformation {
-								if *rc_info.ClassName == current_rail_class {
-									has_selected_profile = true
-									selected_profile = ProfileRunnerSettings_SelectedProfile{
-										Profile: profile,
-									}
-									return false
-								}
-							}
-						}
-						return true
-					})
-				}
-
+				selected_profile, has_selected_profile := p.getSelectedProfileForJoystick(*change_event.Joystick)
 				if !has_selected_profile {
 					logger.Logger.Debug("[ProfileRunner::Run] skipping event, no profile selected", "event", change_event)
 					continue
@@ -632,7 +638,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 					continue
 				}
 
-				selected_profile, has_selected_profile := p.Settings.GetSelectedProfiles().Get(sync_control_state.SourceEvent.Joystick.GUID)
+				selected_profile, has_selected_profile := p.getSelectedProfileForJoystick(*sync_control_state.SourceEvent.Joystick)
 				if !has_selected_profile {
 					/* skip if no profile selected for controller */
 					continue
@@ -649,6 +655,7 @@ func (p *ProfileRunner) Run(ctx context.Context) context.CancelFunc {
 						}
 					}
 				}
+
 				/* only act if a sync control assignment exists for this identifier and is the current preferred control mode */
 				if sync_control_assignment == nil {
 					continue
