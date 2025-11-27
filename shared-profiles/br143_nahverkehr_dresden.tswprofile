@@ -1,5 +1,9 @@
 {
-  "name": "br143_frankfurt_sbahn",
+  "name": "br143_nahverkehr_dresden",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_DRA_DB_BR143_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",
@@ -7,7 +11,7 @@
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "SpeedSelector_{SIDE}",
+          "controls": "CruiseControl_{SIDE}",
           "input_value": {
             "min": 0,
             "max": 1
@@ -38,17 +42,19 @@
           "controls": "DriversBrake_{SIDE}",
           "input_value": {
             "min": 0.1,
-            "max": 0.75,
+            "max": 0.8,
             "steps": [
               0.1,
-              0.275,
-              0.3375,
-              0.4,
-              0.4625,
-              0.525,
-              0.5875,
-              0.65,
-              0.75
+              0.2,
+              0.3,
+              0.36,
+              0.425,
+              0.487,
+              0.55,
+              0.61,
+              0.675,
+              0.737,
+              0.8
             ]
           }
         },
@@ -57,17 +63,19 @@
           "identifier": "AutomaticBrake",
           "input_value": {
             "min": 0.1,
-            "max": 0.75,
+            "max": 0.8,
             "steps": [
               0.1,
-              0.275,
-              0.3375,
-              0.4,
-              0.4625,
-              0.525,
-              0.5875,
-              0.65,
-              0.75
+              0.2,
+              0.3,
+              0.36,
+              0.425,
+              0.487,
+              0.55,
+              0.61,
+              0.675,
+              0.737,
+              0.8
             ]
           },
           "action_increase": {
@@ -224,42 +232,43 @@
     {
       "name": "Button5",
       "description": "Wipers Toggle",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "v"
+        }
+      }
+    },
+    {
+      "name": "Button4",
+      "description": "Headlights Decrease",
       "assignments": [
         {
           "type": "momentary",
           "threshold": 0.9,
           "action_activate": {
-            "controls": "WiperSpeed_{SIDE}R",
-            "value": 0.5
-          },
-          "action_deactivate": {
-            "controls": "WiperSpeed_{SIDE}R",
-            "value": 0
+            "controls": "Headlight_{SIDE}L",
+            "value": -0.5,
+            "relative": true
           }
         },
         {
           "type": "momentary",
           "threshold": 0.9,
           "action_activate": {
-            "controls": "Wiper_{SIDE}R",
-            "value": 1
-          },
-          "action_deactivate": {
-            "controls": "Wiper_{SIDE}R",
-            "value": 0
+            "controls": "Headlight_{SIDE}C",
+            "value": -0.5,
+            "relative": true
           }
-        }
-      ]
-    },
-    {
-      "name": "Button4",
-      "description": "Headlights Switches Down",
-      "assignments": [
+        },
         {
           "type": "momentary",
           "threshold": 0.9,
           "action_activate": {
-            "keys": "shift+h"
+            "controls": "Headlight_{SIDE}R",
+            "value": -0.5,
+            "relative": true
           }
         }
       ]
@@ -283,7 +292,27 @@
           "type": "momentary",
           "threshold": 0.9,
           "action_activate": {
-            "keys": "h"
+            "controls": "Headlight_{SIDE}L",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}C",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}R",
+            "value": 0.5,
+            "relative": true
           }
         }
       ]
