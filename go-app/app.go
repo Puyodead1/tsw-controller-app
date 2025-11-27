@@ -502,7 +502,7 @@ func (a *App) GetLatestReleaseVersion() string {
 
 func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/index.json")
+	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/shared-profiles/index.json")
 	if err != nil {
 		return []Interop_SharedProfile{}
 	}
@@ -528,7 +528,7 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 		profiles = append(profiles, Interop_SharedProfile{
 			Name:       profile.Name,
 			UsbID:      profile.UsbID,
-			Url:        fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Url:        fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/shared-profiles/%s", profile.File),
 			AutoSelect: profile.AutoSelect,
 			Author:     author,
 		})

@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+## 1.3.3
+- Fix explore tab index
+
 ## 1.3.2
 - Update profile IDs to not include updated time
 - Streamline profile selection logic
