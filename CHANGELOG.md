@@ -2,7 +2,7 @@
 # CHANGELOG
 
 ## 1.3.3
-- Fix explore tab index
+- Fix explore tab sources
 
 ## 1.3.2
 - Update profile IDs to not include updated time
