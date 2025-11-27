@@ -6,6 +6,7 @@
 - Streamline profile selection logic
 - Fixes event throttling bug
 - Fixes sync control auto-detection
+- Fixes bug in TSW API debugger
 
 ## 1.3.1
 - Added controller name and USB ID to UI

@@ -93,6 +93,18 @@ func (c *TSWAPI) ListCurrentDrivableActor() (TSWAPI_ListResponse, error) {
 	}, nil
 }
 
+func (c *TSWAPI) GetCurrentDrivableActorObjectClass() (string, error) {
+	get_path := "/get/CurrentDrivableActor.ObjectClass"
+	req_url := fmt.Sprintf("%s%s", c.Config.BaseURL, get_path)
+	set_req, _ := http.NewRequest("GET", req_url, nil)
+	data, err := c.executeTswApiRequest(set_req)
+	if err != nil {
+		return "", err
+	}
+	values := data["Values"].(map[string]any)
+	return values["ObjectClass"].(string), nil
+}
+
 func (c *TSWAPI) DeleteSubscription(id int) error {
 	sub_path := fmt.Sprintf("/subscription?Subscription=%d", id)
 	req_url := fmt.Sprintf("%s%s", c.Config.BaseURL, sub_path)
@@ -184,7 +196,12 @@ func (c *TSWAPI) GetCurrentDrivableActorSubscription(id int) (TSWAPI_GetCurrentD
 		}
 
 		path := entry["Path"].(string)
-		values := entry["Values"].(map[string]any)
+		values_raw := entry["Values"]
+		if values_raw == nil {
+			continue
+		}
+
+		values := values_raw.(map[string]any)
 		if path == "CurrentDrivableActor.ObjectClass" {
 			response.ObjectClass = values["ObjectClass"].(string)
 		} else {

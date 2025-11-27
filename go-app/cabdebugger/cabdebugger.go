@@ -49,26 +49,34 @@ func (cd *CabDebugger) updateControlStateFromAPI() error {
 		}
 		defer cd.updateControlStateFromAPIMutex.Unlock()
 
-		result, err := cd.TSWAPI.GetCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart)
+		drivable_actor_result, err := cd.TSWAPI.GetCurrentDrivableActorObjectClass()
+		if err != nil {
+			cd.State.DrivableActorName = ""
+			cd.State.Controls.Clear()
+			return nil
+		}
+
+		subscription_result, err := cd.TSWAPI.GetCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart)
 		if (err != nil &&
 			/* don't do anything further if the comm api key is missing */
 			!errors.Is(err, tswapi.ErrMissingCommAPIKey) &&
 			/* don't do anything for an OpError */
 			!errors.As(err, new(*net.OpError))) ||
-			result.ObjectClass != cd.State.DrivableActorName {
+			drivable_actor_result != cd.State.DrivableActorName {
+			cd.State.DrivableActorName = drivable_actor_result
 			cd.State.Controls.Clear()
 			cd.TSWAPI.DeleteSubscription(cd.Config.TSWAPISubscriptionIDStart)
 			if err := cd.TSWAPI.CreateCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart); err != nil {
 				return err
 			}
-			if result, err = cd.TSWAPI.GetCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart); err != nil {
+			if subscription_result, err = cd.TSWAPI.GetCurrentDrivableActorSubscription(cd.Config.TSWAPISubscriptionIDStart); err != nil {
 				return err
 			}
 		}
 
 		cd.State.Controls.Clear()
-		cd.State.DrivableActorName = result.ObjectClass
-		for property_name, control := range result.Controls {
+		cd.State.DrivableActorName = subscription_result.ObjectClass
+		for property_name, control := range subscription_result.Controls {
 			control_state, _ := cd.State.Controls.Get(property_name)
 			control_state.Identifier = control.Identifier
 			control_state.PropertyName = control.PropertyName

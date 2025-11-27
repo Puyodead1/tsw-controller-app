@@ -39,7 +39,12 @@ export const CabDebuggerTab = () => {
   }, [refetchCabControlState]);
 
   return (
-    <div>
+    <div className="p-4 grid grid-cols-1 grid-flow-row auto-rows-max gap-4">
+      {!!cabControlState?.Name && (
+          <div className="alert alert-soft alert-info">
+            <div>Currently driving {cabControlState.Name}</div>
+          </div>
+      )}
       {!cabControlState?.Controls?.length && (
         <div className="py-12 text-center">
           <p className="text-base-content/50 text-sm">
@@ -48,10 +53,6 @@ export const CabDebuggerTab = () => {
         </div>
       )}
       {!!cabControlState?.Controls?.length && (
-        <div className="p-4 grid grid-cols-1 grid-flow-row auto-rows-max gap-4">
-          <div className="alert alert-soft alert-info">
-            <div>Currently driving {cabControlState.Name}</div>
-          </div>
           <div>
             <input
               className="input w-full"
@@ -59,7 +60,6 @@ export const CabDebuggerTab = () => {
               {...register("query")}
             />
           </div>
-        </div>
       )}
       <ul className="list bg-base-100 rounded-box shadow-md">
         {sortedControls?.map((controlState) => (
