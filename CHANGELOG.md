@@ -4,6 +4,7 @@
 ## 1.3.2
 - Update profile IDs to not include updated time
 - Streamline profile selection logic
+- Fixes event throttling bug
 
 ## 1.3.1
 - Added controller name and USB ID to UI
