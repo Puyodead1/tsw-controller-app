@@ -14,6 +14,9 @@ import (
 type SDLMgr_Control_Kind = string
 type SDLMgr_Guid_Str = string
 
+const SDL_BUFFER_SIZE = 32
+const SDL_RATE = 16
+
 const (
 	SDLMgr_Control_Kind_Button SDLMgr_Control_Kind = "button"
 	SDLMgr_Control_Kind_Hat    SDLMgr_Control_Kind = "hat"
@@ -51,6 +54,7 @@ func (mgr *SDLMgr) PanicInit() bool {
 		init_ts := time.Now()
 
 		/* try to initialize if not already initialized */
+		sdl.JoystickEventState(1)
 		if err := sdl.Init(sdl.INIT_GAMECONTROLLER | sdl.INIT_JOYSTICK | sdl.INIT_EVENTS); err != nil {
 			panic(err)
 		}
@@ -94,41 +98,72 @@ Returns a channel to listen to events
 */
 func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.CancelFunc) {
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
-	event_channel := make(chan sdl.Event)
+	event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
+	throttled_event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
+	unthrottled_event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
+
 	go func() {
+		for {
+			select {
+			case <-ctx_with_cancel.Done():
+				return
+			case event := <-unthrottled_event_channel:
+				chan_utils.SendTimeout(event_channel, time.Second, event)
+			}
+		}
+	}()
+
+	go func() {
+		timeout_timer := time.NewTimer(time.Millisecond)
+		defer timeout_timer.Stop()
+
 		last_emit_time := sdl.GetTicks64()
 		var pending_event sdl.Event = nil
 
+		for {
+			timeout_timer.Reset(time.Millisecond)
+			select {
+			case <-ctx_with_cancel.Done():
+				return
+			case <-timeout_timer.C:
+			case incoming_event := <-throttled_event_channel:
+				pending_event = incoming_event
+			}
+
+			now := sdl.GetTicks64()
+			if pending_event != nil && (now-last_emit_time) > SDL_RATE {
+				err := chan_utils.SendTimeout(event_channel, time.Second, pending_event)
+				if err == nil {
+					last_emit_time = now
+					pending_event = nil
+				}
+			}
+		}
+	}()
+
+	go func() {
 		for {
 			/* stop if context has been cancelled */
 			if ctx_with_cancel.Err() != nil {
 				return
 			}
 
-			if event := sdl.PollEvent(); event != nil {
+			if event := sdl.WaitEventTimeout(SDL_RATE); event != nil {
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
-					pending_event = &sdl.JoyDeviceAddedEvent{
+					unthrottled_event_channel <- &sdl.JoyDeviceAddedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 					}
 				case *sdl.JoyDeviceRemovedEvent:
-					pending_event = &sdl.JoyDeviceRemovedEvent{
+					unthrottled_event_channel <- &sdl.JoyDeviceRemovedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					}
-				case *sdl.JoyAxisEvent:
-					pending_event = &sdl.JoyAxisEvent{
-						Type:      e.Type,
-						Timestamp: e.Timestamp,
-						Which:     e.Which,
-						Axis:      e.Axis,
-						Value:     e.Value,
 					}
 				case *sdl.JoyButtonEvent:
-					pending_event = &sdl.JoyButtonEvent{
+					unthrottled_event_channel <- &sdl.JoyButtonEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
@@ -136,22 +171,21 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 						State:     e.State,
 					}
 				case *sdl.JoyHatEvent:
-					pending_event = &sdl.JoyHatEvent{
+					unthrottled_event_channel <- &sdl.JoyHatEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Hat:       e.Hat,
 						Value:     e.Value,
 					}
-				}
-			}
-
-			now := sdl.GetTicks64()
-			if pending_event != nil && (now-last_emit_time) > 16 {
-				err := chan_utils.SendTimeout(event_channel, time.Second, pending_event)
-				if err == nil {
-					last_emit_time = now
-					pending_event = nil
+				case *sdl.JoyAxisEvent:
+					throttled_event_channel <- &sdl.JoyAxisEvent{
+						Type:      e.Type,
+						Timestamp: e.Timestamp,
+						Which:     e.Which,
+						Axis:      e.Axis,
+						Value:     e.Value,
+					}
 				}
 			}
 		}
