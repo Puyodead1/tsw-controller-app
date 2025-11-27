@@ -27,37 +27,44 @@
     {
       "usb_id": "044F:040A",
       "file": "./allegra.tswprofile",
-      "name": "allegra - TCA Quadrant Boeing"
+      "name": "allegra - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./alp45dp.tswprofile",
-      "name": "alp45dp - TCA Quadrant Boeing"
+      "name": "alp45dp - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./alp46.tswprofile",
-      "name": "alp46 - TCA Quadrant Boeing"
+      "name": "alp46 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./amfleet_cabcar.tswprofile",
-      "name": "amfleet_cabcar - TCA Quadrant Boeing"
+      "name": "amfleet_cabcar - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./awc_class805.tswprofile",
-      "name": "awc_class805 - TCA Quadrant Boeing"
+      "name": "awc_class805 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./bi_level_cabcar_ctx.tswprofile",
-      "name": "bi_level_cabcar_ctx - TCA Quadrant Boeing"
+      "name": "bi_level_cabcar_ctx - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./bilevel_rotem_car.tswprofile",
-      "name": "bilevel_rotem_car - TCA Quadrant Boeing"
+      "name": "bilevel_rotem_car - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
