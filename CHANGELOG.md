@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+## 1.3.4
+- Fix bug with throttling
+
 ## 1.3.3
 - Fix explore tab sources
 - Add proxy mode
