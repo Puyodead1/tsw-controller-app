@@ -3,6 +3,7 @@
 
 ## 1.3.3
 - Fix explore tab sources
+- Add proxy mode
 
 ## 1.3.2
 - Update profile IDs to not include updated time

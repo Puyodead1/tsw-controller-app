@@ -109,15 +109,12 @@ func (c *SocketProxyConnection) Start() error {
 			}
 		}()
 
+	read_loop:
 		for {
 			select {
 			case msg := <-c.waitForMessage(connection):
 				if msg.err != nil {
-					if errors.Is(ErrCloseMessage, msg.err) {
-						break
-					} else {
-						continue
-					}
+					break read_loop
 				}
 				socket_message := TSWConnector_Message_FromString(msg.message)
 				c.Subscribers.EmitTimeout(time.Second, socket_message)
