@@ -345,12 +345,14 @@
     {
       "usb_id": "044F:040A",
       "file": "./m7.tswprofile",
-      "name": "m7 - TCA Quadrant Boeing"
+      "name": "m7 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
       "file": "./m9.tswprofile",
-      "name": "m9 - TCA Quadrant Boeing"
+      "name": "m9 - TCA Quadrant Boeing",
+      "auto_select": true
     },
     {
       "usb_id": "044F:040A",
