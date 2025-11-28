@@ -73,6 +73,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 			socket_message := TSWConnector_Message_FromString(string(msg))
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received message from client", "message", socket_message)
 			c.Subscribers.EmitTimeout(time.Second, socket_message)
+			go c.Forward(conn_id, socket_message)
 		} else {
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received unsupported message %d", "message_type", msg_type)
 		}
@@ -96,6 +97,16 @@ func (c *SocketConnection) Start() error {
 func (c *SocketConnection) Send(m TSWConnector_Message) error {
 	c.OutgoingChannels.ForEach(func(channel chan TSWConnector_Message, key uuid.UUID) bool {
 		chan_utils.SendTimeout(channel, time.Second, m)
+		return true
+	})
+	return nil
+}
+
+func (c *SocketConnection) Forward(from uuid.UUID, m TSWConnector_Message) error {
+	c.OutgoingChannels.ForEach(func(channel chan TSWConnector_Message, key uuid.UUID) bool {
+		if key != from {
+			chan_utils.SendTimeout(channel, time.Second, m)
+		}
 		return true
 	})
 	return nil
