@@ -99,47 +99,6 @@ Returns a channel to listen to events
 func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.CancelFunc) {
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
 	event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
-	throttled_event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
-	unthrottled_event_channel := make(chan sdl.Event, SDL_BUFFER_SIZE)
-
-	go func() {
-		for {
-			select {
-			case <-ctx_with_cancel.Done():
-				return
-			case event := <-unthrottled_event_channel:
-				chan_utils.SendTimeout(event_channel, time.Second, event)
-			}
-		}
-	}()
-
-	go func() {
-		timeout_timer := time.NewTimer(time.Millisecond)
-		defer timeout_timer.Stop()
-
-		last_emit_time := sdl.GetTicks64()
-		var pending_event sdl.Event = nil
-
-		for {
-			timeout_timer.Reset(time.Millisecond)
-			select {
-			case <-ctx_with_cancel.Done():
-				return
-			case <-timeout_timer.C:
-			case incoming_event := <-throttled_event_channel:
-				pending_event = incoming_event
-			}
-
-			now := sdl.GetTicks64()
-			if pending_event != nil && (now-last_emit_time) > SDL_RATE {
-				err := chan_utils.SendTimeout(event_channel, time.Second, pending_event)
-				if err == nil {
-					last_emit_time = now
-					pending_event = nil
-				}
-			}
-		}
-	}()
 
 	go func() {
 		for {
@@ -151,41 +110,41 @@ func (mgr *SDLMgr) StartPolling(ctx context.Context) (chan sdl.Event, context.Ca
 			if event := sdl.WaitEventTimeout(SDL_RATE); event != nil {
 				switch e := event.(type) {
 				case *sdl.JoyDeviceAddedEvent:
-					unthrottled_event_channel <- &sdl.JoyDeviceAddedEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceAddedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					}
+					})
 				case *sdl.JoyDeviceRemovedEvent:
-					unthrottled_event_channel <- &sdl.JoyDeviceRemovedEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyDeviceRemovedEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
-					}
+					})
 				case *sdl.JoyButtonEvent:
-					unthrottled_event_channel <- &sdl.JoyButtonEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyButtonEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Button:    e.Button,
 						State:     e.State,
-					}
+					})
 				case *sdl.JoyHatEvent:
-					unthrottled_event_channel <- &sdl.JoyHatEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyHatEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Hat:       e.Hat,
 						Value:     e.Value,
-					}
+					})
 				case *sdl.JoyAxisEvent:
-					throttled_event_channel <- &sdl.JoyAxisEvent{
+					chan_utils.SendTimeout[sdl.Event](event_channel, time.Second, &sdl.JoyAxisEvent{
 						Type:      e.Type,
 						Timestamp: e.Timestamp,
 						Which:     e.Which,
 						Axis:      e.Axis,
 						Value:     e.Value,
-					}
+					})
 				}
 			}
 		}
