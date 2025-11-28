@@ -2,6 +2,8 @@ package tswconnector
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 	"tsw_controller_app/chan_utils"
@@ -14,6 +16,7 @@ import (
 )
 
 const SOCKET_CONNECTION_OUTGOING_QUEUE_BUFFER_SIZE = 32
+const SOCKET_CONNECTION_PORT = 63241
 
 type SocketConnection struct {
 	WsUpgrader       *websocket.Upgrader
@@ -70,6 +73,7 @@ func (c *SocketConnection) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 			socket_message := TSWConnector_Message_FromString(string(msg))
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received message from client", "message", socket_message)
 			c.Subscribers.EmitTimeout(time.Second, socket_message)
+			go c.Forward(conn_id, socket_message)
 		} else {
 			logger.Logger.Info("[ProfileRunner::WebsocketHandler] received unsupported message %d", "message_type", msg_type)
 		}
@@ -98,10 +102,23 @@ func (c *SocketConnection) Send(m TSWConnector_Message) error {
 	return nil
 }
 
-func NewSocketConnection() *SocketConnection {
+func (c *SocketConnection) Forward(from uuid.UUID, m TSWConnector_Message) error {
+	c.OutgoingChannels.ForEach(func(channel chan TSWConnector_Message, key uuid.UUID) bool {
+		if key != from {
+			chan_utils.SendTimeout(channel, time.Second, m)
+		}
+		return true
+	})
+	return nil
+}
+
+func NewSocketConnection(ctx context.Context) *SocketConnection {
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    ":63241",
+		BaseContext: func(l net.Listener) context.Context {
+			return ctx
+		},
+		Addr:    fmt.Sprintf(":%d", SOCKET_CONNECTION_PORT),
 		Handler: mux,
 	}
 	controller := SocketConnection{

@@ -22,6 +22,7 @@ type CabDebugger_ControlState_Control struct {
 }
 
 type CabDebugger_ControlState struct {
+	Mutex             sync.Mutex
 	DrivableActorName string
 	Controls          *map_utils.LockMap[PropertyName, CabDebugger_ControlState_Control]
 }
@@ -31,23 +32,33 @@ type CabDebugger_Config struct {
 }
 
 type CabDebugger struct {
-	updateControlStateFromAPIMutex sync.Mutex
-	SocketConnection               *tswconnector.SocketConnection
-	TSWAPI                         *tswapi.TSWAPI
-	Config                         CabDebugger_Config
-	State                          CabDebugger_ControlState
+	Connector tswconnector.TSWConnector
+	TSWAPI    *tswapi.TSWAPI
+	Config    CabDebugger_Config
+	State     CabDebugger_ControlState
 }
 
 var ErrAlreadyLocked = errors.New("already locked error")
 
+func (cd *CabDebugger) updateCurrentDrivableActor(name string) {
+	cd.State.Mutex.Lock()
+	defer cd.State.Mutex.Unlock()
+	should_reset := cd.State.DrivableActorName != name
+	cd.State.DrivableActorName = name
+	if should_reset {
+		cd.State.Controls.Clear()
+		cd.TSWAPI.DeleteSubscription(cd.Config.TSWAPISubscriptionIDStart)
+	}
+}
+
 func (cd *CabDebugger) updateControlStateFromAPI() error {
 	if cd.TSWAPI.Enabled() {
 		/* try to acquire lock ; if already locked we skip */
-		did_lock := cd.updateControlStateFromAPIMutex.TryLock()
+		did_lock := cd.State.Mutex.TryLock()
 		if !did_lock {
 			return ErrAlreadyLocked
 		}
-		defer cd.updateControlStateFromAPIMutex.Unlock()
+		defer cd.State.Mutex.Unlock()
 
 		drivable_actor_result, err := cd.TSWAPI.GetCurrentDrivableActorObjectClass()
 		if err != nil {
@@ -98,13 +109,15 @@ func (cd *CabDebugger) Clear() {
 }
 
 func (cd *CabDebugger) Start(ctx context.Context) {
-	childctx := context.WithoutCancel(ctx)
 	go func() {
-		socket_channel, unsubscribe_socket_channel := cd.SocketConnection.Subscribe()
+		socket_channel, unsubscribe_socket_channel := cd.Connector.Subscribe()
 		ticker := time.NewTicker(333 * time.Millisecond)
 		for {
 			select {
 			case msg := <-socket_channel:
+				if msg.EventName == "current_drivable_actor" && msg.Properties["name"] != cd.State.DrivableActorName {
+					go cd.updateCurrentDrivableActor(msg.Properties["name"])
+				}
 				if msg.EventName == "sync_control_value" {
 					control_state, has_control_state := cd.State.Controls.Get(msg.Properties["property"])
 					if cd.TSWAPI.Enabled() && !has_control_state {
@@ -122,7 +135,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 				}
 			case <-ticker.C:
 				go cd.updateControlStateFromAPI()
-			case <-childctx.Done():
+			case <-ctx.Done():
 				ticker.Stop()
 				unsubscribe_socket_channel()
 				return
@@ -132,13 +145,13 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 
 }
 
-func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn *tswconnector.SocketConnection, config CabDebugger_Config) *CabDebugger {
+func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn tswconnector.TSWConnector, config CabDebugger_Config) *CabDebugger {
 	return &CabDebugger{
-		updateControlStateFromAPIMutex: sync.Mutex{},
-		SocketConnection:               socket_conn,
-		TSWAPI:                         tswapi,
-		Config:                         config,
+		Connector: socket_conn,
+		TSWAPI:    tswapi,
+		Config:    config,
 		State: CabDebugger_ControlState{
+			Mutex:             sync.Mutex{},
 			DrivableActorName: "",
 			Controls:          map_utils.NewLockMap[PropertyName, CabDebugger_ControlState_Control](),
 		},

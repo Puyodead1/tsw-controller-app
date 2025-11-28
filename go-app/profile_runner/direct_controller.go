@@ -16,8 +16,8 @@ type DirectController_Command struct {
 }
 
 type DirectController struct {
-	SocketConnection *tswconnector.SocketConnection
-	ControlChannel   chan DirectController_Command
+	Connector      tswconnector.TSWConnector
+	ControlChannel chan DirectController_Command
 }
 
 func (command *DirectController_Command) ToSocketMessage() tswconnector.TSWConnector_Message {
@@ -40,7 +40,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 			case <-ctx_with_cancel.Done():
 				return
 			case command := <-controller.ControlChannel:
-				controller.SocketConnection.Send(command.ToSocketMessage())
+				controller.Connector.Send(command.ToSocketMessage())
 			}
 		}
 	}()
@@ -48,10 +48,10 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewDirectController(connection *tswconnector.SocketConnection) *DirectController {
+func NewDirectController(connection tswconnector.TSWConnector) *DirectController {
 	controller := DirectController{
-		SocketConnection: connection,
-		ControlChannel:   make(chan DirectController_Command, DIRECT_CONTROLLER_QUEUE_BUFFER_SIZE),
+		Connector:      connection,
+		ControlChannel: make(chan DirectController_Command, DIRECT_CONTROLLER_QUEUE_BUFFER_SIZE),
 	}
 	return &controller
 }

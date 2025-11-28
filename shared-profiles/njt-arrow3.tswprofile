@@ -1,5 +1,9 @@
 {
   "name": "njt-arrow3",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_MRT_NJT_ArrowIII_CabCarBase_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",

@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,10 @@ var VERSION = "1.0.0"
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func run_gui_app() {
+func main() {
+	arg_proxy := flag.String("proxy", "", "Enter the proxy address")
+	flag.Parse()
+
 	fmt.Printf("Version %s\n", VERSION)
 
 	config_dir, err := os.UserConfigDir()
@@ -42,9 +46,21 @@ func run_gui_app() {
 		os.MkdirAll(filepath.Join(global_config_dir, subpath), 0o755)
 	}
 
+	mode := AppConfig_Mode_Default
+	var proxy_settings *AppConfig_ProxySettings
+	if arg_proxy != nil && *arg_proxy != "" {
+		fmt.Printf("enabling proxy mode: %s\n", *arg_proxy)
+		mode = AppConfig_Mode_Proxy
+		proxy_settings = &AppConfig_ProxySettings{
+			Addr: *arg_proxy,
+		}
+	}
+
 	app := NewApp(AppConfig{
 		GlobalConfigDir: global_config_dir,
 		LocalConfigDir:  local_config_dir,
+		Mode:            mode,
+		ProxySettings:   proxy_settings,
 	})
 
 	err = wails.Run(&options.App{
@@ -72,8 +88,4 @@ func run_gui_app() {
 	if err != nil {
 		logger.Logger.Error("[main] error", "error", err)
 	}
-}
-
-func main() {
-	run_gui_app()
 }

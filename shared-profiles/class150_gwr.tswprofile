@@ -1,16 +1,51 @@
 {
-  "name": "br143_frankfurt_sbahn",
+  "name": "class150_gwr",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_GWR_Class150_DMS_C" }
+  ],
   "controls": [
+    {
+      "name": "Lever3",
+      "description": "Automatic Brake",
+      "assignments": [
+        {
+          "type": "direct_control",
+          "controls": "TrainBrake_IrregularLever",
+          "input_value": {
+            "min": 0,
+            "max": 0.75,
+            "step": 0.25
+          }
+        },
+        {
+          "type": "sync_control",
+          "identifier": "AutomaticBrake",
+          "input_value": {
+            "min": 0,
+            "max": 0.75,
+            "step": 0.25
+          },
+          "action_increase": {
+            "keys": ";"
+          },
+          "action_decrease": {
+            "keys": "'"
+          }
+        }
+      ]
+    },
     {
       "name": "Lever2",
       "description": "Throttle",
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "SpeedSelector_{SIDE}",
+          "controls": "Throttle_IrregularLever",
           "input_value": {
             "min": 0,
-            "max": 1
+            "max": 1,
+            "step": 0.14
           }
         },
         {
@@ -18,91 +53,14 @@
           "identifier": "Throttle",
           "input_value": {
             "min": 0,
-            "max": 1
+            "max": 1,
+            "step": 0.14
           },
           "action_increase": {
             "keys": "a"
           },
           "action_decrease": {
             "keys": "d"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Lever3",
-      "description": "TrainBrake",
-      "assignments": [
-        {
-          "type": "direct_control",
-          "controls": "DriversBrake_{SIDE}",
-          "input_value": {
-            "min": 0.1,
-            "max": 0.75,
-            "steps": [
-              0.1,
-              0.275,
-              0.3375,
-              0.4,
-              0.4625,
-              0.525,
-              0.5875,
-              0.65,
-              0.75
-            ]
-          }
-        },
-        {
-          "type": "sync_control",
-          "identifier": "AutomaticBrake",
-          "input_value": {
-            "min": 0.1,
-            "max": 0.75,
-            "steps": [
-              0.1,
-              0.275,
-              0.3375,
-              0.4,
-              0.4625,
-              0.525,
-              0.5875,
-              0.65,
-              0.75
-            ]
-          },
-          "action_increase": {
-            "keys": "'"
-          },
-          "action_decrease": {
-            "keys": ";"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Lever1",
-      "description": "CruiseControlForceSelector",
-      "assignments": [
-        {
-          "type": "direct_control",
-          "controls": "ForceSelector_{SIDE}",
-          "input_value": {
-            "min": 0,
-            "max": 1
-          }
-        },
-        {
-          "type": "sync_control",
-          "identifier": "CruiseControlAdjust",
-          "input_value": {
-            "min": 0,
-            "max": 1
-          },
-          "action_increase": {
-            "keys": "r"
-          },
-          "action_decrease": {
-            "keys": "f"
           }
         }
       ]
@@ -136,7 +94,7 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "Q+PageDown"
+          "keys": "Q"
         }
       }
     },
@@ -147,8 +105,8 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "w",
-          "press_time": 0.2,
+          "keys": "s",
+          "press_time": 0.3,
           "wait_time": 0.2
         }
       }
@@ -160,8 +118,8 @@
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "s",
-          "press_time": 0.2,
+          "keys": "w",
+          "press_time": 0.3,
           "wait_time": 0.2
         }
       }
@@ -212,7 +170,29 @@
     },
     {
       "name": "Button3",
-      "description": "Cab Lights Toggle",
+      "description": "Wipers Dial Right",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.5,
+        "action_activate": {
+          "keys": "v"
+        }
+      }
+    },
+    {
+      "name": "Button5",
+      "description": "Wipers Dial Left",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.5,
+        "action_activate": {
+          "keys": "shift+v"
+        }
+      }
+    },
+    {
+      "name": "Button2",
+      "description": "Cab Light",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
@@ -222,71 +202,26 @@
       }
     },
     {
-      "name": "Button5",
-      "description": "Wipers Toggle",
-      "assignments": [
-        {
-          "type": "momentary",
-          "threshold": 0.9,
-          "action_activate": {
-            "controls": "WiperSpeed_{SIDE}R",
-            "value": 0.5
-          },
-          "action_deactivate": {
-            "controls": "WiperSpeed_{SIDE}R",
-            "value": 0
-          }
-        },
-        {
-          "type": "momentary",
-          "threshold": 0.9,
-          "action_activate": {
-            "controls": "Wiper_{SIDE}R",
-            "value": 1
-          },
-          "action_deactivate": {
-            "controls": "Wiper_{SIDE}R",
-            "value": 0
-          }
-        }
-      ]
-    },
-    {
-      "name": "Button4",
-      "description": "Headlights Switches Down",
-      "assignments": [
-        {
-          "type": "momentary",
-          "threshold": 0.9,
-          "action_activate": {
-            "keys": "shift+h"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Button2",
-      "description": "PZB Release",
+      "name": "Button1",
+      "description": "Headlights Switch Down",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "end"
+          "keys": "h"
         }
       }
     },
     {
-      "name": "Button1",
-      "description": "Headlight Switches Up",
-      "assignments": [
-        {
-          "type": "momentary",
-          "threshold": 0.9,
-          "action_activate": {
-            "keys": "h"
-          }
+      "name": "Button4",
+      "description": "Headlights Switch Up",
+      "assignment": {
+        "type": "momentary",
+        "threshold": 0.9,
+        "action_activate": {
+          "keys": "shift+h"
         }
-      ]
+      }
     }
   ],
   "controller": {

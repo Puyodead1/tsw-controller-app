@@ -1,5 +1,9 @@
 {
   "name": "br110",
+  "auto_select": true,
+  "rail_class_information": [
+    { "class_name": "RVM_BRO_DB_BR110_399_C" }
+  ],
   "controls": [
     {
       "name": "Lever2",

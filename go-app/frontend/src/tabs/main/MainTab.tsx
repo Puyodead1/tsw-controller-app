@@ -193,7 +193,7 @@ export const MainTab = () => {
         ))}
       </div>
       <p className="text-xs text-base-content/50">
-        Note: for auto-detection to work it has to be supported by the profile
+        Note: for auto-detection to work it has to be supported by the profile and the TSW API needs to be configured
       </p>
       <div className="divider"></div>
       {/* steam://controllerconfig/2967990/3576092503 */}

@@ -24,7 +24,7 @@ type SyncController_ControlState struct {
 }
 
 type SyncController struct {
-	SocketConnection            *tswconnector.SocketConnection
+	Connector                   tswconnector.TSWConnector
 	ControlState                *map_utils.LockMap[string, SyncController_ControlState]
 	ControlStateChangedChannels *pubsub_utils.PubSubSlice[SyncController_ControlState]
 }
@@ -65,7 +65,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 	ctx_with_cancel, cancel := context.WithCancel(ctx)
 
 	go func() {
-		incoming_channel, unsubscribe := c.SocketConnection.Subscribe()
+		incoming_channel, unsubscribe := c.Connector.Subscribe()
 		defer unsubscribe()
 
 		for {
@@ -104,9 +104,9 @@ func (c *SyncController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewSyncController(connection *tswconnector.SocketConnection) *SyncController {
+func NewSyncController(connection tswconnector.TSWConnector) *SyncController {
 	controller := SyncController{
-		SocketConnection:            connection,
+		Connector:                   connection,
 		ControlState:                map_utils.NewLockMap[string, SyncController_ControlState](),
 		ControlStateChangedChannels: pubsub_utils.NewPubSubSlice[SyncController_ControlState](),
 	}

@@ -1,11 +1,8 @@
 {
-  "name": "br182_185",
+  "name": "br143_nahverkehr_dresden",
   "auto_select": true,
   "rail_class_information": [
-    { "class_name": "RVM_MRCE_BR182_C" },
-    { "class_name": "RVM_DRA_MRCE_BR185-5_C" },
-    { "class_name": "RVM_DLG_DB_BR185_C" },
-    { "class_name": "RVM_KWG_DB_BR185_C" }
+    { "class_name": "RVM_DRA_DB_BR143_C" }
   ],
   "controls": [
     {
@@ -14,7 +11,7 @@
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "Throttle_{SIDE}",
+          "controls": "CruiseControl_{SIDE}",
           "input_value": {
             "min": 0,
             "max": 1
@@ -38,44 +35,25 @@
     },
     {
       "name": "Lever3",
-      "description": "Brake Handle",
+      "description": "TrainBrake",
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "TrainBrake_{SIDE}",
+          "controls": "DriversBrake_{SIDE}",
           "input_value": {
             "min": 0.1,
             "max": 0.8,
             "steps": [
               0.1,
               0.2,
-              0.27,
-              0.35,
+              0.3,
+              0.36,
               0.425,
-              0.5,
-              0.575,
-              0.65,
-              0.725,
-              0.8
-            ]
-          }
-        },
-        {
-          "type": "direct_control",
-          "controls": "DynamicBrake_{SIDE}",
-          "input_value": {
-            "min": 0.1,
-            "max": 0.8,
-            "steps": [
-              0.1,
-              0.2,
-              0.275,
-              0.35,
-              0.425,
-              0.5,
-              0.575,
-              0.65,
-              0.725,
+              0.487,
+              0.55,
+              0.61,
+              0.675,
+              0.737,
               0.8
             ]
           }
@@ -89,13 +67,14 @@
             "steps": [
               0.1,
               0.2,
-              0.27,
-              0.35,
+              0.3,
+              0.36,
               0.425,
-              0.5,
-              0.575,
-              0.65,
-              0.725,
+              0.487,
+              0.55,
+              0.61,
+              0.675,
+              0.737,
               0.8
             ]
           },
@@ -110,11 +89,11 @@
     },
     {
       "name": "Lever1",
-      "description": "AFB",
+      "description": "CruiseControlForceSelector",
       "assignments": [
         {
           "type": "direct_control",
-          "controls": "AFB_Speed_{SIDE}",
+          "controls": "ForceSelector_{SIDE}",
           "input_value": {
             "min": 0,
             "max": 1
@@ -128,10 +107,10 @@
             "max": 1
           },
           "action_increase": {
-            "keys": "a"
+            "keys": "r"
           },
           "action_decrease": {
-            "keys": "d"
+            "keys": "f"
           }
         }
       ]
@@ -241,38 +220,58 @@
     },
     {
       "name": "Button3",
-      "description": "Wipers Increase",
+      "description": "Cab Lights Toggle",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "v",
-          "press_time": 0.1
+          "keys": "l"
         }
       }
     },
     {
       "name": "Button5",
-      "description": "Wipers Decrease",
+      "description": "Wipers Toggle",
       "assignment": {
         "type": "momentary",
         "threshold": 0.9,
         "action_activate": {
-          "keys": "shift+v",
-          "press_time": 0.1
+          "keys": "v"
         }
       }
     },
     {
       "name": "Button4",
       "description": "Headlights Decrease",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "shift+h"
+      "assignments": [
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}L",
+            "value": -0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}C",
+            "value": -0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}R",
+            "value": -0.5,
+            "relative": true
+          }
         }
-      }
+      ]
     },
     {
       "name": "Button2",
@@ -287,14 +286,36 @@
     },
     {
       "name": "Button1",
-      "description": "Headlights Increase",
-      "assignment": {
-        "type": "momentary",
-        "threshold": 0.9,
-        "action_activate": {
-          "keys": "h"
+      "description": "Headlight Switches Up",
+      "assignments": [
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}L",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}C",
+            "value": 0.5,
+            "relative": true
+          }
+        },
+        {
+          "type": "momentary",
+          "threshold": 0.9,
+          "action_activate": {
+            "controls": "Headlight_{SIDE}R",
+            "value": 0.5,
+            "relative": true
+          }
         }
-      }
+      ]
     }
   ],
   "controller": {

@@ -43,6 +43,13 @@ const (
 	AppEventType_Log               AppEventType = "log"
 )
 
+type AppConfig_Mode = string
+
+const (
+	AppConfig_Mode_Default AppConfig_Mode = "default"
+	AppConfig_Mode_Proxy   AppConfig_Mode = "proxy"
+)
+
 type ModAssets_Manifest_Entry_ActionType = string
 
 const (
@@ -82,9 +89,15 @@ type AppRawSubscriber struct {
 	LastEvent *controller_mgr.ControllerManager_RawEvent
 }
 
+type AppConfig_ProxySettings struct {
+	Addr string
+}
+
 type AppConfig struct {
 	GlobalConfigDir string
 	LocalConfigDir  string
+	Mode            AppConfig_Mode
+	ProxySettings   *AppConfig_ProxySettings
 }
 
 type App struct {
@@ -95,7 +108,7 @@ type App struct {
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
-	socket_connection  *tswconnector.SocketConnection
+	connector          tswconnector.TSWConnector
 	tswapi             *tswapi.TSWAPI
 	cab_debugger       *cabdebugger.CabDebugger
 	direct_controller  *profile_runner.DirectController
@@ -117,16 +130,37 @@ func NewApp(
 		program_config.TSWAPIKeyLocation = program_config.AutoDetectTSWAPIKeyLocation()
 	}
 
-	controller_manager := controller_mgr.New(sdl_manager)
-	action_sequencer := action_sequencer.New()
-	socket_connection := tswconnector.NewSocketConnection()
-	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
-		BaseURL: "http://localhost:31270",
-	})
-	cab_debugger := cabdebugger.NewCabDebugger(tswapi, socket_connection, cabdebugger.CabDebugger_Config{})
-	api_controller := profile_runner.NewAPIController(tswapi)
-	direct_controller := profile_runner.NewDirectController(socket_connection)
-	sync_controller := profile_runner.NewSyncController(socket_connection)
+	return &App{
+		config:         appconfig,
+		program_config: program_config,
+		config_loader:  config_loader.New(),
+		sdl_manager:    sdl_manager,
+	}
+}
+
+func (a *App) startupInitialize() {
+	var connector tswconnector.TSWConnector
+	var tsw_api *tswapi.TSWAPI
+	switch a.config.Mode {
+	case AppConfig_Mode_Default:
+		connector = tswconnector.NewSocketConnection(a.ctx)
+		tsw_api = tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+			BaseURL: "http://localhost:31270",
+		})
+	case AppConfig_Mode_Proxy:
+		connector = tswconnector.NewSocketProxyConnection(a.ctx, a.config.ProxySettings.Addr)
+		tsw_api = tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+			BaseURL: fmt.Sprintf("http://%s:31270", a.config.ProxySettings.Addr),
+		})
+	}
+
+	controller_manager := controller_mgr.New(a.sdl_manager)
+	action_sequencer := action_sequencer.New(connector)
+
+	cab_debugger := cabdebugger.NewCabDebugger(tsw_api, connector, cabdebugger.CabDebugger_Config{})
+	api_controller := profile_runner.NewAPIController(tsw_api)
+	direct_controller := profile_runner.NewDirectController(connector)
+	sync_controller := profile_runner.NewSyncController(connector)
 	profile_runner := profile_runner.New(
 		action_sequencer,
 		controller_manager,
@@ -136,25 +170,18 @@ func NewApp(
 		cab_debugger,
 	)
 
-	return &App{
-		config:             appconfig,
-		program_config:     program_config,
-		config_loader:      config_loader.New(),
-		sdl_manager:        sdl_manager,
-		controller_manager: controller_manager,
-		action_sequencer:   action_sequencer,
-		socket_connection:  socket_connection,
-		tswapi:             tswapi,
-		cab_debugger:       cab_debugger,
-		direct_controller:  direct_controller,
-		sync_controller:    sync_controller,
-		api_controller:     api_controller,
-		profile_runner:     profile_runner,
-	}
+	a.controller_manager = controller_manager
+	a.action_sequencer = action_sequencer
+	a.connector = connector
+	a.tswapi = tsw_api
+	a.cab_debugger = cab_debugger
+	a.direct_controller = direct_controller
+	a.sync_controller = sync_controller
+	a.api_controller = api_controller
+	a.profile_runner = profile_runner
 }
 
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
+func (a *App) startupLoad() {
 	a.LoadConfiguration()
 
 	if a.program_config.TSWAPIKeyLocation != "" {
@@ -173,22 +200,24 @@ func (a *App) startup(ctx context.Context) {
 	if a.program_config.AlwaysOnTop {
 		runtime.WindowSetAlwaysOnTop(a.ctx, true)
 	}
+}
 
+func (a *App) startupRun() {
 	go func() {
 		channel, unsubscribe := logger.Logger.Listen()
 		defer unsubscribe()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.ctx.Done():
 				return
 			case msg := <-channel:
-				runtime.EventsEmit(ctx, AppEventType_Log, msg)
+				runtime.EventsEmit(a.ctx, AppEventType_Log, msg)
 			}
 		}
 	}()
 
 	go func() {
-		a.socket_connection.Start()
+		a.connector.Start()
 	}()
 
 	go func() {
@@ -198,38 +227,38 @@ func (a *App) startup(ctx context.Context) {
 	go func() {
 		cancel := a.controller_manager.Attach(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.profile_runner.Run(ctx)
+		cancel := a.profile_runner.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.action_sequencer.Run(ctx)
+		cancel := a.action_sequencer.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.direct_controller.Run(ctx)
+		cancel := a.direct_controller.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.api_controller.Run(ctx)
+		cancel := a.api_controller.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.sync_controller.Run(ctx)
+		cancel := a.sync_controller.Run(a.ctx)
 		defer cancel()
 
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
@@ -237,13 +266,20 @@ func (a *App) startup(ctx context.Context) {
 		defer cancel()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.ctx.Done():
 				return
 			case <-channel:
 				runtime.EventsEmit(a.ctx, AppEventType_JoyDevicesUpdated)
 			}
 		}
 	}()
+}
+
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
+	a.startupInitialize()
+	a.startupLoad()
+	a.startupRun()
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -502,7 +538,7 @@ func (a *App) GetLatestReleaseVersion() string {
 
 func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/index.json")
+	resp, err := client.Get("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/shared-profiles/index.json")
 	if err != nil {
 		return []Interop_SharedProfile{}
 	}
@@ -528,7 +564,7 @@ func (a *App) GetSharedProfiles() []Interop_SharedProfile {
 		profiles = append(profiles, Interop_SharedProfile{
 			Name:       profile.Name,
 			UsbID:      profile.UsbID,
-			Url:        fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/feat/go-rewrite/shared-profiles/%s", profile.File),
+			Url:        fmt.Sprintf("https://raw.githubusercontent.com/LiamMartens/tsw-controller-app/refs/heads/main/shared-profiles/%s", profile.File),
 			AutoSelect: profile.AutoSelect,
 			Author:     author,
 		})

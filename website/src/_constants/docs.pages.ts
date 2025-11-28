@@ -13,4 +13,8 @@ export const pages = {
     title: "Steam Input Setup - TSW Controller App",
     contents: () => fs.readFileSync("../STEAM_INPUT_SETUP.md", { encoding: 'utf8' }),
   },
+  "proxy-mode": {
+    title: "Proxy Mode - TSW Controller App",
+    contents: () => fs.readFileSync("../PROXY_MODE.md", { encoding: 'utf8' }),
+  }
 };
