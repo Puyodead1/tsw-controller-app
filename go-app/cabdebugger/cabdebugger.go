@@ -98,7 +98,6 @@ func (cd *CabDebugger) Clear() {
 }
 
 func (cd *CabDebugger) Start(ctx context.Context) {
-	childctx := context.WithoutCancel(ctx)
 	go func() {
 		socket_channel, unsubscribe_socket_channel := cd.SocketConnection.Subscribe()
 		ticker := time.NewTicker(333 * time.Millisecond)
@@ -122,7 +121,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 				}
 			case <-ticker.C:
 				go cd.updateControlStateFromAPI()
-			case <-childctx.Done():
+			case <-ctx.Done():
 				ticker.Stop()
 				unsubscribe_socket_channel()
 				return

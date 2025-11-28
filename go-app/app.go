@@ -117,9 +117,18 @@ func NewApp(
 		program_config.TSWAPIKeyLocation = program_config.AutoDetectTSWAPIKeyLocation()
 	}
 
-	controller_manager := controller_mgr.New(sdl_manager)
+	return &App{
+		config:         appconfig,
+		program_config: program_config,
+		config_loader:  config_loader.New(),
+		sdl_manager:    sdl_manager,
+	}
+}
+
+func (a *App) startupInitialize() {
+	controller_manager := controller_mgr.New(a.sdl_manager)
 	action_sequencer := action_sequencer.New()
-	socket_connection := tswconnector.NewSocketConnection()
+	socket_connection := tswconnector.NewSocketConnection(a.ctx)
 	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
 		BaseURL: "http://localhost:31270",
 	})
@@ -136,25 +145,18 @@ func NewApp(
 		cab_debugger,
 	)
 
-	return &App{
-		config:             appconfig,
-		program_config:     program_config,
-		config_loader:      config_loader.New(),
-		sdl_manager:        sdl_manager,
-		controller_manager: controller_manager,
-		action_sequencer:   action_sequencer,
-		socket_connection:  socket_connection,
-		tswapi:             tswapi,
-		cab_debugger:       cab_debugger,
-		direct_controller:  direct_controller,
-		sync_controller:    sync_controller,
-		api_controller:     api_controller,
-		profile_runner:     profile_runner,
-	}
+	a.controller_manager = controller_manager
+	a.action_sequencer = action_sequencer
+	a.socket_connection = socket_connection
+	a.tswapi = tswapi
+	a.cab_debugger = cab_debugger
+	a.direct_controller = direct_controller
+	a.sync_controller = sync_controller
+	a.api_controller = api_controller
+	a.profile_runner = profile_runner
 }
 
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
+func (a *App) startupLoad() {
 	a.LoadConfiguration()
 
 	if a.program_config.TSWAPIKeyLocation != "" {
@@ -173,16 +175,19 @@ func (a *App) startup(ctx context.Context) {
 	if a.program_config.AlwaysOnTop {
 		runtime.WindowSetAlwaysOnTop(a.ctx, true)
 	}
+}
+
+func (a *App) startupRun() {
 
 	go func() {
 		channel, unsubscribe := logger.Logger.Listen()
 		defer unsubscribe()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.ctx.Done():
 				return
 			case msg := <-channel:
-				runtime.EventsEmit(ctx, AppEventType_Log, msg)
+				runtime.EventsEmit(a.ctx, AppEventType_Log, msg)
 			}
 		}
 	}()
@@ -198,38 +203,38 @@ func (a *App) startup(ctx context.Context) {
 	go func() {
 		cancel := a.controller_manager.Attach(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.profile_runner.Run(ctx)
+		cancel := a.profile_runner.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.action_sequencer.Run(ctx)
+		cancel := a.action_sequencer.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.direct_controller.Run(ctx)
+		cancel := a.direct_controller.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.api_controller.Run(ctx)
+		cancel := a.api_controller.Run(a.ctx)
 		defer cancel()
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
-		cancel := a.sync_controller.Run(ctx)
+		cancel := a.sync_controller.Run(a.ctx)
 		defer cancel()
 
-		<-ctx.Done()
+		<-a.ctx.Done()
 	}()
 
 	go func() {
@@ -237,13 +242,20 @@ func (a *App) startup(ctx context.Context) {
 		defer cancel()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.ctx.Done():
 				return
 			case <-channel:
 				runtime.EventsEmit(a.ctx, AppEventType_JoyDevicesUpdated)
 			}
 		}
 	}()
+}
+
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
+	a.startupInitialize()
+	a.startupLoad()
+	a.startupRun()
 }
 
 func (a *App) shutdown(ctx context.Context) {

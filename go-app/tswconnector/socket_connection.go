@@ -2,6 +2,8 @@ package tswconnector
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 	"tsw_controller_app/chan_utils"
@@ -14,6 +16,7 @@ import (
 )
 
 const SOCKET_CONNECTION_OUTGOING_QUEUE_BUFFER_SIZE = 32
+const SOCKET_CONNECTION_PORT = 63241
 
 type SocketConnection struct {
 	WsUpgrader       *websocket.Upgrader
@@ -98,10 +101,13 @@ func (c *SocketConnection) Send(m TSWConnector_Message) error {
 	return nil
 }
 
-func NewSocketConnection() *SocketConnection {
+func NewSocketConnection(ctx context.Context) *SocketConnection {
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    ":63241",
+		BaseContext: func(l net.Listener) context.Context {
+			return ctx
+		},
+		Addr:    fmt.Sprintf(":%d", SOCKET_CONNECTION_PORT),
 		Handler: mux,
 	}
 	controller := SocketConnection{
