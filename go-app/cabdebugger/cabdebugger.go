@@ -32,7 +32,7 @@ type CabDebugger_Config struct {
 
 type CabDebugger struct {
 	updateControlStateFromAPIMutex sync.Mutex
-	SocketConnection               *tswconnector.SocketConnection
+	SocketConnection               tswconnector.TSWConnector
 	TSWAPI                         *tswapi.TSWAPI
 	Config                         CabDebugger_Config
 	State                          CabDebugger_ControlState
@@ -131,7 +131,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 
 }
 
-func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn *tswconnector.SocketConnection, config CabDebugger_Config) *CabDebugger {
+func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn tswconnector.TSWConnector, config CabDebugger_Config) *CabDebugger {
 	return &CabDebugger{
 		updateControlStateFromAPIMutex: sync.Mutex{},
 		SocketConnection:               socket_conn,

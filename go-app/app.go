@@ -43,6 +43,13 @@ const (
 	AppEventType_Log               AppEventType = "log"
 )
 
+type AppConfig_Mode = string
+
+const (
+	AppConfig_Mode_Default AppConfig_Mode = "default"
+	AppConfig_Mode_Proxy   AppConfig_Mode = "proxy"
+)
+
 type ModAssets_Manifest_Entry_ActionType = string
 
 const (
@@ -82,9 +89,15 @@ type AppRawSubscriber struct {
 	LastEvent *controller_mgr.ControllerManager_RawEvent
 }
 
+type AppConfig_ProxySettings struct {
+	Addr string
+}
+
 type AppConfig struct {
 	GlobalConfigDir string
 	LocalConfigDir  string
+	Mode            AppConfig_Mode
+	ProxySettings   *AppConfig_ProxySettings
 }
 
 type App struct {
@@ -95,7 +108,7 @@ type App struct {
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
-	socket_connection  *tswconnector.SocketConnection
+	socket_connection  tswconnector.TSWConnector
 	tswapi             *tswapi.TSWAPI
 	cab_debugger       *cabdebugger.CabDebugger
 	direct_controller  *profile_runner.DirectController
@@ -126,16 +139,23 @@ func NewApp(
 }
 
 func (a *App) startupInitialize() {
+	var connector tswconnector.TSWConnector
+	if a.config.Mode == AppConfig_Mode_Default {
+		connector = tswconnector.NewSocketConnection(a.ctx)
+	} else if a.config.Mode == AppConfig_Mode_Proxy {
+		connector = tswconnector.NewSocketProxyConnection(a.ctx, a.config.ProxySettings.Addr)
+	}
+
 	controller_manager := controller_mgr.New(a.sdl_manager)
 	action_sequencer := action_sequencer.New()
-	socket_connection := tswconnector.NewSocketConnection(a.ctx)
+
 	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
 		BaseURL: "http://localhost:31270",
 	})
-	cab_debugger := cabdebugger.NewCabDebugger(tswapi, socket_connection, cabdebugger.CabDebugger_Config{})
+	cab_debugger := cabdebugger.NewCabDebugger(tswapi, connector, cabdebugger.CabDebugger_Config{})
 	api_controller := profile_runner.NewAPIController(tswapi)
-	direct_controller := profile_runner.NewDirectController(socket_connection)
-	sync_controller := profile_runner.NewSyncController(socket_connection)
+	direct_controller := profile_runner.NewDirectController(connector)
+	sync_controller := profile_runner.NewSyncController(connector)
 	profile_runner := profile_runner.New(
 		action_sequencer,
 		controller_manager,
@@ -147,7 +167,7 @@ func (a *App) startupInitialize() {
 
 	a.controller_manager = controller_manager
 	a.action_sequencer = action_sequencer
-	a.socket_connection = socket_connection
+	a.socket_connection = connector
 	a.tswapi = tswapi
 	a.cab_debugger = cab_debugger
 	a.direct_controller = direct_controller

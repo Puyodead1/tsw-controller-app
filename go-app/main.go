@@ -45,6 +45,10 @@ func run_gui_app() {
 	app := NewApp(AppConfig{
 		GlobalConfigDir: global_config_dir,
 		LocalConfigDir:  local_config_dir,
+		Mode:            AppConfig_Mode_Proxy,
+		ProxySettings: &AppConfig_ProxySettings{
+			Addr: "0.0.0.0:63241",
+		},
 	})
 
 	err = wails.Run(&options.App{

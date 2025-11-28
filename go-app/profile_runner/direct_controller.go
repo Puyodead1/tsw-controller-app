@@ -16,7 +16,7 @@ type DirectController_Command struct {
 }
 
 type DirectController struct {
-	SocketConnection *tswconnector.SocketConnection
+	SocketConnection tswconnector.TSWConnector
 	ControlChannel   chan DirectController_Command
 }
 
@@ -48,7 +48,7 @@ func (controller *DirectController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewDirectController(connection *tswconnector.SocketConnection) *DirectController {
+func NewDirectController(connection tswconnector.TSWConnector) *DirectController {
 	controller := DirectController{
 		SocketConnection: connection,
 		ControlChannel:   make(chan DirectController_Command, DIRECT_CONTROLLER_QUEUE_BUFFER_SIZE),

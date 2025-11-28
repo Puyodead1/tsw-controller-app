@@ -24,7 +24,7 @@ type SyncController_ControlState struct {
 }
 
 type SyncController struct {
-	SocketConnection            *tswconnector.SocketConnection
+	SocketConnection            tswconnector.TSWConnector
 	ControlState                *map_utils.LockMap[string, SyncController_ControlState]
 	ControlStateChangedChannels *pubsub_utils.PubSubSlice[SyncController_ControlState]
 }
@@ -104,7 +104,7 @@ func (c *SyncController) Run(ctx context.Context) func() {
 	return cancel
 }
 
-func NewSyncController(connection *tswconnector.SocketConnection) *SyncController {
+func NewSyncController(connection tswconnector.TSWConnector) *SyncController {
 	controller := SyncController{
 		SocketConnection:            connection,
 		ControlState:                map_utils.NewLockMap[string, SyncController_ControlState](),
