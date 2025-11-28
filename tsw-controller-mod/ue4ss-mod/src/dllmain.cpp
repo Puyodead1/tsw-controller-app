@@ -116,6 +116,8 @@ struct GameplayStatistics_GetPlayerControllerParams
 class TSWControllerMod : public RC::CppUserModBase
 {
   private:
+    static inline RC::StringType CURRENT_DRIVABLE_ACTOR_CLASS_NAME = STR("");
+
     static inline std::shared_mutex DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP_MUTEX;
     static inline std::unordered_map<Unreal::UObject*, std::unordered_map<Unreal::UObject*, RC::StringType>> DRIVABLE_ACTOR_CONTROL_PROPERTY_MAP;
 
@@ -310,14 +312,17 @@ class TSWControllerMod : public RC::CppUserModBase
         std::shared_lock<std::shared_mutex> direct_control_queue_lock(TSWControllerMod::DIRECT_CONTROL_TARGET_STATE_MUTEX);
         std::shared_lock<std::shared_mutex> vhid_components_to_release_lock(TSWControllerMod::VHID_COMPONENTS_TO_RELEASE_MUTEX);
 
+        /* skip if no controller or pawn */
+        Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
+        Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
+        if (!controller || !pawn) {
+            Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Missing player controller or pawn\n"));
+            return;
+        }
+
         /* release components if they don't have a target state */
         if (!TSWControllerMod::VHID_COMPONENTS_TO_RELEASE.empty())
         {
-            /* skip if no controller or pawn */
-            Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
-            Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
-            if (!controller || !pawn) return;
-
             Unreal::UFunction* end_using_func = controller->GetFunctionByNameInChain(STR("EndUsingVHIDComponent"));
             if (!end_using_func) return;
 
@@ -337,14 +342,6 @@ class TSWControllerMod : public RC::CppUserModBase
             }
         }
 
-        /* skip if no controller or pawn */
-        Unreal::UObject* controller = TSWControllerMod::get_player_controller_from(context);
-        Unreal::UObject* pawn = TSWControllerMod::get_driver_pawn_from_controller(controller);
-        if (!controller || !pawn) {
-            Output::send<LogLevel::Verbose>(STR("[TSWControllerMod] Missing player controller or pawn\n"));
-            return;
-        }
-
         /* skip if drivable actor can't be found */
         Unreal::UFunction* get_drivable_actor_fn = controller->GetFunctionByNameInChain(STR("GetDrivableActor"));
         if (!get_drivable_actor_fn) {
@@ -356,6 +353,14 @@ class TSWControllerMod : public RC::CppUserModBase
         controller->ProcessEvent(get_drivable_actor_fn, &drivable_actor_result);
         if (!drivable_actor_result.DrivableActor) {
             return;
+        }
+
+        auto drivable_actor_name = drivable_actor_result.DrivableActor->GetClassPrivate()->GetName();
+        if (TSWControllerMod::CURRENT_DRIVABLE_ACTOR_CLASS_NAME != drivable_actor_name) {
+            TSWControllerMod::CURRENT_DRIVABLE_ACTOR_CLASS_NAME = drivable_actor_name;
+            auto message = STR("current_drivable_actor,name=") + drivable_actor_name;
+            Output::send<LogLevel::Default>(STR("[TSWControllerMod] sending current drivable actor information {}\n"), message);
+            tsw_controller_mod_send_message((char*)std::string(message.begin(), message.end()).c_str());
         }
 
         Unreal::UFunction* find_virtual_hid_component_func = drivable_actor_result.DrivableActor->GetFunctionByNameInChain(STR("FindVirtualHIDComponent"));
