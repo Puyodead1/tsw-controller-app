@@ -3,6 +3,7 @@ package tswconnector
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 	"tsw_controller_app/chan_utils"
@@ -44,7 +45,7 @@ func (c *SocketProxyConnection) dial() chan SocketProxyConnection_ConnectionResu
 		dialer := websocket.Dialer{
 			HandshakeTimeout: 5 * time.Second,
 		}
-		u := url.URL{Scheme: "ws", Host: c.ServerAddr, Path: "/"}
+		u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", c.ServerAddr, SOCKET_CONNECTION_PORT), Path: "/"}
 		conn, _, err := dialer.Dial(u.String(), nil)
 		if err != nil {
 			logger.Logger.Error("[SocketProxyConnection::dial] could not connect to server", "error", err)

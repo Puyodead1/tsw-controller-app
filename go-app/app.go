@@ -108,7 +108,7 @@ type App struct {
 	sdl_manager        *sdl_mgr.SDLMgr
 	controller_manager *controller_mgr.ControllerManager
 	action_sequencer   *action_sequencer.ActionSequencer
-	socket_connection  tswconnector.TSWConnector
+	connector          tswconnector.TSWConnector
 	tswapi             *tswapi.TSWAPI
 	cab_debugger       *cabdebugger.CabDebugger
 	direct_controller  *profile_runner.DirectController
@@ -140,20 +140,25 @@ func NewApp(
 
 func (a *App) startupInitialize() {
 	var connector tswconnector.TSWConnector
-	if a.config.Mode == AppConfig_Mode_Default {
+	var tsw_api *tswapi.TSWAPI
+	switch a.config.Mode {
+	case AppConfig_Mode_Default:
 		connector = tswconnector.NewSocketConnection(a.ctx)
-	} else if a.config.Mode == AppConfig_Mode_Proxy {
+		tsw_api = tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+			BaseURL: "http://localhost:31270",
+		})
+	case AppConfig_Mode_Proxy:
 		connector = tswconnector.NewSocketProxyConnection(a.ctx, a.config.ProxySettings.Addr)
+		tsw_api = tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
+			BaseURL: fmt.Sprintf("http://%s:31270", a.config.ProxySettings.Addr),
+		})
 	}
 
 	controller_manager := controller_mgr.New(a.sdl_manager)
-	action_sequencer := action_sequencer.New()
+	action_sequencer := action_sequencer.New(connector)
 
-	tswapi := tswapi.NewTSWAPI(tswapi.TSWAPIConfig{
-		BaseURL: "http://localhost:31270",
-	})
-	cab_debugger := cabdebugger.NewCabDebugger(tswapi, connector, cabdebugger.CabDebugger_Config{})
-	api_controller := profile_runner.NewAPIController(tswapi)
+	cab_debugger := cabdebugger.NewCabDebugger(tsw_api, connector, cabdebugger.CabDebugger_Config{})
+	api_controller := profile_runner.NewAPIController(tsw_api)
 	direct_controller := profile_runner.NewDirectController(connector)
 	sync_controller := profile_runner.NewSyncController(connector)
 	profile_runner := profile_runner.New(
@@ -167,8 +172,8 @@ func (a *App) startupInitialize() {
 
 	a.controller_manager = controller_manager
 	a.action_sequencer = action_sequencer
-	a.socket_connection = connector
-	a.tswapi = tswapi
+	a.connector = connector
+	a.tswapi = tsw_api
 	a.cab_debugger = cab_debugger
 	a.direct_controller = direct_controller
 	a.sync_controller = sync_controller
@@ -198,7 +203,6 @@ func (a *App) startupLoad() {
 }
 
 func (a *App) startupRun() {
-
 	go func() {
 		channel, unsubscribe := logger.Logger.Listen()
 		defer unsubscribe()
@@ -213,7 +217,7 @@ func (a *App) startupRun() {
 	}()
 
 	go func() {
-		a.socket_connection.Start()
+		a.connector.Start()
 	}()
 
 	go func() {

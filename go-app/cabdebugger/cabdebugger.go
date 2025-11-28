@@ -32,7 +32,7 @@ type CabDebugger_Config struct {
 
 type CabDebugger struct {
 	updateControlStateFromAPIMutex sync.Mutex
-	SocketConnection               tswconnector.TSWConnector
+	Connector                      tswconnector.TSWConnector
 	TSWAPI                         *tswapi.TSWAPI
 	Config                         CabDebugger_Config
 	State                          CabDebugger_ControlState
@@ -99,7 +99,7 @@ func (cd *CabDebugger) Clear() {
 
 func (cd *CabDebugger) Start(ctx context.Context) {
 	go func() {
-		socket_channel, unsubscribe_socket_channel := cd.SocketConnection.Subscribe()
+		socket_channel, unsubscribe_socket_channel := cd.Connector.Subscribe()
 		ticker := time.NewTicker(333 * time.Millisecond)
 		for {
 			select {
@@ -134,7 +134,7 @@ func (cd *CabDebugger) Start(ctx context.Context) {
 func NewCabDebugger(tswapi *tswapi.TSWAPI, socket_conn tswconnector.TSWConnector, config CabDebugger_Config) *CabDebugger {
 	return &CabDebugger{
 		updateControlStateFromAPIMutex: sync.Mutex{},
-		SocketConnection:               socket_conn,
+		Connector:                      socket_conn,
 		TSWAPI:                         tswapi,
 		Config:                         config,
 		State: CabDebugger_ControlState{
