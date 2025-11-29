@@ -30,6 +30,8 @@ export function GetSharedProfiles():Promise<Array<main.Interop_SharedProfile>>;
 
 export function GetTSWAPIKeyLocation():Promise<string>;
 
+export function GetTheme():Promise<string>;
+
 export function GetVersion():Promise<string>;
 
 export function HasNewerVersion():Promise<boolean>;
@@ -67,6 +69,8 @@ export function SetLastInstalledModVersion(arg1:string):Promise<void>;
 export function SetPreferredControlMode(arg1:string):Promise<void>;
 
 export function SetTSWAPIKeyLocation(arg1:string):Promise<void>;
+
+export function SetTheme(arg1:string):Promise<void>;
 
 export function SubscribeRaw(arg1:string):Promise<void>;
 

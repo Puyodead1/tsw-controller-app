@@ -6,6 +6,7 @@ import {
 import { ExploreTabProfile } from "./ExploreTabProfile";
 import { useMemo } from "react";
 import { main } from "../../../wailsjs/go/models";
+import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 
 export const ExploreTab = () => {
   const { data: controllers } = useSWR("controllers", () => GetControllers(), {
@@ -20,6 +21,10 @@ export const ExploreTab = () => {
       ),
     { revalidateOnMount: true },
   );
+
+  const handleShare = () => {
+    BrowserOpenURL("https://github.com/LiamMartens/tsw-controller-app/issues/new?title=NEW+PROFILE")
+  }
 
   const [supportedSharedProfiles, unsupportedSharedProfiles] = useMemo(() => {
     const controllerUsbIds = new Set(controllers?.map((c) => c.UsbID) ?? []);
@@ -46,13 +51,12 @@ export const ExploreTab = () => {
           <span>
             Want to share a profile with the world? Submit an "issue" request
             with your profile on Github
-            <a
+            <button
               className="link ml-2"
-              target="_blank"
-              href="https://github.com/LiamMartens/tsw-controller-app/issues/new?title=NEW+PROFILE"
+              onClick={handleShare}
             >
               Submit now
-            </a>
+            </button>
           </span>
         </div>
         <div>

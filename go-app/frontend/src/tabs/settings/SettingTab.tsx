@@ -6,14 +6,18 @@ import {
   SetTSWAPIKeyLocation,
   GetAlwaysOnTop,
   SetAlwaysOnTop,
+  GetTheme,
+  SetTheme,
 } from "../../../wailsjs/go/main/App";
 import { alert } from "../../utils/alert";
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
+import { updateTheme } from "../../utils/updateTheme";
 
 type FormValues = {
   tswApiKeyLocation: string;
   preferredControlMode: "direct_control" | "sync_control" | "api_control";
   alwaysOnTop: boolean;
+  theme: "system" | "light" | "dark";
 };
 
 const getRemoteFormValues = async () => ({
@@ -21,6 +25,7 @@ const getRemoteFormValues = async () => ({
   preferredControlMode:
     (await GetPreferredControlMode()) as FormValues["preferredControlMode"],
   alwaysOnTop: await GetAlwaysOnTop(),
+  theme: (await GetTheme()) as FormValues["theme"],
 });
 
 export const SettingsTab = () => {
@@ -38,9 +43,12 @@ export const SettingsTab = () => {
     const promises: Promise<void>[] = [];
     const currentValues = await getRemoteFormValues();
 
+    if (values.theme  !== currentValues.theme) {
+      updateTheme(values.theme)
+      promises.push(SetTheme(values.theme))
+    }
+
     if (
-      values.tswApiKeyLocation &&
-      values.tswApiKeyLocation.endsWith("CommAPIKey.txt") &&
       values.tswApiKeyLocation !== currentValues.tswApiKeyLocation
     ) {
       promises.push(SetTSWAPIKeyLocation(values.tswApiKeyLocation));
@@ -71,10 +79,28 @@ export const SettingsTab = () => {
       onSubmit={handleSubmit(handleSubmitSuccess)}
     >
       <fieldset className="fieldset">
+        <label htmlFor="ui-theme" className="fieldset-legend">
+          Theme
+        </label>
+        <select
+          id="ui-theme"
+          className="select w-full"
+          {...register("theme")}
+        >
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </fieldset>
+      <fieldset className="fieldset">
         <label htmlFor="preferred-control-mode" className="fieldset-legend">
           Preferred Control Mode
         </label>
-        <select className="select w-full" {...register("preferredControlMode")}>
+        <select
+          id="preferred-control-mode"
+          className="select w-full"
+          {...register("preferredControlMode")}
+        >
           <option value="direct_control">Direct Control</option>
           <option value="sync_control">Sync Control</option>
           <option value="api_control">API Control</option>
@@ -84,8 +110,14 @@ export const SettingsTab = () => {
         </p>
       </fieldset>
       <fieldset className="fieldset">
-        <label className="fieldset-legend">TSW API Key Location</label>
-        <input className="input w-full" {...register("tswApiKeyLocation")} />
+        <label htmlFor="tsw-api-key-location" className="fieldset-legend">
+          TSW API Key Location
+        </label>
+        <input
+          id="tsw-api-key-location"
+          className="input w-full"
+          {...register("tswApiKeyLocation")}
+        />
         <p className="fieldset-label whitespace-normal">
           If the location has not been auto-detected you will need to enter it
           manually here. The API key is only requred for the "api_control"

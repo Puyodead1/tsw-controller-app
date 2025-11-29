@@ -247,6 +247,11 @@ func (c *TSWAPI) LoadAPIKey(path string) error {
 	return nil
 }
 
+func (c *TSWAPI) CanConnect() bool {
+	// @TODO
+	return true
+}
+
 func (c *TSWAPI) Enabled() bool {
 	return c.Config.CommAPIKey != ""
 }

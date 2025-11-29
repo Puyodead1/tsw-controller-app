@@ -1,6 +1,11 @@
 
 # CHANGELOG
 
+## 1.3.5
+- Update webkit to 4.1 for debian/ubuntu
+- Fix conditions missing from sharing and profile builder
+- Fix "Submit now" link
+
 ## 1.3.4
 - Fix bug with throttling
 

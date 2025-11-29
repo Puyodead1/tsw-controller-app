@@ -58,6 +58,10 @@ export function GetTSWAPIKeyLocation() {
   return window['go']['main']['App']['GetTSWAPIKeyLocation']();
 }
 
+export function GetTheme() {
+  return window['go']['main']['App']['GetTheme']();
+}
+
 export function GetVersion() {
   return window['go']['main']['App']['GetVersion']();
 }
@@ -132,6 +136,10 @@ export function SetPreferredControlMode(arg1) {
 
 export function SetTSWAPIKeyLocation(arg1) {
   return window['go']['main']['App']['SetTSWAPIKeyLocation'](arg1);
+}
+
+export function SetTheme(arg1) {
+  return window['go']['main']['App']['SetTheme'](arg1);
 }
 
 export function SubscribeRaw(arg1) {

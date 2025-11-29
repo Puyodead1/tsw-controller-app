@@ -29,27 +29,57 @@
             "items": {
               "allOf": [
                 {
-                  "type": "object",
-                  "properties": {
-                    "conditions": {
-                      "type": "array",
-                      "description": "The conditions to apply to this assignment",
-                      "items": {
-                        "$ref": "./profile.assignment_condition.schema.json"
-                      }
-                    }
-                  }
-                },
-                {
                   "oneOf": [
-                    { "$ref": "./profile.momentary_assignment.schema.json" },
-                    { "$ref": "./profile.toggle_assignment.schema.json" },
-                    { "$ref": "./profile.linear_assignment.schema.json" },
                     {
-                      "$ref": "./profile.direct_control_assignment.schema.json"
+                      "allOf": [
+                        {
+                          "$ref": "./profile.momentary_assignment.schema.json"
+                        },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
                     },
-                    { "$ref": "./profile.api_control_assignment.schema.json" },
-                    { "$ref": "./profile.sync_control_assignment.schema.json" }
+                    {
+                      "allOf": [
+                        { "$ref": "./profile.toggle_assignment.schema.json" },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        { "$ref": "./profile.linear_assignment.schema.json" },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        { "$ref": "./profile.direct_control_assignment.schema.json" },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        { "$ref": "./profile.api_control_assignment.schema.json" },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        { "$ref": "./profile.sync_control_assignment.schema.json" },
+                        {
+                          "$ref": "./profile.assignment_conditions.schema.json"
+                        }
+                      ]
+                    }
                   ]
                 }
               ]

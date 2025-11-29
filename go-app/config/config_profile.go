@@ -56,11 +56,16 @@ type Config_Controller_Profile_Control_Assignment_Action struct {
 type Config_Controller_Profile_Control_Assignment_Condition struct {
 	/* this is the other control name to depend on */
 	Control  string  `json:"control" validate:"required"`
-	Operator string  `json:"operator" validate:"required,oneof=gte,lte,gt,lt"`
+	Operator string  `json:"operator" validate:"required,oneof=gte lte gt lt"`
 	Value    float64 `json:"value"`
 }
 
+type Config_Controller_Profile_Control_Assignment_Shared struct {
+	Conditions *[]Config_Controller_Profile_Control_Assignment_Condition `json:"conditions,omitempty"`
+}
+
 type Config_Controller_Profile_Control_Assignment_Momentary struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type      string  `json:"type" validate:"required,eq=momentary"`
 	Threshold float64 `json:"threshold"`
 	/* which action to perform once the threshold is exceeded */
@@ -80,12 +85,14 @@ type Config_Controller_Profile_Control_Assignment_Linear_Threshold struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_Linear struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type       string                                                          `json:"type" validate:"required,eq=linear"`
 	Neutral    *float64                                                        `json:"neutral,omitempty"`
 	Thresholds []Config_Controller_Profile_Control_Assignment_Linear_Threshold `json:"thresholds" validate:"required"`
 }
 
 type Config_Controller_Profile_Control_Assignment_Toggle struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type      string  `json:"type" validate:"required,eq=toggle"`
 	Threshold float64 `json:"threshold"`
 	/* which action to perform once the threshold is exceeded */
@@ -103,6 +110,7 @@ type Config_Controller_Profile_Control_Assignment_DirectLike_InputValue struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_DirectControl struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type string `json:"type" validate:"required,eq=direct_control"`
 	/* the HID control component as per the UE4SS API */
 	Controls string `json:"controls" validate:"required"`
@@ -114,6 +122,7 @@ type Config_Controller_Profile_Control_Assignment_DirectControl struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_ApiControl struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type string `json:"type" validate:"required,eq=api_control"`
 	/* the HID control component as per the UE4SS API / HTTP API - they are the same */
 	Controls   string                                                             `json:"controls" validate:"required"`
@@ -121,6 +130,7 @@ type Config_Controller_Profile_Control_Assignment_ApiControl struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_SyncControl struct {
+	Config_Controller_Profile_Control_Assignment_Shared
 	Type string `json:"type" validate:"required,eq=sync_control"`
 	/** this is the VHID Identifier Name - differs from the direct control name */
 	Identifier     string                                                             `json:"identifier" validate:"required"`
@@ -136,7 +146,6 @@ type Config_Controller_Profile_Control_Assignment struct {
 	DirectControl *Config_Controller_Profile_Control_Assignment_DirectControl `json:"-"`
 	SyncControl   *Config_Controller_Profile_Control_Assignment_SyncControl   `json:"-"`
 	ApiControl    *Config_Controller_Profile_Control_Assignment_ApiControl    `json:"-"`
-	Conditions    *[]Config_Controller_Profile_Control_Assignment_Condition   `json:"conditions,omitempty"`
 }
 
 type Config_Controller_Profile_Control struct {
@@ -232,12 +241,33 @@ func (c Config_Controller_Profile_Control_Assignment_Action) MarshalJSON() ([]by
 	return nil, fmt.Errorf("unable to marshal control assignment action; has to be one of direct_control or keys but neither was found")
 }
 
+func (c *Config_Controller_Profile_Control_Assignment) Conditions() *[]Config_Controller_Profile_Control_Assignment_Condition {
+	if c.Momentary != nil {
+		return c.Momentary.Conditions
+	}
+	if c.Linear != nil {
+		return c.Linear.Conditions
+	}
+	if c.Toggle != nil {
+		return c.Toggle.Conditions
+	}
+	if c.DirectControl != nil {
+		return c.DirectControl.Conditions
+	}
+	if c.ApiControl != nil {
+		return c.ApiControl.Conditions
+	}
+	if c.SyncControl != nil {
+		return c.SyncControl.Conditions
+	}
+	return nil
+}
+
 func (c *Config_Controller_Profile_Control_Assignment) UnmarshalJSON(data []byte) error {
 	v := validator.New()
 
 	var peek struct {
-		Type       string                                                    `type:"type"`
-		Conditions *[]Config_Controller_Profile_Control_Assignment_Condition `json:"conditions,omitempty"`
+		Type string `type:"type"`
 	}
 	if err := json.Unmarshal(data, &peek); err != nil {
 		return err
@@ -246,7 +276,6 @@ func (c *Config_Controller_Profile_Control_Assignment) UnmarshalJSON(data []byte
 		return err
 	}
 
-	c.Conditions = peek.Conditions
 	switch peek.Type {
 	case "momentary":
 		var momentary Config_Controller_Profile_Control_Assignment_Momentary
@@ -327,6 +356,9 @@ func (c Config_Controller_Profile_Control_Assignment) MarshalJSON() ([]byte, err
 	}
 	if c.SyncControl != nil {
 		return json.Marshal(c.SyncControl)
+	}
+	if c.ApiControl != nil {
+		return json.Marshal(c.ApiControl)
 	}
 	return nil, fmt.Errorf("unable to marshal control assignment; no valid assignment found")
 }
