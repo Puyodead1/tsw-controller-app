@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+## 1.3.5
+- Fix debian installation
+
 ## 1.3.4
 - Fix bug with throttling
 

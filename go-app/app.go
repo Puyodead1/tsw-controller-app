@@ -886,7 +886,7 @@ func (a *App) OpenConfigDirectory() error {
 
 func (a *App) InstallTrainSimWorldMod() error {
 	tsw_exe_path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Train Sim World 5/6 executable (TrainSimWorld.exe)",
+		Title: "Select Train Sim World 5/6 executable within Binaries/Win64 (TrainSimWorld.exe)",
 	})
 	if err != nil {
 		return err
