@@ -256,7 +256,7 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: libwebkit2gtk-4.1-0, libwebkit2gtk-4.0-37, libgtk-3-0, libsdl2-2.0-0
+          Depends: libwebkit2gtk-4.0-37, libgtk-3-0, libsdl2-2.0-0
           Maintainer: L Martens <hi@liammartens.com>
           Description: TSW Controller App
           EOF
