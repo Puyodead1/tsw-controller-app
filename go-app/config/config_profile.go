@@ -56,7 +56,7 @@ type Config_Controller_Profile_Control_Assignment_Action struct {
 type Config_Controller_Profile_Control_Assignment_Condition struct {
 	/* this is the other control name to depend on */
 	Control  string  `json:"control" validate:"required"`
-	Operator string  `json:"operator" validate:"required,oneof=gte,lte,gt,lt"`
+	Operator string  `json:"operator" validate:"required,oneof=gte lte gt lt"`
 	Value    float64 `json:"value"`
 }
 

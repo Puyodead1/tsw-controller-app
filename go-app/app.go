@@ -59,7 +59,7 @@ const (
 
 type ModAssets_Manifest_Entry struct {
 	Path   string `json:"path"`
-	Action string `json:"action" validate:"required,oneof=copy,delete"`
+	Action string `json:"action" validate:"required,oneof=copy delete"`
 }
 
 type ModAssets_Manifest struct {
@@ -325,6 +325,15 @@ func (a *App) GetAlwaysOnTop() bool {
 func (a *App) SetAlwaysOnTop(enabled bool) {
 	a.program_config.AlwaysOnTop = enabled
 	runtime.WindowSetAlwaysOnTop(a.ctx, enabled)
+	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
+}
+
+func (a *App) GetTheme() string {
+	return a.program_config.Theme
+}
+
+func (a *App) SetTheme(theme string) {
+	a.program_config.Theme = theme
 	a.program_config.Save(filepath.Join(a.config.GlobalConfigDir, "program.json"))
 }
 
