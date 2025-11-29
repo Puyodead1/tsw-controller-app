@@ -208,7 +208,7 @@ This can be added to any assignment using the `conditions` key:
   ]
 }
 ```
-In the above example, the assignment will only execute if `mylever` exceeds 0.5
+In the above example, the assignment will only execute if `mylever` exceeds 0.5. At this time the supported operators are `gte`, `lte`, `gt` and `lt`.
 
 ---
 
