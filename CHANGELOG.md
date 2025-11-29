@@ -2,7 +2,8 @@
 # CHANGELOG
 
 ## 1.3.5
-- Fix debian installation
+- Update webkit to 4.1 for debian/ubuntu
+- Fix conditions missing from sharing and profile builder
 
 ## 1.3.4
 - Fix bug with throttling

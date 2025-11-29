@@ -385,8 +385,9 @@ func (p *ProfileRunner) GetAssignments(
 check_assignments_loop:
 	for _, assignment := range assignments {
 		/* conditions can only be evaluated if there is a source event */
-		if source_event != nil && assignment.Conditions != nil && len(*assignment.Conditions) > 0 {
-			for _, condition := range *assignment.Conditions {
+		assigmment_conditions := assignment.Conditions()
+		if source_event != nil && assigmment_conditions != nil && len(*assigmment_conditions) > 0 {
+			for _, condition := range *assigmment_conditions {
 				dependency_control, has_dependency_control := source_event.Controller.Controls.Get(condition.Control)
 				if !has_dependency_control {
 					logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because dependency control does not exist")
