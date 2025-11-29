@@ -357,6 +357,9 @@ func (c Config_Controller_Profile_Control_Assignment) MarshalJSON() ([]byte, err
 	if c.SyncControl != nil {
 		return json.Marshal(c.SyncControl)
 	}
+	if c.ApiControl != nil {
+		return json.Marshal(c.ApiControl)
+	}
 	return nil, fmt.Errorf("unable to marshal control assignment; no valid assignment found")
 }
 
