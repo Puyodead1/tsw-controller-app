@@ -44,9 +44,17 @@ To install the mod and program just head to the [releases page](https://github.c
 ### Manual installation
 You can also manually install if you alread have your own UE4SS installed and want to use your existing installation. To do so you will need to download the respective binary for you platform as well as the UE4SS mod and manually place the mod files into the UE4SS directory.
 
-**Note linux**  
-SDL2 and Webkit2 are required for this app to work and will need to be installed.  
-  
+**Note linux users**  
+SDL2 and Webkit2 4.1 are required for this app to work and will need to be installed.  
+
+**For Arch users**
+On Arch based systems it is recommended to use SDL3 in favor of SDL2 (see [this article](https://wiki.archlinux.org/title/SDL)). You will have to get both the SDL3 and SDL2-compat packages.
+[SDL3](https://archlinux.org/packages/extra/x86_64/sdl3/) and [SDL2-compat](https://archlinux.org/packages/extra/x86_64/sdl2-compat/) are in the ['extra' package repository](https://wiki.archlinux.org/title/Official_repositories#extra) and can be installed with pacman
+```
+sudo pacman -S sdl3 sdl2-compat
+```
+
+**For Ubuntu users**
 On Ubuntu/Debian you can install it using apt  
 ```
 sudo apt install -y  libsdl2-2.0-0 libwebkit2gtk-4.1-0
