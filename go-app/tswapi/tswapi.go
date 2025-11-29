@@ -247,14 +247,11 @@ func (c *TSWAPI) LoadAPIKey(path string) error {
 	return nil
 }
 
-<<<<<<< Updated upstream
-=======
 func (c *TSWAPI) CanConnect() bool {
 	// @TODO
 	return true
 }
 
->>>>>>> Stashed changes
 func (c *TSWAPI) Enabled() bool {
 	return c.Config.CommAPIKey != ""
 }
