@@ -74,7 +74,7 @@ export const MainTab = () => {
           form.setValue(`profiles.${guid}`, undefined);
         });
       } else {
-        ClearProfile(guid)
+        ClearProfile(guid);
       }
     }
   }, [form]);
@@ -93,7 +93,11 @@ export const MainTab = () => {
 
   const handleOpenProfile = (controller: main.Interop_GenericController) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) OpenProfileBuilder(profile.Id);
+    if (profile) {
+      OpenProfileBuilder(profile.Id).catch((err) =>
+        alert(String(err), "error"),
+      );
+    }
   };
 
   const handleDeleteProfile = (controller: main.Interop_GenericController) => {
@@ -121,7 +125,11 @@ export const MainTab = () => {
     controller: main.Interop_GenericController,
   ) => {
     const profile = getValues(`profiles.${controller.GUID}`);
-    if (profile) SaveProfileForSharing(controller.GUID, profile.Id);
+    if (profile) {
+      SaveProfileForSharing(controller.GUID, profile.Id).catch((err) =>
+        alert(String(err), "error"),
+      );
+    }
   };
 
   const handleInstall = () => {
