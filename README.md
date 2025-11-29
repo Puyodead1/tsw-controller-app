@@ -49,7 +49,7 @@ SDL2 and Webkit2 are required for this app to work and will need to be installed
   
 On Ubuntu/Debian you can install it using apt  
 ```
-sudo apt install -y  libsdl2-2.0-0 libwebkit2gtk-4.0-37
+sudo apt install -y  libsdl2-2.0-0 libwebkit2gtk-4.1-0
 ```
 
 ## Contributing
