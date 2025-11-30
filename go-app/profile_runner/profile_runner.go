@@ -384,35 +384,60 @@ func (p *ProfileRunner) GetAssignments(
 
 check_assignments_loop:
 	for _, assignment := range assignments {
-		/* conditions can only be evaluated if there is a source event */
+		/* conditions can only be evaluated if there is a source event or cab variable */
 		assigmment_conditions := assignment.Conditions()
-		if source_event != nil && assigmment_conditions != nil && len(*assigmment_conditions) > 0 {
+		if assigmment_conditions != nil && len(*assigmment_conditions) > 0 {
 			for _, condition := range *assigmment_conditions {
-				dependency_control, has_dependency_control := source_event.Controller.Controls.Get(condition.Control)
-				if !has_dependency_control {
-					logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because dependency control does not exist")
-					continue
+				var condition_value float64
+				var has_condition_value bool
+
+				/* check if condition is based on cab variable or controller input */
+				if condition.CabVariable != nil {
+					/* read from cab state */
+					cab_control, has_cab_control := p.CabDebugger.State.Controls.Get(*condition.CabVariable)
+					if !has_cab_control {
+						logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because cab variable does not exist: %s", *condition.CabVariable)
+						continue check_assignments_loop
+					}
+					condition_value = cab_control.CurrentNormalizedValue
+					has_condition_value = true
+				} else if condition.Control != nil && source_event != nil {
+					/* read from controller input */
+					dependency_control, has_dependency_control := source_event.Controller.Controls.Get(*condition.Control)
+					if !has_dependency_control {
+						logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because dependency control does not exist: %s", *condition.Control)
+						continue check_assignments_loop
+					}
+					condition_value = dependency_control.State.NormalizedValues.Value
+					has_condition_value = true
+				} else {
+					logger.Logger.Error("[ProfileRunner::GetAssignments] skipping condition because neither control nor cab_variable is specified")
+					continue check_assignments_loop
 				}
-				switch condition.Operator {
-				case "gte":
-					if dependency_control.State.NormalizedValues.Value < condition.Value {
-						/* condition doesn't match -> skip */
-						continue check_assignments_loop
-					}
-				case "lte":
-					if dependency_control.State.NormalizedValues.Value > condition.Value {
-						/* condition doesn't match -> skip */
-						continue check_assignments_loop
-					}
-				case "gt":
-					if dependency_control.State.NormalizedValues.Value <= condition.Value {
-						/* condition doesn't match -> skip */
-						continue check_assignments_loop
-					}
-				case "lt":
-					if dependency_control.State.NormalizedValues.Value >= condition.Value {
-						/* condition doesn't match -> skip */
-						continue check_assignments_loop
+
+				/* evaluate condition operator */
+				if has_condition_value {
+					switch condition.Operator {
+					case "gte":
+						if condition_value < condition.Value {
+							/* condition doesn't match -> skip */
+							continue check_assignments_loop
+						}
+					case "lte":
+						if condition_value > condition.Value {
+							/* condition doesn't match -> skip */
+							continue check_assignments_loop
+						}
+					case "gt":
+						if condition_value <= condition.Value {
+							/* condition doesn't match -> skip */
+							continue check_assignments_loop
+						}
+					case "lt":
+						if condition_value >= condition.Value {
+							/* condition doesn't match -> skip */
+							continue check_assignments_loop
+						}
 					}
 				}
 			}

@@ -54,10 +54,12 @@ type Config_Controller_Profile_Control_Assignment_Action struct {
 }
 
 type Config_Controller_Profile_Control_Assignment_Condition struct {
-	/* this is the other control name to depend on */
-	Control  string  `json:"control" validate:"required"`
-	Operator string  `json:"operator" validate:"required,oneof=gte lte gt lt"`
-	Value    float64 `json:"value"`
+	/* this is the other control name to depend on (physical controller input) */
+	Control *string `json:"control,omitempty"`
+	/* this is the cab variable name to depend on (cab state variable) */
+	CabVariable *string `json:"cab_variable,omitempty"`
+	Operator    string  `json:"operator" validate:"required,oneof=gte lte gt lt"`
+	Value       float64 `json:"value"`
 }
 
 type Config_Controller_Profile_Control_Assignment_Shared struct {
